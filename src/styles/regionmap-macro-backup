@@ -1,0 +1,117 @@
+.macro-regionrose {
+    display: grid;
+    grid-template-rows: repeat(3,calc((var(--rose-H) - 2 * var(--rose-gap)) / 3));
+    grid-template-columns: repeat(3,calc((var(--rose-W) - 2 * var(--rose-gap)) / 3));
+    gap: var(--rose-gap);
+    position: relative;
+}
+.macro-regionrose-dir {
+    /* background-color: #aa5252; */
+    padding: 0.5em;
+}
+.macro-regionrose-dir[data-rosedir *= 'east'] {
+    padding-right: 1.6em;
+}
+.macro-regionrose-dir[data-rosedir *= 'west'] {
+    padding-left: 1.6em;
+}
+
+
+
+.macro-regionrose-dir[data-rosedir = 'center'] {
+    grid-row: 2;
+    grid-column: 2;
+}
+.macro-regionrose-dir[data-rosedir = 'north'] {
+    grid-row: 1;
+    grid-column: 2;
+    /* clip-path: polygon(0 20%,50% 0,100% 20%,100% 100%,0 100%); */
+}
+.macro-regionrose-dir[data-rosedir = 'northeast'] {
+    grid-row: 1;
+    grid-column: 3;
+    /* clip-path: polygon(0 20%, 80% 25%, 85% 100%, 0 100%); */
+}
+.macro-regionrose-dir[data-rosedir = 'east'] {
+    grid-row: 2;
+    grid-column: 3;
+    /* clip-path: polygon(0 0,85% 0,100% 50%,85% 100%,0 100%); */
+}
+.macro-regionrose-dir[data-rosedir = 'southeast'] {
+    grid-row: 3;
+    grid-column: 3;
+    /* clip-path: polygon(0 0, 85% 0, 80% 74%, 0 80%); */
+}
+.macro-regionrose-dir[data-rosedir = 'south'] {
+    grid-row: 3;
+    grid-column: 2;
+    /* clip-path: polygon(0 0,0 80%,50% 100%,100% 80%,100% 0); */
+}
+.macro-regionrose-dir[data-rosedir = 'southwest'] {
+    grid-row: 3;
+    grid-column: 1;
+    /* clip-path: polygon(15% 0, 100% 0, 100% 80%, 20% 75%); */
+}
+.macro-regionrose-dir[data-rosedir = 'west'] {
+    grid-row: 2;
+    grid-column: 1;
+    /* clip-path: polygon(0 50%,15% 0,100% 0,100% 100%,15% 100%); */
+}
+.macro-regionrose-dir[data-rosedir = 'northwest'] {
+    grid-row: 1;
+    grid-column: 1;
+    /* clip-path: polygon(20% 25%, 100% 20%, 100% 100%, 15% 100%); */
+}
+.macro-regionrose-output {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    position: relative;
+}
+.macro-regionrose-dir[data-rosedir = 'center'] .macro-regionrose-output {
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+.macro-regionrose-dir[data-rosedir = 'north'] .macro-regionrose-output {
+    align-items: center;
+    justify-content: flex-end;
+    text-align: center;
+}
+.macro-regionrose-dir[data-rosedir = 'northeast'] .macro-regionrose-output {
+    align-items: flex-start;
+    justify-content: flex-end;
+    text-align: left;
+}
+.macro-regionrose-dir[data-rosedir = 'east'] .macro-regionrose-output {
+    align-items: flex-start;
+    justify-content: center;
+    text-align: left;
+}
+.macro-regionrose-dir[data-rosedir = 'southeast'] .macro-regionrose-output {
+    align-items: flex-start;
+    justify-content:  flex-start;
+    text-align: left;
+}
+.macro-regionrose-dir[data-rosedir = 'south'] .macro-regionrose-output {
+    align-items: center;
+    justify-content: flex-start;
+    text-align: center;
+}
+.macro-regionrose-dir[data-rosedir = 'southwest'] .macro-regionrose-output {
+    align-items: flex-end;
+    justify-content: flex-start;
+    text-align: right;
+}
+.macro-regionrose-dir[data-rosedir = 'west'] .macro-regionrose-output {
+    align-items: flex-end;
+    justify-content: center;
+    text-align: right;
+}
+.macro-regionrose-dir[data-rosedir = 'northwest'] .macro-regionrose-output {
+    align-items: flex-end;
+    justify-content: flex-end;
+    text-align: right;
+}
+

@@ -1,0 +1,46 @@
+sugarcube-2:
+  macros:
+    regionmap:
+      name: regionmap
+      container: true
+    regionnames:
+      name: regionnames
+    regionrose:
+      name: regionrose
+      container: true
+    onattempt:
+      name: onattempt
+    abort:
+      name: abort
+    disable:
+      name: disable
+    onabort:
+      name: onabort
+    onenter:
+      name: onenter
+    rosedisable:
+      name: rosedisable
+    roseenable:
+      name: roseenable
+    areamap:
+      name: areamap
+      container: true
+    variables:
+      name: variables
+    areavars:
+      name: areavars
+    mapvars:
+      name: mapvars
+    createmap:
+      name: createmap
+      container: true
+    newrose:
+      name: newrose
+      container: true
+    newmap:
+      name: newmap
+      container: true
+    showrose:
+      name: showrose
+    maptiles:
+      name: maptiles

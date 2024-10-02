@@ -1,0 +1,351 @@
+:: StoryTitle
+Walach Home - regionmap demo
+
+
+:: StoryInit [nobr]
+ /* create names */
+ <<set 
+    setup.rooms = {
+        Y: 'Yard',
+        F: 'Front door',
+        L: 'Living room',
+        B: 'Bedroom',
+        W: 'Washroom',
+        H: 'Hall',
+        K: 'Kitchen',
+        G: 'Garage',
+        D: 'Dungeon',
+        C: 'Courtyard',
+    };
+>>
+
+/*
+DEFINE MAP
+<<regionmap 'map_name' #cols
+    map
+    goes
+    here
+    <<regionwalls 'x'>> optionally change walls from period to x
+    <<regionnames>>
+<</regionmap
+ */
+<<regionmap 'walach_home' 6>>
+    .   .   .   .   .   .
+    G   G   H   K   C   .
+    Y   .   H   K   C   .
+    Y   F   H   L   C   .
+    Y   .   H   .   C   .
+    .   W   H   B   D   .
+    .   .   .   .   .   .
+    <<regionnames setup.rooms>>
+<</regionmap>>
+
+/* init vars */
+<<set 
+    $here       = 'Y';
+    $entering   = '';
+    $leaving    = '';
+    $disable      = {
+        Y: false,
+        F: false,
+        L: false,
+        B: false,
+        W: false,
+        H: false,
+        K: false,
+        G: true,
+        D: false,
+        C: false,
+    };
+    $abort      = {
+        Y: false,
+        F: false,
+        L: false,
+        B: false,
+        W: false,
+        H: false,
+        K: false,
+        G: false,
+        D: true,
+        C: false,
+    };
+    $turn = 0;
+>>
+
+
+:: Start [nobr]
+/* function to update map */
+<<script>>
+    setup.updateMap = function() {
+        $('#map').attr('data-here',State.variables.here);
+    };
+<</script>>
+<<done>><<run setup.updateMap()>><</done>>
+/* simple styling */
+<style>
+    #passage-start {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        width: fit-content;
+    }
+    h2, h3, h4 {
+        margin: 0.5rem 0;
+    }
+</style>
+
+/* DISPLAY MAP */
+<h2>The Walach Home</h2>
+<div id='mapC'>
+    <div id='map'>
+        <h4>Map</h4>
+        <div class='row'>
+            <div class='wall'>.</div><div class='wall'>.</div><div class='wall'>.</div><div class='wall'>.</div><div class='wall'>.</div><div class='wall'>.</div>
+        </div>
+        <div class='row'>
+            <div class='G'>G</div><div class='G'>G</div><div class='H'>H</div><div class='K'>K</div><div class='C'>C</div><div class='wall'>.</div>
+        </div>
+        <div class='row'>
+            <div class='G'>G</div><div class='G'>G</div><div class='H'>H</div><div class='K'>K</div><div class='C'>C</div><div class='wall'>.</div>
+        </div>
+        <div class='row'>
+            <div class='Y'>Y</div><div class='wall'>.</div><div class='H'>H</div><div class='K'>K</div><div class='C'>C</div><div class='wall'>.</div>
+        </div>
+        <div class='row'>
+            <div class='Y'>Y</div><div class='F'>F</div><div class='H'>H</div><div class='L'>L</div><div class='C'>C</div><div class='wall'>.</div>
+        </div>
+        <div class='row'>
+            <div class='Y'>Y</div><div class='wall'>.</div><div class='H'>H</div><div class='wall'>.</div><div class='C'>C</div><div class='wall'>.</div>
+        </div>
+        <div class='row'>
+            <div class='wall'>.</div><div class='W'>W</div><div class='H'>H</div><div class='B'>B</div><div class='D'>D</div><div class='wall'>.</div>
+        </div>
+        <div class='row'>
+            <div class='wall'>.</div><div class='wall'>.</div><div class='wall'>.</div><div class='wall'>.</div><div class='wall'>.</div><div class='wall'>.</div>
+        </div>
+    </div>
+
+    /*
+    DEFINE ROSE
+    <<regionrose    map_name
+        position    var that stores position info
+        enterCode   optional, returns place trying to enter
+        leaveCode   optional, returns place trying to leave
+    >>
+    */
+    <div>
+        <h4>Rose</h4>
+        <<regionrose    'walach_home'
+            position    '$here'
+            enterCode   '$entering'
+            leaveCode   '$leaving'
+        >>
+            /* runs whenever moving is attempted */
+            <<onattempt>>
+                <<run $turn++>>
+                <<run console.log(`-------- turn: ${$turn} --------`)>>
+                <<run console.log('movement attempted!')>>
+                <<run console.log(`tried to go to: ${setup.rooms[$entering]}`)>>
+                <<run console.log(`tried leaving: ${setup.rooms[$leaving]}`)>>
+
+            /* anything room set to true will abort */
+            <<abort $abort>>
+            /* anything room set to true will be greyed out on the map */
+            <<disable $disable>>
+            
+            /* runs whenever an abort happens, can optionally specify specific rooms */
+            <<onabort>>
+                <<run console.log('movement aborted!')>>
+
+            /* runs whenever entering a new room */
+            <<onenter>>
+                <<run console.log(`you're now at: ${setup.rooms[$here]}`)>>
+                <<run setup.updateMap()>>
+
+        <</regionrose>>
+    </div>
+</div>
+
+/* styling map */
+<style>
+    #mapC {
+        display: flex;
+        gap: 3rem;
+    }
+        #map {
+            display: flex;
+            flex-direction: column;
+        }
+            .row {
+                display: flex;
+            }
+                .row > * {
+                    width: 2rem;
+                    height: 2rem;
+                    align-content: center;
+                    justify-content: center;
+                    text-align: center;
+                }
+                
+        .macro-regionrose-dir {
+            border: 1px solid;
+            width: 10rem;
+            height: 5rem;
+        }
+        #legend {
+            font-size: 0.8rem;
+        }
+    #map[data-here="Y"] .Y,
+    #map[data-here="F"] .F,
+    #map[data-here="L"] .L,
+    #map[data-here="B"] .B,
+    #map[data-here="W"] .W,
+    #map[data-here="H"] .H,
+    #map[data-here="K"] .K,
+    #map[data-here="G"] .G,
+    #map[data-here="D"] .D,
+    #map[data-here="C"] .C {
+        color: blue;
+        transform: scale(1.5);
+    }
+</style>
+
+<div id='controlsC'>
+    /* legend, for reference */
+    <h4 class="legend title">Legend</h4>
+    <div class='legend content' id='legend'>
+        <div>Y: Yard</div>
+        <div>F: Front door</div>
+        <div>L: Living room</div>
+        <div>B: Bedroom</div>
+        <div>W: Washroom</div>
+        <div>H: Hall</div>
+        <div>K: Kitchen</div>
+        <div>G: Garage</div>
+        <div>D: Dungeon</div>
+        <div>C: Courtyard</div>
+    </div>
+
+    /* CONTROLS, should mostly be self-explanatory */
+    <h4 class='controls title'>Controls</h4>
+    <div class='controls content' id='controls'>
+
+        <div id='subtitle1' class='subtitle'></div><br>
+        <<done>><<script>>$('#subtitle1').text(`these run <<rosedisable>> / <<roseenable>>`)<</script>><</done>>
+        <div id='subtitle2' class='subtitle'></div><br>
+        <<done>><<script>>$('#subtitle2').text(`then sets "$disable[room]" to true / false`)<</script>><</done>>
+
+        <<link 'disable all room buttons'>>
+            <<rosedisable>>
+            <<script>>
+                for (const r in State.variables.disable) {
+                    State.variables.disable[r] = true;
+                }
+            <</script>>
+        <</link>>
+        <br>
+        <<link 'enable all room buttons'>>
+            <<roseenable>>
+            <<script>>
+                for (const r in State.variables.disable) {
+                    State.variables.disable[r] = false;
+                }
+            <</script>>
+        <</link>>
+        <br>
+
+        <<link 'disable specific room button'>>
+            <<set _room = $('#room_disable').val()>>
+            <<if ! Object.keys(setup.rooms).includes(_room)>>
+                <<run $('#room_disable').val('invalid room code')>>
+            <<else>>
+                <<run $('#room_disable').val('')>>
+                <<rosedisable _room>>
+                <<set $disable[_room] = true>>
+            <</if>>
+        <</link>>
+        <input id="room_disable" type="textbox">
+
+        <<link 'enable specific room button'>>
+            <<set _room = $('#room_enable').val()>>
+            <<if ! Object.keys(setup.rooms).includes(_room)>>
+                <<run $('#room_enable').val('invalid room code')>>
+            <<else>>
+                <<run $('#room_enable').val('')>>
+                <<roseenable _room>>
+                <<set $disable[_room] = false>>
+            <</if>>
+        <</link>>
+        <input id="room_enable" type="textbox">
+
+        <div id='subtitle3' class='subtitle'></div><br>
+        <<done>><<script>>$('#subtitle3').text(`these set "$abort[room]" to true or false`)<</script>><</done>>
+
+        <<link 'disallow travel to specific room (abort)'>>
+            <<set _room = $('#room_disallow').val()>>
+            <<if ! Object.keys(setup.rooms).includes(_room)>>
+                <<run $('#room_disallow').val('invalid room code')>>
+            <<else>>
+                <<run $('#room_disallow').val('')>>
+                <<set $abort[_room] = true>>
+            <</if>>
+        <</link>>
+        <input id="room_disallow" type="textbox">
+
+        <<link 'allow travel to specific room'>>
+            <<set _room = $('#room_allow').val()>>
+            <<if ! Object.keys(setup.rooms).includes(_room)>>
+                <<run $('#room_allow').val('invalid room code')>>
+            <<else>>
+                <<run $('#room_allow').val('')>>
+                <<set $abort[_room] = false>>
+            <</if>>
+        <</link>>
+        <input id="room_allow" type="textbox">
+    </div>
+</div>
+
+/* styling controls */
+<style>
+    #controlsC {
+        display: grid;
+        grid-template-columns: auto auto;
+    }
+        .title {
+            grid-row: 1;
+        }
+        .content {
+            grid-row: 2;
+        }
+
+        .legend {
+            grid-column: 1;
+        }
+        #legend {
+            width: fit-content;
+            display: flex;
+            flex-direction: column;
+            padding-left: 1rem;
+        }
+
+        .controls {
+            grid-column: 2;
+        }
+        #controls {
+            display: grid;
+            grid-template-columns: auto auto;
+            row-gap: 0.2rem;
+            column-gap: 1rem;
+            width: fit-content;
+            padding-left: 2rem;
+        }
+        .subtitle {
+            margin-left: -1rem;
+        }
+
+    input {
+        padding: 0 0.5rem;
+    }
+</style>
+
+
