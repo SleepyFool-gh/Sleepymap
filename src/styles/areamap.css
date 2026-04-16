@@ -1,0 +1,52 @@
+.macro-arearose {
+    display: grid;
+    grid-template-columns: repeat(3, auto);
+    grid-template-rows: repeat(3, auto);
+    border-top: 1px dotted white;
+    border-left: 1px dotted white;
+}
+    .macro-arearose-dir {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        min-height: 3em;
+        border-right: 1px dotted white;
+        border-bottom: 1px dotted white;
+    }
+        .macro-arearose-dir[data-dir='C'] {
+            grid-column: 2;
+            grid-row: 2;
+        }
+        .macro-arearose-dir[data-dir='N'] {
+            grid-column: 2;
+            grid-row: 1;
+        }
+        .macro-arearose-dir[data-dir='E'] {
+            grid-column: 3;
+            grid-row: 2;
+        }
+        .macro-arearose-dir[data-dir='S'] {
+            grid-column: 2;
+            grid-row: 3;
+        }
+        .macro-arearose-dir[data-dir='W'] {
+            grid-column: 1;
+            grid-row: 2;
+        }
+        .macro-arearose-dir[data-dir='NE'] {
+            grid-column: 3;
+            grid-row: 1;
+        }
+        .macro-arearose-dir[data-dir='SE'] {
+            grid-column: 3;
+            grid-row: 3;
+        }
+        .macro-arearose-dir[data-dir='SW'] {
+            grid-column: 1;
+            grid-row: 3;
+        }
+        .macro-arearose-dir[data-dir='NW'] {
+            grid-column: 1;
+            grid-row: 1;
+        }

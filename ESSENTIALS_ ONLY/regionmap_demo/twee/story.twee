@@ -1,101 +1,79 @@
 :: StoryTitle
-Walach Home - areamap demo
+Walach Home - regionmap demo
 
 
 :: StoryInit [nobr]
+ /* create names */
  <<set 
-    setup.areas = {
-        Y: {name: 'Yard'},
-        F: {name: 'Front door'},
-        L: {name: 'Living room'},
-        B: {name: 'Bedroom'},
-        W: {name: 'Washroom'},
-        H: {name: 'Hall'},
-        K: {name: 'Kitchen'},
-        G: {name: 'Garage'},
-        D: {name: 'Dungeon'},
-        C: {name: 'Courtyard'},
+    setup.rooms = {
+        Y: 'Yard',
+        F: 'Front door',
+        L: 'Living room',
+        B: 'Bedroom',
+        W: 'Washroom',
+        H: 'Hall',
+        K: 'Kitchen',
+        G: 'Garage',
+        D: 'Dungeon',
+        C: 'Courtyard',
     };
 >>
 
-/* <<newrose
-    mapname     'walach_home'
-    rosename    'default'
-    diagonals   false
->>
-<<onabort 'K'>>
-<<onattempt>>
-    <<run console.log('attempted!')>>
-<</newrose>> */
-
-
-<<new_areamap 
-    mapname     'demo'
-    columns     6
-    diagonals   false
->>
+/*
+DEFINE MAP
+<<regionmap 'map_name' #cols
+    map
+    goes
+    here
+    <<regionwalls 'x'>> optionally change walls from period to x
+    <<regionnames>>
+<</regionmap
+ */
+<<regionmap 'walach_home' 6>>
     .   .   .   .   .   .
     G   G   H   K   C   .
     Y   .   H   K   C   .
     Y   F   H   L   C   .
     Y   .   H   .   C   .
-    .   W   H   B   .   .
+    .   W   H   B   D   .
     .   .   .   .   .   .
-    .   .   .   B   D   .
-<<mapareas setup.areas>>
-<<mapvars
-    position    '$position'
-    entering    '$entering'
-    leaving     '$leaving'
-    prevented   '$prevented'
-    disabled    '$disabled'
+    <<regionnames setup.rooms>>
+<</regionmap>>
+
+/* init vars */
+<<set 
+    $here       = 'Y';
+    $entering   = '';
+    $leaving    = '';
+    $disable      = {
+        Y: false,
+        F: false,
+        L: false,
+        B: false,
+        W: false,
+        H: false,
+        K: false,
+        G: true,
+        D: false,
+        C: false,
+    };
+    $abort      = {
+        Y: false,
+        F: false,
+        L: false,
+        B: false,
+        W: false,
+        H: false,
+        K: false,
+        G: false,
+        D: true,
+        C: false,
+    };
+    $turn = 0;
 >>
-<</new_areamap>>
-<<set $position to 'Y'>>
-
-:: Start
-<<place_arearose mapname 'demo'>>
-<style>
-    .macro-showrose-rose {
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        grid-template-rows: 1fr 1fr 1fr;
-        text-align: center;
-    }
-        .macro-showrose button {
-            margin: 0;
-            height: 100%;
-        }
-    .macro-showrose-dir {
-        border: 1px solid;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-    }
-    .macro-showrose-dir[data-dir="C"] {
-        grid-row: 2;
-        grid-column: 2;
-    }
-    .macro-showrose-dir[data-dir="N"] {
-        grid-row: 1;
-        grid-column: 2;
-    }
-    .macro-showrose-dir[data-dir="E"] {
-        grid-row: 2;
-        grid-column: 3;
-    }
-    .macro-showrose-dir[data-dir="S"] {
-        grid-row: 3;
-        grid-column: 2;
-    }
-    .macro-showrose-dir[data-dir="W"] {
-        grid-row: 2;
-        grid-column: 1;
-    }
-</style>
 
 
-:: Start2 [nobr]
+:: Start [nobr]
 /* function to update map */
 <<script>>
     setup.updateMap = function() {
