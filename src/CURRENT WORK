@@ -5,3 +5,4 @@
 - moving on to navigating functionality
 - map movement SHOULD work, tested, seems okay
 - next is adding map movement functionality to the rose & deciding if the "prevented" variable should stay or go
+- rose should work, still don't know if I should keep prevented variable

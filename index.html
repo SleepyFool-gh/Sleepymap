@@ -392,10 +392,10 @@ setup['@areamap/options'] = options;
 // used to define a map so that a player can navigate through it using the regionrose macro
 // comes in both 4 and 8 wind variants
 
-Macro.add(["newareamap", "new_areamap"], {
+Macro.add(['newareamap', 'new_areamap'], {
 
     // child tags
-    tags    :    ["mapvars", "mapareas"],
+    tags    :    ['mapvars', 'mapareas'],
 
     // maps container
     maps    :    {},
@@ -751,7 +751,6 @@ function new_areamap(argObj) {
 // then attaches it to the macro output
 
 Macro.add(['place_arearose', 'placearearose'], {
-
     handler() {
         const template = {
             mapname: {
@@ -779,8 +778,9 @@ Macro.add(['place_arearose', 'placearearose'], {
 
 function create_arearose(argObj) {
 
-    const { mapname, autoupdate} = {
-        autoupdate: options.default.rose_autoupdate,    // grab default value
+    // get values, use default as needed
+    const { mapname, autoupdate } = {
+        autoupdate: options.default.rose_autoupdate,    // default value
         ...argObj
     };
     // ERROR: no mapname provided
@@ -794,7 +794,6 @@ function create_arearose(argObj) {
     const position  = State.getVar(mapvars.position);
     const disabled  = State.getVar(mapvars.disabled);
     const hidden    = State.getVar(mapvars.hidden);
-    const prevented = State.getVar(mapvars.prevented);
 
     // create rose
     const $rose =   $(document.createElement('div'));
@@ -927,7 +926,10 @@ function set_areascripts(argObj) {
 // begins map movement procedure
 function begin_mapmove(argObj) {
 
-    const { mapname, id_entering, abort } = argObj;
+    const { mapname, id_entering, abort } = {
+        abort: false,   // default value
+        ...argObj,
+    }
     const this_map = Macro.get('new_areamap').maps[mapname];
     const position = State.getVar(this_map.mapvars.position);
 
@@ -977,6 +979,26 @@ function resolve_mapmove(argObj) {
         succeeded: ! abort
     });
 }
+Macro.add(['areamapmove', 'areamap_move'], {
+    handler() {
+        const template = {
+            mapname: {
+                required: true,
+                type: 'string',
+            },
+            id_entering: {
+                type: 'string',
+                aliases: ['id', 'area'],
+            },
+            abort: {
+                type: 'boolean',
+            },
+        };
+        const argObj = new ArgObj(this.name, template, this.args);
+        console.log(argObj);
+        begin_mapmove(argObj);      
+    }
+});
 
 // // regionrose macro
 // // generates a 4 or 8 wind compass rose for navigation through the map defined using the areamap macro
@@ -1500,6 +1522,11 @@ function resolve_mapmove(argObj) {
     &lt;&lt;leaving&gt;&gt;
         &lt;&lt;run console.log(&#39;leaving anywhere!&#39;)&gt;&gt;
 &lt;&lt;/set_areascripts&gt;&gt;
+&lt;&lt;areamap_move
+    mapname &#39;demo&#39;
+    id &#39;G&#39;
+    abort `1 &gt; 0`
+&gt;&gt;
 &lt;style&gt;
     .macro-showrose-rose {
         display: grid;

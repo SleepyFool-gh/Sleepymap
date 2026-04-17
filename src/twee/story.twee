@@ -65,6 +65,11 @@ Walach Home - areamap demo
     <<leaving>>
         <<run console.log('leaving anywhere!')>>
 <</set_areascripts>>
+<<areamap_move
+    mapname 'demo'
+    area 'G'
+    abort `1 > 0`
+>>
 <style>
     .macro-showrose-rose {
         display: grid;
