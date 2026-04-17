@@ -10,6 +10,7 @@ const options = {
         wall_id                 : ".",
         diagonals               : false,
         position_story_variable : "@areamap/pos",
+        rose_autoupdate         : true,
     }
 }
 setup['@areamap/options'] = options;
@@ -142,8 +143,7 @@ function new_areamap(argObj) {
         mapname,
         columns,
         maparray,
-        // uses default values if not assigned,
-        diagonals   : argObj.diagonals   ?? options.default.diagonals,
+        diagonals   : argObj.diagonals   ?? options.default.diagonals,  // use default if nullish
     };
     this_macro.maps[mapname] = this_map;
 
@@ -386,7 +386,6 @@ function new_areamap(argObj) {
 // then attaches it to the macro output
 
 Macro.add(['place_arearose', 'placearearose'], {
-
     handler() {
         const template = {
             mapname: {
@@ -414,7 +413,10 @@ Macro.add(['place_arearose', 'placearearose'], {
 
 function create_arearose(argObj) {
 
+    // get values, use default as needed
     const mapname = argObj.mapname;
+    const autoupdate = argObj.autoupdate ?? options.default.rose_autoupdate;
+
     // ERROR: no mapname provided
     if (! mapname) {
         throw new Error(`create_arearose — no map name provided!`)
@@ -426,7 +428,6 @@ function create_arearose(argObj) {
     const position  = State.getVar(mapvars.position);
     const disabled  = State.getVar(mapvars.disabled);
     const hidden    = State.getVar(mapvars.hidden);
-    const prevented = State.getVar(mapvars.prevented);
 
     // create rose
     const $rose =   $(document.createElement('div'));
@@ -477,8 +478,11 @@ function create_arearose(argObj) {
         begin_mapmove({
             mapname,
             id_entering,
-            abort,
+            abort: false,
         });
+        if (autoupdate) {
+            $rose.replaceWith(create_arearose(argObj));
+        }
     });
 
     return $rose
@@ -551,9 +555,9 @@ function set_areascripts(argObj) {
 // resolve_mapmove checks if movement should continue, fires any entering scripts
 // then updates to new position
 // fires ending event off #passages
-// done this way to allow people to intercept and manipulate if they like
+// done this way to allow authors to intercept and manipulate if they like
 
-// starts map movement procedure
+// begins map movement procedure
 function begin_mapmove(argObj) {
 
     const { mapname, id_entering, abort } = argObj;
