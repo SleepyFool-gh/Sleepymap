@@ -1,3 +1,10 @@
+//  ████  ████  █████ ███  ████  █    █  ████
+// █    █ █   █   █    █  █    █ ██   █ █
+// █    █ ████    █    █  █    █ █ █  █  ███
+// █    █ █       █    █  █    █ █  █ █     █
+//  ████  █       █   ███  ████  █   ██ ████
+// SECTION: options
+
 const options = {
     default: {
         wall_id                 : ".",
@@ -8,9 +15,17 @@ const options = {
 setup['@areamap/options'] = options;
 
 
-// areamap macro
+
+
+// █    █  ███   ████ ████   ████          ███  ████  █████  ███  █    █  ███  ████
+// ██  ██ █   █ █     █   █ █    █        █   █ █   █ █     █   █ ██  ██ █   █ █   █
+// █ ██ █ █████ █     ████  █    █        █████ ████  ███   █████ █ ██ █ █████ ████
+// █    █ █   █ █     █   █ █    █        █   █ █   █ █     █   █ █    █ █   █ █
+// █    █ █   █  ████ █   █  ████  ▄█     █   █ █   █ █████ █   █ █    █ █   █ █
+// SECTION: macro, areamap
 // used to define a map so that a player can navigate through it using the regionrose macro
 // comes in both 4 and 8 wind variants
+
 Macro.add(["newareamap", "new_areamap"], {
 
     // child tags
@@ -98,6 +113,7 @@ function new_areamap(argObj) {
 //     █  █ █ █     █ █ █ █ █   █ █   █ █     █   █ █    █ █   █ █
 //     █   ██ █████  █   █  █   █ █   █ █████ █   █ █    █ █   █ █
 //      SECTION: newareamap
+//      creates map object on the new_areamap macro
 
     const { mapname, columns, maparray }= argObj;
     const this_macro = Macro.get('new_areamap');
@@ -132,20 +148,21 @@ function new_areamap(argObj) {
     this_macro.maps[mapname] = this_map;
 
 
-
 //     █    █  ███  ████   ███  ████  █████  ███   ████
 //     ██  ██ █   █ █   █ █   █ █   █ █     █   █ █
 //     █ ██ █ █████ ████  █████ ████  ███   █████  ███
 //     █    █ █   █ █     █   █ █   █ █     █   █     █
 //     █    █ █   █ █     █   █ █   █ █████ █   █ ████
 //      SECTION: mapareas
+//      creates areas based off any provided data & off the defaults
+//      area, here, means a named region on the map represented by an id
 
     // ERROR: mapareas not an object
     if (argObj.mapareas && (typeof argObj.mapareas !== 'object')) {
         throw new Error(`new_areamap — areamap "${mapname}" — mapareas not an object!`)
     }
 
-    // create mapareas, areas being named regions on map
+    // create mapareas
     const mapareas = {};
     this_map.mapareas = mapareas;
     // take unique values from map array, create areas for each
@@ -167,13 +184,13 @@ function new_areamap(argObj) {
     }
 
 
-
 //     █    █  ███  ████  █   █  ███  ████   ████
 //     ██  ██ █   █ █   █ █   █ █   █ █   █ █
 //     █ ██ █ █████ ████  █   █ █████ ████   ███
 //     █    █ █   █ █      █ █  █   █ █   █     █
 //     █    █ █   █ █       █   █   █ █   █ ████
 //      SECTION: mapvars
+//      sets the State variables used to track position & the state of the links
 
     // ERROR: mapvars not an object
     if (argObj.mapvars && (typeof argObj.mapvars !== 'object')) {
@@ -182,7 +199,6 @@ function new_areamap(argObj) {
 
     // create mapvars
     const mapvars = argObj.mapvars ?? {};
-    window.mapvars = mapvars;
     mapvars.position ??= options.default.position_story_variable;
     this_map.mapvars = mapvars;
 
@@ -221,40 +237,29 @@ function new_areamap(argObj) {
     }
 
 
-
 //     █████ █   █ ███ █████  ████
 //     █      █ █   █    █   █
 //     ███     █    █    █    ███
 //     █      █ █   █    █       █
 //     █████ █   █ ███   █   ████
 //      SECTION: exits
-
-    const { diagonals } = this_map;
+//      backbone that checks exits for each area
 
     // create empty exits object
     const exits = {};
     this_map.exits = exits;
     Object.keys(mapareas).forEach( function(id) {
-        if (diagonals) {
-            exits[id] = {
-                N   : new Set(),
-                E   : new Set(),
-                W   : new Set(),
-                S   : new Set(),
-                NW  : new Set(),
-                NE  : new Set(),
-                SE  : new Set(),
-                SW  : new Set(),
-            };
-        }
-        else {
-            exits[id] = {
-                N   : new Set(),
-                E   : new Set(),
-                W   : new Set(),
-                S   : new Set(),
-            };
-        }
+        exits[id] = {
+            N   : new Set(),
+            E   : new Set(),
+            W   : new Set(),
+            S   : new Set(),
+            // won't be used if diagonals are disabled
+            NW  : new Set(),
+            NE  : new Set(),
+            SE  : new Set(),
+            SW  : new Set(),
+        };
     });
 
     // populate exits object
@@ -368,6 +373,18 @@ function new_areamap(argObj) {
     }
 };
 
+
+
+
+// █    █  ███   ████ ████   ████          ███  ████  █████  ███  ████   ████   ████ █████
+// ██  ██ █   █ █     █   █ █    █        █   █ █   █ █     █   █ █   █ █    █ █     █
+// █ ██ █ █████ █     ████  █    █        █████ ████  ███   █████ ████  █    █  ███  ███
+// █    █ █   █ █     █   █ █    █        █   █ █   █ █     █   █ █   █ █    █     █ █
+// █    █ █   █  ████ █   █  ████  ▄█     █   █ █   █ █████ █   █ █   █  ████  ████  █████
+// SECTION: macro, arearose
+// calls the create_arearose function (which returns a $rose object)
+// then attaches it to the macro output
+
 Macro.add(['place_arearose', 'placearearose'], {
 
     handler() {
@@ -381,10 +398,19 @@ Macro.add(['place_arearose', 'placearearose'], {
             },
         }
         const argObj = new ArgObj(this.name, template, this.args);
-
         create_arearose(argObj).appendTo(this.output);
     }
 });
+
+
+//      ████ ████  █████  ███  █████ █████        ███  ████  █████  ███  ████   ████   ████ █████
+//     █     █   █ █     █   █   █   █           █   █ █   █ █     █   █ █   █ █    █ █     █
+//     █     ████  ███   █████   █   ███         █████ ████  ███   █████ ████  █    █  ███  ███
+//     █     █   █ █     █   █   █   █           █   █ █   █ █     █   █ █   █ █    █     █ █
+//      ████ █   █ █████ █   █   █   █████ █████ █   █ █   █ █████ █   █ █   █  ████  ████  █████
+//      SECTION: create_arearose
+//      creates a 3x3 grid of links for navigation in each direction
+//      returns a $rose jQuery element
 
 function create_arearose(argObj) {
 
@@ -395,13 +421,12 @@ function create_arearose(argObj) {
     }
 
     const this_map = Macro.get('new_areamap').maps[mapname];
-    const { diagonals, mapareas, mapvars, exits } = this_map;
+    const { mapareas, mapvars, exits } = this_map;
 
     const position  = State.getVar(mapvars.position);
     const disabled  = State.getVar(mapvars.disabled);
     const hidden    = State.getVar(mapvars.hidden);
     const prevented = State.getVar(mapvars.prevented);
-    console.log(position);
 
     // create rose
     const $rose =   $(document.createElement('div'));
@@ -419,7 +444,7 @@ function create_arearose(argObj) {
             .appendTo($rose)
 
     // create each dir
-    const dirs  = ['N', 'E', 'S', 'W', 'NE', 'NW', 'SE', 'SW']
+    const dirs  = ['N', 'E', 'S', 'W', 'NE', 'NW', 'SE', 'SW'];
     for (const dir of dirs) {
         // create dir container
         const $dir  = $(document.createElement('div'));
@@ -428,14 +453,11 @@ function create_arearose(argObj) {
             .attr('data-dir', dir)
             .appendTo($rose);
 
-        // skip adding links if diagonals not enabled
-        if ((! diagonals) && ['NE', 'NW', 'SE', 'SW'].includes(dir)) {
-            continue;
-        }
         // add links
+        // diagonals will be empty if not enabled
         for (const id of exits[position][dir]) {
             const maparea = mapareas[id];
-            const $link = $(document.createElement('link'));
+            const $link = $(document.createElement('a'));
             $link
                 .addClass('macro-arearose-link')
                 .attr('data-id', id)
@@ -452,14 +474,137 @@ function create_arearose(argObj) {
 
     $rose.on('click', function(ev) {
         const id_entering = $(ev.target).attr('data-id');
-        navigate(mapname, id_entering);
+        begin_mapmove({
+            mapname,
+            id_entering,
+            abort,
+        });
     });
 
     return $rose
 }
 
-function navigate(mapname, id_entering) {
-    // TODO: implement navigation logic
+
+
+
+// █    █  ███   ████ ████   ████          ███  ████  █████  ███   ████  ████ ████  ███ ████  █████  ████
+// ██  ██ █   █ █     █   █ █    █        █   █ █   █ █     █   █ █     █     █   █  █  █   █   █   █
+// █ ██ █ █████ █     ████  █    █        █████ ████  ███   █████  ███  █     ████   █  ████    █    ███
+// █    █ █   █ █     █   █ █    █        █   █ █   █ █     █   █     █ █     █   █  █  █       █       █
+// █    █ █   █  ████ █   █  ████  ▄█     █   █ █   █ █████ █   █ ████   ████ █   █ ███ █       █   ████
+// SECTION: macro, areascripts
+// macro sets scripts to run when leaving or entering areas
+
+Macro.add(['set_areascripts','setareascripts'], {
+
+    tags: ['leaving', 'entering'],
+
+    handler() {
+        const template = {
+            mapname: {
+                required: true,
+                type: 'string',
+            }
+        };
+        const argObj = new ArgObj(this.name, template, this.args);
+        const mapname = argObj.mapname;
+
+        // ERROR: no map name provided
+        if (! mapname) {
+            throw new Error(`${this.name} — missing mapname argument`);
+        }
+
+        const scripts = [];
+        for(let i = 1; i < this.payload.length; i++) {
+            const p = this.payload[i];
+            scripts.push({
+                type: p.name,
+                areas: p.args.flat(),
+                contents: p.contents,
+            });
+        }
+
+        set_areascripts({
+            mapname,
+            scripts,
+        });
+    }
+});
+
+function set_areascripts(argObj) {
+    const { mapname, scripts } = argObj;
+    const this_map = Macro.get('new_areamap').maps[mapname];
+    this_map.scripts = scripts;
+}
+
+
+
+
+// █    █  ███  ████  █    █  ████  █   █ █████
+// ██  ██ █   █ █   █ ██  ██ █    █ █   █ █
+// █ ██ █ █████ ████  █ ██ █ █    █ █   █ ███
+// █    █ █   █ █     █    █ █    █  █ █  █
+// █    █ █   █ █     █    █  ████    █   █████
+// SECTION: mapmove
+// begin_mapmove starts map movement, fires an event off #passages and any leaving scripts
+// then fires event off #passages, listener on document catches and calls resolve_mapmove
+// resolve_mapmove checks if movement should continue, fires any entering scripts
+// then updates to new position
+// fires ending event off #passages
+// done this way to allow people to intercept and manipulate if they like
+
+// starts map movement procedure
+function begin_mapmove(argObj) {
+
+    const { mapname, id_entering, abort } = argObj;
+    const this_map = Macro.get('new_areamap').maps[mapname];
+    const position = State.getVar(this_map.mapvars.position);
+
+    // fire began event
+    $('#passages').trigger('areamap:mapmove_began', { mapname, position, id_entering, abort });
+
+    // check for any leaving scripts
+    const scripts_leaving = this_map.scripts.filter(script => script.type === 'leaving');
+    for (const script of scripts_leaving) {
+        // check if script applies to this location, if yes run
+        if (script.areas.includes(position) || (script.areas.length === 0)) {
+            $.wiki(script.contents);
+        }
+    }
+}
+
+// document listener to catch events an resolve
+$(document).on('areamap:mapmove_began', (event, argObj) => {
+    resolve_mapmove(argObj);
+});
+
+// resolves map movement procedure
+function resolve_mapmove(argObj) {
+    const { mapname, id_entering, abort } = argObj;
+    const this_map = Macro.get('new_areamap').maps[mapname];
+
+    if (! abort) {
+        // check for any entering scripts
+        const scripts_entering = this_map.scripts.filter(script => script.type === 'entering');
+        for (const script of scripts_entering) {
+            // check if script applies to this location, if yes run
+            if (script.areas.includes(id_entering) || (script.areas.length === 0)) {
+                $.wiki(script.contents);
+            }
+        }
+
+        // enter new location
+        State.setVar(this_map.mapvars.position, id_entering);
+    }
+    
+    // fire resolved event
+    const position = State.getVar(this_map.mapvars.position);
+    $('#passages').trigger('areamap:mapmove_resolved', { 
+        mapname, 
+        id_started: id_entering, 
+        id_ended: position, 
+        succeeded: ! abort
+    });
 }
 
 // // regionrose macro

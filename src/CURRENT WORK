@@ -3,3 +3,5 @@
 - moving on to creating rose
 - rose element created
 - moving on to navigating functionality
+- map movement SHOULD work, tested, seems okay
+- next is adding map movement functionality to the rose & deciding if the "prevented" variable should stay or go

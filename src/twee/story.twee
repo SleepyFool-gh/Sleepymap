@@ -55,6 +55,16 @@ Walach Home - areamap demo
 
 :: Start
 <<place_arearose mapname 'demo'>>
+<<set_areascripts mapname 'demo'>>
+    <<entering 'G'>>
+        <<run console.log('entering G!')>>
+    <<entering 'A'>>
+        entering A
+    <<leaving 'D'>>
+        <<run console.log('leaving D')>>
+    <<leaving>>
+        <<run console.log('leaving anywhere!')>>
+<</set_areascripts>>
 <style>
     .macro-showrose-rose {
         display: grid;
