@@ -203,7 +203,15 @@ function new_areamap(argObj) {
     mapvars.position ??= options.default.position_story_variable;
     this_map.mapvars = mapvars;
 
-    for (const key of ['position', 'origin', 'target', 'disabled', 'hidden', 'prevented']) {
+    const MAPVAR_KEYS = {
+        position    : 'string',
+        origin      : 'string',
+        target      : 'string',
+        disabled    : 'object',
+        hidden      : 'object',
+        prevented   : 'object'
+    };
+    for (const key of Object.keys(MAPVAR_KEYS)) {
         // mapvar key not defined, skip
         if (! (key in mapvars)) {
             continue;
@@ -218,18 +226,18 @@ function new_areamap(argObj) {
             throw new Error(`new_areamap — areamap "${mapname}" — mapvar must be a story variable starting with "$"!`);
         }
         // WARNING: clobbering something
-        if (typeof State.getVar(mapvars[key]) !== 'undefined') {
+        if (State.getVar(mapvars[key]) !== undefined) {
             console.warn(`new_areamap — areamap "${mapname}" — something was clobbered while setting mapvar "${key}" at "${mapvars[key]}"!`);
         }
 
-        // these just store data about one specific area
-        if (['position', 'origin', 'target'].includes(key)) {
+        // create default values to store into State
+        // these just store an area id
+        if (MAPVAR_KEYS[key] === 'string') {
             State.setVar(mapvars[key], null);
         }
-        // disabled, hidden, and prevented need to store information about each area
+        // these need to store a boolean for each area
         else {
             const mapvar = {};
-            // fill with default values
             for (const area of Object.keys(mapareas)) {
                 mapvar[area] = false;
             }
@@ -315,7 +323,7 @@ function new_areamap(argObj) {
                 diagonal    : true,
                 offset      : columns - 1,
             },
-        }
+        };
         for (const [dir, check] of Object.entries(checks)) {
             // if check not needed, continue
             if (! check.needed) {
@@ -360,7 +368,7 @@ Macro.add(['place_arearose', 'placearearose'], {
             autoupdate: {
                 type: 'boolean',
             },
-        }
+        };
         const argObj = new ArgObj(this.name, template, this.args);
         create_arearose(argObj).appendTo(this.output);
     }
@@ -388,11 +396,26 @@ function create_arearose(argObj) {
     }
 
     const this_map = Macro.get('new_areamap').maps[mapname];
+
+    // ERROR: no map found
+    if (! this_map) {
+        throw new Error(`create_arearose — no map found with name "${mapname}"!`)
+    }
+
     const { mapareas, mapvars, exits } = this_map;
 
     const position  = State.getVar(mapvars.position);
-    const disabled  = State.getVar(mapvars.disabled);
-    const hidden    = State.getVar(mapvars.hidden);
+    const disabled  = mapvars.disabled ? State.getVar(mapvars.disabled) : null;
+    const hidden    = mapvars.hidden   ? State.getVar(mapvars.hidden)   : null;
+
+    // ERROR: invalid position, either not set or non-existing or a wall
+    if (
+        (position === null) ||
+        (mapareas[position] === undefined) ||
+        (mapareas[position].type === 'wall')
+    ) {
+        throw new Error(`create_arearose — map "${mapname}" — position currently invalid!`)
+    }
 
     // create rose
     const $rose =   $(document.createElement('div'));
@@ -405,12 +428,11 @@ function create_arearose(argObj) {
         .addClass('macro-arearose-dir')
         .attr('data-id', position)
         .attr('data-dir', 'C')
-        .html(mapareas[position]?.name)
+        .html(mapareas[position].name)
         .appendTo($rose);
 
     // create each dir
-    const dirs  = ['N', 'E', 'S', 'W', 'NE', 'NW', 'SE', 'SW'];
-    for (const dir of dirs) {
+    for (const dir of ['N', 'E', 'S', 'W', 'NE', 'NW', 'SE', 'SW']) {
         // create dir container
         const $dir  = $(document.createElement('div'));
         $dir
@@ -523,10 +545,12 @@ function set_areascripts(argObj) {
                 script.areas[arg] = 'any';
                 continue;
             }
+
             // wrap in array if not "any"
             script.areas[arg]   = script.areas[arg] === 'any'
                                     ? 'any'
                                     : [script.areas[arg]].flat();
+                                    
             // ERROR: make sure each array element is a string
             if (typeof script.areas[arg] !== 'string') {
                 script.areas[arg].forEach( area => {
