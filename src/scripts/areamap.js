@@ -554,18 +554,10 @@ function set_areascripts(argObj) {
     const this_map = Macro.get('new_areamap').maps[mapname];
     // error checking & object shaping
     for (const script of scripts) {
-        // no "to" or "from" args defined, it's an "any" script
-        // set to any, continue
-        if (
-            (! ('to' in script.areas))      && 
-            (! ('from' in script.areas))
-        ) {
-            script.areas.to = 'any';
-            continue;
-        }
         for (const arg of ['to', 'from']) {
-            // arg not defined, continue
+            // arg not defined, set to any, continue
             if (! (arg in script.areas)) {
+                script.areas[arg] = 'any';
                 continue;
             }
             // wrap in array if not "any"
@@ -620,10 +612,8 @@ function begin_mapmove(argObj) {
     for (const script of scripts_attempt) {
         // check if script applies to this location, if yes run
         if (
-            script.areas.from === 'any'             ||
-            script.areas.to === 'any'               ||
-            script.areas.from.includes(id_origin)    || 
-            script.areas.to.includes(id_target)  
+            ((script.areas.from === 'any') || script.areas.from.includes(id_origin))    &&
+            ((script.areas.to === 'any')   || script.areas.to.includes(id_target)) 
         ) {
             $.wiki(script.contents);
         }
@@ -647,10 +637,8 @@ function resolve_mapmove(argObj) {
         for (const script of scripts_leave) {
             // check if script applies to this location, if yes run
             if (
-                script.areas.from === 'any'             ||
-                script.areas.to === 'any'               ||
-                script.areas.from.includes(id_origin)    || 
-                script.areas.to.includes(id_target)  
+                ((script.areas.from === 'any') || script.areas.from.includes(id_origin))    &&
+                ((script.areas.to === 'any')   || script.areas.to.includes(id_target)) 
             ) {
                 $.wiki(script.contents);
             }
@@ -664,10 +652,8 @@ function resolve_mapmove(argObj) {
         for (const script of scripts_end) {
             // check if script applies to this location, if yes run
             if (
-                script.areas.from === 'any'             ||
-                script.areas.to === 'any'               ||
-                script.areas.from.includes(id_origin)    || 
-                script.areas.to.includes(id_target)  
+                ((script.areas.from === 'any') || script.areas.from.includes(id_origin))    &&
+                ((script.areas.to === 'any')   || script.areas.to.includes(id_target)) 
             ) {
                 $.wiki(script.contents);
             }
@@ -679,10 +665,8 @@ function resolve_mapmove(argObj) {
         for (const script of scripts_abort) {
             // check if script applies to this location, if yes run
             if (
-                script.areas.from === 'any'             ||
-                script.areas.to === 'any'               ||
-                script.areas.from.includes(id_origin)   || 
-                script.areas.to.includes(id_target)  
+                ((script.areas.from === 'any') || script.areas.from.includes(id_origin))    &&
+                ((script.areas.to === 'any')   || script.areas.to.includes(id_target))  
             ) {
                 $.wiki(script.contents);
             }
