@@ -5,7 +5,7 @@
     border-top: 1px dotted white;
     border-left: 1px dotted white;
 }
-    .macro-arearose-dir {
+    .macro-areamap-dir {
         display: flex;
         align-items: center;
         justify-content: center;
@@ -14,39 +14,39 @@
         border-right: 1px dotted white;
         border-bottom: 1px dotted white;
     }
-        .macro-arearose-dir[data-dir='C'] {
+        .macro-areamap-dir[data-dir='C'] {
             grid-column: 2;
             grid-row: 2;
         }
-        .macro-arearose-dir[data-dir='N'] {
+        .macro-areamap-dir[data-dir='N'] {
             grid-column: 2;
             grid-row: 1;
         }
-        .macro-arearose-dir[data-dir='E'] {
+        .macro-areamap-dir[data-dir='E'] {
             grid-column: 3;
             grid-row: 2;
         }
-        .macro-arearose-dir[data-dir='S'] {
+        .macro-areamap-dir[data-dir='S'] {
             grid-column: 2;
             grid-row: 3;
         }
-        .macro-arearose-dir[data-dir='W'] {
+        .macro-areamap-dir[data-dir='W'] {
             grid-column: 1;
             grid-row: 2;
         }
-        .macro-arearose-dir[data-dir='NE'] {
+        .macro-areamap-dir[data-dir='NE'] {
             grid-column: 3;
             grid-row: 1;
         }
-        .macro-arearose-dir[data-dir='SE'] {
+        .macro-areamap-dir[data-dir='SE'] {
             grid-column: 3;
             grid-row: 3;
         }
-        .macro-arearose-dir[data-dir='SW'] {
+        .macro-areamap-dir[data-dir='SW'] {
             grid-column: 1;
             grid-row: 3;
         }
-        .macro-arearose-dir[data-dir='NW'] {
+        .macro-areamap-dir[data-dir='NW'] {
             grid-column: 1;
             grid-row: 1;
         }

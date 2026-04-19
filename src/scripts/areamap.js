@@ -37,6 +37,11 @@ Macro.add(['newareamap', 'new_areamap'], {
 
     handler() {
 
+        // ERROR: macro being called outside StoryInit
+        if (! turns()) {
+            return this.error(`${this.name} — macro must be called during StoryInit!`);
+        }
+
         // parse args to argsObj
         const template_main = {
             mapname: {
@@ -383,7 +388,69 @@ Macro.add(['place_arearose', 'placearearose'], {
 //      SECTION: create_arearose
 //      creates a 3x3 grid of links for navigation in each direction
 //      returns a $rose jQuery element
+function create_arealinks(argObj) {
+    const { mapname, dir } = argObj;
+    
+    // ERROR: no mapname provided
+    if (! mapname) {
+        throw new Error(`create_arealinks — no map name provided!`)
+    }
+    else if (! dir) {
+        throw new Error(`create_arealinks — map "${mapname}" — no direction provided!`)
+    }
+    
+    const this_map = Macro.get('new_areamap').maps[mapname];
+    
+    // ERROR: no map found
+    if (! this_map) {
+        throw new Error(`create_arealinks — no map found with name "${mapname}"!`)
+    }
+    
+    const { mapareas, mapvars, exits } = this_map;
 
+    const position  = State.getVar(mapvars.position);
+    const disabled  = mapvars.disabled ? State.getVar(mapvars.disabled) : null;
+    const hidden    = mapvars.hidden   ? State.getVar(mapvars.hidden)   : null;
+
+    // ERROR: invalid position, either not set or non-existing or a wall
+    if (
+        (position === null) ||
+        (mapareas[position] === undefined) ||
+        (mapareas[position].type === 'wall')
+    ) {
+        throw new Error(`create_arealinks — map "${mapname}" — position currently invalid!`)
+    }
+
+    const $dir = $(document.createElement('div'));
+    $dir
+        .addClass('macro-areamap-dir')
+        .attr('data-mapname', mapname)
+        .attr('data-dir', dir);
+
+    for (const id of exits[position][dir]) {
+        const maparea = mapareas[id];
+        const $link = $(document.createElement('a'));
+        $link
+            .addClass('macro-areamap-link')
+            .attr('data-id', id)
+            .attr('data-dir', dir)
+            .attr('data-area', maparea.name)
+            .prop('disabled', !! disabled?.[id])
+            .css({
+                visibility: hidden?.[id] ? 'hidden' : 'visible',
+            })
+            .html(maparea.name)
+            .appendTo($dir);
+    }
+
+    $dir.on('click', 'a', function() {
+        const id = $(this).attr('data-id');
+        State.setVar(mapvars.position, id);
+        if (autoupdate) {
+            update_areamap(mapname);
+        }
+    });
+}
 function create_arearose(argObj) {
 
     // get values, use default as needed
@@ -425,7 +492,7 @@ function create_arearose(argObj) {
 
     // create center
     $(document.createElement('div'))
-        .addClass('macro-arearose-dir')
+        .addClass('macro-areamap-dir')
         .attr('data-id', position)
         .attr('data-dir', 'C')
         .html(mapareas[position].name)
@@ -436,7 +503,7 @@ function create_arearose(argObj) {
         // create dir container
         const $dir  = $(document.createElement('div'));
         $dir
-            .addClass('macro-arearose-dir')
+            .addClass('macro-areamap-dir')
             .attr('data-dir', dir)
             .appendTo($rose);
 
@@ -446,7 +513,7 @@ function create_arearose(argObj) {
             const maparea = mapareas[id];
             const $link = $(document.createElement('a'));
             $link
-                .addClass('macro-arearose-link')
+                .addClass('macro-areamap-link')
                 .attr('data-id', id)
                 .attr('data-dir', dir)
                 .attr('data-area', maparea.name)
@@ -459,7 +526,7 @@ function create_arearose(argObj) {
         }
     }
 
-    $rose.on('click', '.macro-arearose-link', function(ev) {
+    $rose.on('click', '.macro-areamap-link', function(ev) {
         const id_target = $(ev.target).attr('data-id');
         begin_mapmove({
             mapname,
@@ -494,6 +561,12 @@ Macro.add(['set_areascripts','setareascripts'], {
     tags: ['onmapattempt', 'onmapstart', 'onmapend', 'onmapabort'],
 
     handler() {
+
+        // ERROR: macro being called outside StoryInit
+        if (! turns()) {
+            return this.error(`${this.name} — macro must be called during StoryInit!`);
+        }
+        
         const template = {
             mapname: {
                 required: true,
