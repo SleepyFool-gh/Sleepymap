@@ -420,48 +420,43 @@ Macro.add(['newareamap', 'new_areamap'], {
         argObj.maparray = this.payload[0].contents.trim().split(/\s+/g);
 
         // if <<mapareas>> exists
-        if (this.payload.filter( p => p.name === 'mapareas' ).length) {
-            const args = this.payload.filter( p => p.name === 'mapareas' )[0].args;
+        // should be an object of values to write into the area data when areas are being generated
+        const mapareas = this.payload.find( p => p.name === 'mapareas' )?.args[0]
+        if (mapareas) {
             // ERROR: args not an object
-            if (typeof args !== 'object') {
+            if (typeof mapareas !== 'object') {
                 throw new Error('new_areamap — <<mapareas>> args must be an object!');
             }
-            argObj.mapareas = args[0];
+            argObj.mapareas = mapareas;
         }
 
         // if <<mapvars>> exists
-        if (this.payload.filter( p => p.name === 'mapvars').length) {
-            const args = this.payload.filter( p => p.name === 'mapvars' )[0].args;
-            // if only one input, it is position
-            if (args.length === 1) {
-                argObj.mapvars = { position: args[0] };
-            }
-            // else parse inputs
-            else {
-                const template_mapvars = {
-                    position: {
-                        required: true,
-                        type: 'string',
-                    },
-                    entering: {
-                        type: 'string',
-                    },
-                    leaving: {
-                        type: 'string',
-                    },
-                    disabled: {
-                        type: 'string',
-                    },
-                    hidden: {
-                        type: 'string',
-                    },
-                    prevented: {
-                        type: 'string',
-                    },
-                };
-                const argObj_mapvars = new ArgObj('mapvars', template_mapvars, args);
-                argObj.mapvars = argObj_mapvars;
-            }
+        const payload_mapvars = this.payload.find( p => p.name === 'mapvars' );
+        if (payload_mapvars) {
+            const args = payload_mapvars.args;
+            const template = {
+                position: {
+                    required: true,
+                    type: 'string',
+                },
+                origin: {
+                    type: 'string',
+                },
+                target: {
+                    type: 'string',
+                },
+                disabled: {
+                    type: 'string',
+                },
+                hidden: {
+                    type: 'string',
+                },
+                prevented: {
+                    type: 'string',
+                },
+            };
+            const mapvars = new ArgObj('mapvars', template, args);
+            argObj.mapvars = mapvars;
         }
 
         // call function
@@ -481,7 +476,9 @@ function new_areamap(argObj) {
 //      SECTION: newareamap
 //      creates map object on the new_areamap macro
 
-    const { mapname, columns, maparray }= argObj;
+    const { mapname, columns, maparray } = argObj;
+    const diagonals = argObj.diagonals ?? options.default.diagonals;    // default value
+
     const this_macro = Macro.get('new_areamap');
 
     // ERROR: no map name or columns or map array provided
@@ -508,7 +505,7 @@ function new_areamap(argObj) {
         mapname,
         columns,
         maparray,
-        diagonals   : argObj.diagonals   ?? options.default.diagonals,  // use default if nullish
+        diagonals,
     };
     this_macro.maps[mapname] = this_map;
 
@@ -533,9 +530,9 @@ function new_areamap(argObj) {
     // take unique values from map array, create areas for each
     [...new Set(maparray)].forEach( function(id) {
         mapareas[id] = {
-            id      : id,                            // area identifier
-            name    : argObj?.mapareas?.[id]?.name ?? id,      // name, use maparea name if found
-            type    : argObj?.mapareas?.[id]?.type ?? 'floor', // area type, use maparea type if found
+            id      : id,                                       // area identifier
+            name    : argObj?.mapareas?.[id]?.name ?? id,       // name, use maparea name if found
+            type    : argObj?.mapareas?.[id]?.type ?? 'floor',  // area type, use maparea type if found
         };
     });
     // overwrite with default wall
@@ -567,7 +564,7 @@ function new_areamap(argObj) {
     mapvars.position ??= options.default.position_story_variable;
     this_map.mapvars = mapvars;
 
-    for (const key of ['position', 'entering', 'leaving', 'disabled', 'hidden', 'prevented']) {
+    for (const key of ['position', 'origin', 'target', 'disabled', 'hidden', 'prevented']) {
         // mapvar key not defined, skip
         if (! (key in mapvars)) {
             continue;
@@ -587,7 +584,7 @@ function new_areamap(argObj) {
         }
 
         // these just store data about one specific area
-        if (['position', 'entering', 'leaving'].includes(key)) {
+        if (['position', 'origin', 'target'].includes(key)) {
             State.setVar(mapvars[key], null);
         }
         // disabled, hidden, and prevented need to store information about each area
@@ -637,102 +634,66 @@ function new_areamap(argObj) {
             continue;
         }
 
-        // if not first row, check north
-        if (i >= columns) {
-            // if not this area and not a wall
-            const maparea_N = mapareas[maparray[i-columns]];
-            if (
-                (maparea_N.id !== maparea.id)  &&
-                (maparea_N.type !== 'wall')
-            ) {
-                exits[maparea.id].N.add(maparea_N.id);
-            }
+        // define checks for each direction
+        const checks = {
+            N: {
+                needed      : i >= columns,
+                diagonal    : false,
+                offset      : -columns,
+            },
+            E: {
+                needed      : (i+1) % columns !== 0,
+                diagonal    : false,
+                offset      : 1,
+            },
+            S: {
+                needed      : i < (maparray.length - columns),
+                diagonal    : false,
+                offset      : columns,
+            },
+            W: {
+                needed      : i % columns !== 0,
+                diagonal    : false,
+                offset      : -1,
+            },
+            NE: {
+                needed      : i >= columns && (i+1) % columns !== 0,
+                diagonal    : true, 
+                offset      : -columns + 1,
+            },
+            NW: {
+                needed      : i >= columns && i % columns !== 0,
+                diagonal    : true,
+                offset      : -columns - 1,
+            },
+            SE: {
+                needed      : i < (maparray.length - columns) && (i+1) % columns !== 0,
+                diagonal    : true,
+                offset      : columns + 1,
+            },
+            SW: {
+                needed      : i < (maparray.length - columns) && i % columns !== 0,
+                diagonal    : true,
+                offset      : columns - 1,
+            },
         }
-        // if not last column, check east
-        if ((i+1) % columns) {
-            const maparea_E = mapareas[maparray[i+1]];
-            if (
-                (maparea_E.id !== maparea.id)  &&
-                (maparea_E.type !== 'wall')
-            ) {
-                exits[maparea.id].E.add(maparea_E.id);
+        for (const [dir, check] of Object.entries(checks)) {
+            // if check not needed, continue
+            if (! check.needed) {
+                continue;
             }
-        }
-        // if not last row, check south
-        if (i < (maparray.length - columns)) {
-            const maparea_S = mapareas[maparray[i+columns]];
-            if (
-                (maparea_S.id !== maparea.id)  &&
-                (maparea_S.type !== 'wall')
-            ) {
-                exits[maparea.id].S.add(maparea_S.id);
+            // if dir is a diagonal and diagonals not enabled, continue
+            if (check.diagonal && (! diagonals)) {
+                continue;
             }
-        }
-        //if not first column, check west
-        if (i % columns) {
-            const maparea_W = mapareas[maparray[i-1]];
+            // get neighbor
+            // if neighbor is not this area and not a wall, add to exits
+            const neighbor = mapareas[maparray[i + check.offset]];
             if (
-                (maparea_W.id !== maparea.id)  &&
-                (maparea_W.type !== 'wall')
+                (neighbor.id !== maparea.id)   && 
+                (neighbor.type !== 'wall')
             ) {
-                exits[maparea.id].W.add(maparea_W.id);
-            }
-        }
-
-        // extra handling for diagonals
-        if (this_map.diagonals) {
-
-            // if not first row and not first column, check northwest
-            if (
-                (i >= columns) && 
-                (i % columns)
-            ) {
-                const maparea_NW = mapareas[maparray[i-columns-1]];
-                if (
-                    (maparea_NW.id !== maparea.id) &&
-                    (maparea_NW.type !== 'wall')
-                ) {
-                    exits[maparea.id].NW.add(maparea_NW.id);
-                }
-            }
-            // if not first row and not last column, check northeast
-            if (
-                (i >= columns) && 
-                ((i+1) % columns)
-            ) {
-                const maparea_NE = mapareas[maparray[i-columns+1]];
-                if (
-                    (maparea_NE.id !== maparea.id) &&
-                    (maparea_NE.type !== 'wall')
-                ) {
-                    exits[maparea.id].NE.add(maparea_NE.id);
-                }
-            }
-            // if not last row and not last column, check southeast
-            if (
-                (i < (maparray.length - columns)) && 
-                ((i+1) % columns)
-            ) {
-                const maparea_SE = mapareas[maparray[i+columns+1]];
-                if (
-                    (maparea_SE.id !== maparea.id) &&
-                    (maparea_SE.type !== 'wall')
-                ) {
-                    exits[maparea.id].SE.add(maparea_SE.id);
-                }
-            }
-            // if not last row and not first column, check southwest
-            if (
-                (i < (maparray.length - columns)) && 
-                (i % columns)
-            ) {
-                const maparea_SW = mapareas[maparray[i+columns-1]];
-                if (
-                    (maparea_SW.id !== maparea.id) &&
-                    (maparea_SW.type !== 'wall')
-                ) {
-                    exits[maparea.id].SW.add(maparea_SW.id);
-                }
+                exits[maparea.id][dir].add(neighbor.id);
             }
         }
     }
@@ -779,10 +740,9 @@ Macro.add(['place_arearose', 'placearearose'], {
 function create_arearose(argObj) {
 
     // get values, use default as needed
-    const { mapname, autoupdate } = {
-        autoupdate: options.default.rose_autoupdate,    // default value
-        ...argObj
-    };
+    const { mapname } = argObj;
+    const autoupdate = argObj.autoupdate ?? options.default.rose_autoupdate;    // default value
+
     // ERROR: no mapname provided
     if (! mapname) {
         throw new Error(`create_arearose — no map name provided!`)
@@ -802,13 +762,12 @@ function create_arearose(argObj) {
         .attr('data-map', mapname);
 
     // create center
-    const $center   = $(document.createElement('div'));
-    $center
-            .addClass('macro-arearose-dir')
-            .attr('data-id', position)
-            .attr('data-dir', 'C')
-            .html(mapareas[position]?.name)
-            .appendTo($rose)
+    $(document.createElement('div'))
+        .addClass('macro-arearose-dir')
+        .attr('data-id', position)
+        .attr('data-dir', 'C')
+        .html(mapareas[position]?.name)
+        .appendTo($rose);
 
     // create each dir
     const dirs  = ['N', 'E', 'S', 'W', 'NE', 'NW', 'SE', 'SW'];
@@ -830,7 +789,7 @@ function create_arearose(argObj) {
                 .attr('data-id', id)
                 .attr('data-dir', dir)
                 .attr('data-area', maparea.name)
-                .prop('disabled', disabled?.[id])
+                .prop('disabled', !! disabled?.[id])
                 .css({
                     visibility: hidden?.[id] ? 'hidden' : 'visible',
                 })
@@ -839,7 +798,7 @@ function create_arearose(argObj) {
         }
     }
 
-    $rose.on('click', function(ev) {
+    $rose.on('click', '.macro-arearose-link', function(ev) {
         const id_target = $(ev.target).attr('data-id');
         begin_mapmove({
             mapname,
@@ -962,10 +921,9 @@ function set_areascripts(argObj) {
 // begins map movement procedure
 function begin_mapmove(argObj) {
 
-    const { mapname, id_target, abort } = {
-        abort: false,   // default value
-        ...argObj,
-    }
+    const { mapname, id_target } = argObj;
+    const abort = argObj.abort ?? false;    // default value
+    
     const this_map = Macro.get('new_areamap').maps[mapname];
     const id_origin = State.getVar(this_map.mapvars.position);
 
@@ -1114,22 +1072,22 @@ Macro.add(['areamapmove', 'areamap_move'], {
 &lt;&lt;mapareas setup.areas&gt;&gt;
 &lt;&lt;mapvars
     position    &#39;$position&#39;
-    entering    &#39;$entering&#39;
-    leaving     &#39;$leaving&#39;
+    origin      &#39;$origin&#39;
+    target      &#39;$target&#39;
     prevented   &#39;$prevented&#39;
     disabled    &#39;$disabled&#39;
 &gt;&gt;
 &lt;&lt;/new_areamap&gt;&gt;
 &lt;&lt;set $position to &#39;Y&#39;&gt;&gt;</tw-passagedata><tw-passagedata pid="2" name="Start" tags="" position="225,100" size="100,100">&lt;&lt;place_arearose mapname &#39;demo&#39;&gt;&gt;
 &lt;&lt;set_areascripts mapname &#39;demo&#39;&gt;&gt;
-    &lt;&lt;onmapattempt to `[&#39;G&#39;, &#39;A&#39;]`&gt;&gt;
-        &lt;&lt;run console.log(&#39;entering G or A!&#39;)&gt;&gt;
-    &lt;&lt;onmapstart to &#39;A&#39;&gt;&gt;
-        &lt;&lt;run console.log(&#39;entering A!&#39;)&gt;&gt;
+    &lt;&lt;onmapattempt to `[&#39;G&#39;, &#39;W&#39;]`&gt;&gt;
+        &lt;&lt;run console.log(&#39;to G or W!&#39;)&gt;&gt;
+    &lt;&lt;onmapstart to &#39;H&#39;&gt;&gt;
+        &lt;&lt;run console.log(&#39;to H!&#39;)&gt;&gt;
     &lt;&lt;onmapstart from &#39;D&#39;&gt;&gt;
-        &lt;&lt;run console.log(&#39;leaving D!&#39;)&gt;&gt;
+        &lt;&lt;run console.log(&#39;from D!&#39;)&gt;&gt;
     &lt;&lt;onmapend from any&gt;&gt;
-        &lt;&lt;run console.log(&#39;leaving anywhere!&#39;)&gt;&gt;
+        &lt;&lt;run console.log(&#39;from any!&#39;)&gt;&gt;
     &lt;&lt;onmapabort&gt;&gt;
         &lt;&lt;run console.log(&#39;aborted!&#39;)&gt;&gt;
 &lt;&lt;/set_areascripts&gt;&gt;

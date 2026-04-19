@@ -45,8 +45,8 @@ Walach Home - areamap demo
 <<mapareas setup.areas>>
 <<mapvars
     position    '$position'
-    entering    '$entering'
-    leaving     '$leaving'
+    origin      '$origin'
+    target      '$target'
     prevented   '$prevented'
     disabled    '$disabled'
 >>
@@ -56,14 +56,14 @@ Walach Home - areamap demo
 :: Start
 <<place_arearose mapname 'demo'>>
 <<set_areascripts mapname 'demo'>>
-    <<onmapattempt to `['G', 'A']`>>
-        <<run console.log('entering G or A!')>>
-    <<onmapstart to 'A'>>
-        <<run console.log('entering A!')>>
+    <<onmapattempt to `['G', 'W']`>>
+        <<run console.log('to G or W!')>>
+    <<onmapstart to 'H'>>
+        <<run console.log('to H!')>>
     <<onmapstart from 'D'>>
-        <<run console.log('leaving D!')>>
+        <<run console.log('from D!')>>
     <<onmapend from any>>
-        <<run console.log('leaving anywhere!')>>
+        <<run console.log('from any!')>>
     <<onmapabort>>
         <<run console.log('aborted!')>>
 <</set_areascripts>>
