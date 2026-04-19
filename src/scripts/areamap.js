@@ -437,13 +437,12 @@ function create_arearose(argObj) {
         .attr('data-map', mapname);
 
     // create center
-    const $center   = $(document.createElement('div'));
-    $center
-            .addClass('macro-arearose-dir')
-            .attr('data-id', position)
-            .attr('data-dir', 'C')
-            .html(mapareas[position]?.name)
-            .appendTo($rose)
+    $(document.createElement('div'))
+        .addClass('macro-arearose-dir')
+        .attr('data-id', position)
+        .attr('data-dir', 'C')
+        .html(mapareas[position]?.name)
+        .appendTo($rose);
 
     // create each dir
     const dirs  = ['N', 'E', 'S', 'W', 'NE', 'NW', 'SE', 'SW'];
@@ -465,7 +464,7 @@ function create_arearose(argObj) {
                 .attr('data-id', id)
                 .attr('data-dir', dir)
                 .attr('data-area', maparea.name)
-                .prop('disabled', disabled?.[id])
+                .prop('disabled', !! disabled?.[id])
                 .css({
                     visibility: hidden?.[id] ? 'hidden' : 'visible',
                 })
@@ -474,7 +473,7 @@ function create_arearose(argObj) {
         }
     }
 
-    $rose.on('click', function(ev) {
+    $rose.on('click', '.macro-arearose-link', function(ev) {
         const id_target = $(ev.target).attr('data-id');
         begin_mapmove({
             mapname,
