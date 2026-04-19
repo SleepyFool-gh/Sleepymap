@@ -475,10 +475,10 @@ function create_arearose(argObj) {
     }
 
     $rose.on('click', function(ev) {
-        const id_entering = $(ev.target).attr('data-id');
+        const id_target = $(ev.target).attr('data-id');
         begin_mapmove({
             mapname,
-            id_entering,
+            id_target,
             abort: false,
         });
         if (autoupdate) {
@@ -498,18 +498,22 @@ function create_arearose(argObj) {
 // █    █ █   █ █     █   █ █    █        █   █ █   █ █     █   █     █ █     █   █  █  █       █       █
 // █    █ █   █  ████ █   █  ████  ▄█     █   █ █   █ █████ █   █ ████   ████ █   █ ███ █       █   ████
 // SECTION: macro, areascripts
-// macro sets scripts to run when leaving or entering areas
+// macro sets scripts to run at various parts of the process:
+//   when attempting, immediately, before success or failure is determined
+//   when starting, before position updates
+//   when ending, after position updates
+//   when aborting
 
 Macro.add(['set_areascripts','setareascripts'], {
 
-    tags: ['leaving', 'entering'],
+    tags: ['onmapattempt', 'onmapstart', 'onmapend', 'onmapabort'],
 
     handler() {
         const template = {
             mapname: {
                 required: true,
                 type: 'string',
-            }
+            },
         };
         const argObj = new ArgObj(this.name, template, this.args);
         const mapname = argObj.mapname;
@@ -522,9 +526,18 @@ Macro.add(['set_areascripts','setareascripts'], {
         const scripts = [];
         for(let i = 1; i < this.payload.length; i++) {
             const p = this.payload[i];
+            const template = {
+                to: {
+                    type: ['string', 'object'],
+                },
+                from: {
+                    type: ['string', 'object'],
+                },
+            };
+            const argObj = new ArgObj(p.name, template, p.args);
             scripts.push({
                 type: p.name,
-                areas: p.args.flat(),
+                areas: argObj,
                 contents: p.contents,
             });
         }
@@ -539,6 +552,36 @@ Macro.add(['set_areascripts','setareascripts'], {
 function set_areascripts(argObj) {
     const { mapname, scripts } = argObj;
     const this_map = Macro.get('new_areamap').maps[mapname];
+    // error checking & object shaping
+    for (const script of scripts) {
+        // no "to" or "from" args defined, it's an "any" script
+        // set to any, continue
+        if (
+            (! ('to' in script.areas))      && 
+            (! ('from' in script.areas))
+        ) {
+            script.areas.to = 'any';
+            continue;
+        }
+        for (const arg of ['to', 'from']) {
+            // arg not defined, continue
+            if (! (arg in script.areas)) {
+                continue;
+            }
+            // wrap in array if not "any"
+            script.areas[arg]   = script.areas[arg] === 'any'
+                                    ? 'any'
+                                    : [script.areas[arg]].flat();
+            // ERROR: make sure each array element is a string
+            if (typeof script.areas[arg] !== 'string') {
+                script.areas[arg].forEach( area => {
+                    if (typeof area !== 'string') {
+                        throw new Error(`set_areascripts — ${script.type} — map ${mapname}, "${arg}" must be a string, array of strings, or keyword "any"`);
+                    }
+                });
+            }
+        }
+    }
     this_map.scripts = scripts;
 }
 
@@ -551,31 +594,37 @@ function set_areascripts(argObj) {
 // █    █ █   █ █     █    █ █    █  █ █  █
 // █    █ █   █ █     █    █  ████    █   █████
 // SECTION: mapmove
-// begin_mapmove starts map movement, fires an event off #passages and any leaving scripts
-// then fires event off #passages, listener on document catches and calls resolve_mapmove
-// resolve_mapmove checks if movement should continue, fires any entering scripts
-// then updates to new position
-// fires ending event off #passages
+// begin_mapmove starts map movement,
+//   then fires event off #passages, 
+//   listener on document catches and calls resolve_mapmove
+// resolve_mapmove checks if movement should continue
+//   then updates to new position
+//   fires ending event off #passages
 // done this way to allow authors to intercept and manipulate if they like
 
 // begins map movement procedure
 function begin_mapmove(argObj) {
 
-    const { mapname, id_entering, abort } = {
+    const { mapname, id_target, abort } = {
         abort: false,   // default value
         ...argObj,
     }
     const this_map = Macro.get('new_areamap').maps[mapname];
-    const position = State.getVar(this_map.mapvars.position);
+    const id_origin = State.getVar(this_map.mapvars.position);
 
     // fire began event
-    $('#passages').trigger('areamap:mapmove_began', { mapname, position, id_entering, abort });
+    $('#passages').trigger('areamap:mapmove_began', { mapname, id_origin, id_target, abort });
 
-    // check for any leaving scripts
-    const scripts_leaving = this_map.scripts.filter(script => script.type === 'leaving');
-    for (const script of scripts_leaving) {
+    // check for any scripts to fire when beginning an attempt
+    const scripts_attempt = this_map.scripts.filter(script => script.type === 'onmapattempt');
+    for (const script of scripts_attempt) {
         // check if script applies to this location, if yes run
-        if (script.areas.includes(position) || (script.areas.length === 0)) {
+        if (
+            script.areas.from === 'any'             ||
+            script.areas.to === 'any'               ||
+            script.areas.from.includes(id_origin)    || 
+            script.areas.to.includes(id_target)  
+        ) {
             $.wiki(script.contents);
         }
     }
@@ -588,29 +637,63 @@ $(document).on('areamap:mapmove_began', (event, argObj) => {
 
 // resolves map movement procedure
 function resolve_mapmove(argObj) {
-    const { mapname, id_entering, abort } = argObj;
+    const { mapname, id_target, abort } = argObj;
     const this_map = Macro.get('new_areamap').maps[mapname];
+    const id_origin = State.getVar(this_map.mapvars.position);
 
     if (! abort) {
-        // check for any entering scripts
-        const scripts_entering = this_map.scripts.filter(script => script.type === 'entering');
-        for (const script of scripts_entering) {
+        // check for any onmapstart scripts
+        const scripts_leave = this_map.scripts.filter(script => script.type === 'onmapstart');
+        for (const script of scripts_leave) {
             // check if script applies to this location, if yes run
-            if (script.areas.includes(id_entering) || (script.areas.length === 0)) {
+            if (
+                script.areas.from === 'any'             ||
+                script.areas.to === 'any'               ||
+                script.areas.from.includes(id_origin)    || 
+                script.areas.to.includes(id_target)  
+            ) {
                 $.wiki(script.contents);
             }
         }
 
         // enter new location
-        State.setVar(this_map.mapvars.position, id_entering);
+        State.setVar(this_map.mapvars.position, id_target);
+
+        // check for any onmapend scripts
+        const scripts_end = this_map.scripts.filter(script => script.type === 'onmapend');
+        for (const script of scripts_end) {
+            // check if script applies to this location, if yes run
+            if (
+                script.areas.from === 'any'             ||
+                script.areas.to === 'any'               ||
+                script.areas.from.includes(id_origin)    || 
+                script.areas.to.includes(id_target)  
+            ) {
+                $.wiki(script.contents);
+            }
+        }
+    }
+    else {
+        // check for any onmapabort scripts
+        const scripts_abort = this_map.scripts.filter(script => script.type === 'onmapabort');
+        for (const script of scripts_abort) {
+            // check if script applies to this location, if yes run
+            if (
+                script.areas.from === 'any'             ||
+                script.areas.to === 'any'               ||
+                script.areas.from.includes(id_origin)   || 
+                script.areas.to.includes(id_target)  
+            ) {
+                $.wiki(script.contents);
+            }
+        }
     }
     
     // fire resolved event
-    const position = State.getVar(this_map.mapvars.position);
     $('#passages').trigger('areamap:mapmove_resolved', { 
         mapname, 
-        id_started: id_entering, 
-        id_ended: position, 
+        id_origin, 
+        id_target, 
         succeeded: ! abort
     });
 }
@@ -629,9 +712,9 @@ Macro.add(['areamapmove', 'areamap_move'], {
                 required: true,
                 type: 'string',
             },
-            id_entering: {
+            id_target: {
                 type: 'string',
-                aliases: ['id', 'area'],
+                aliases: ['target','id', 'area'],
             },
             abort: {
                 type: 'boolean',

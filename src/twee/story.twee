@@ -56,20 +56,22 @@ Walach Home - areamap demo
 :: Start
 <<place_arearose mapname 'demo'>>
 <<set_areascripts mapname 'demo'>>
-    <<entering 'G'>>
-        <<run console.log('entering G!')>>
-    <<entering 'A'>>
-        entering A
-    <<leaving 'D'>>
-        <<run console.log('leaving D')>>
-    <<leaving>>
+    <<onmapattempt to `['G', 'A']`>>
+        <<run console.log('entering G or A!')>>
+    <<onmapstart to 'A'>>
+        <<run console.log('entering A!')>>
+    <<onmapstart from 'D'>>
+        <<run console.log('leaving D!')>>
+    <<onmapend from any>>
         <<run console.log('leaving anywhere!')>>
+    <<onmapabort>>
+        <<run console.log('aborted!')>>
 <</set_areascripts>>
-<<areamap_move
+/* <<areamap_move
     mapname 'demo'
     area 'G'
     abort `1 > 0`
->>
+>> */
 <style>
     .macro-showrose-rose {
         display: grid;

@@ -5,4 +5,10 @@
 - moving on to navigating functionality
 - map movement SHOULD work, tested, seems okay
 - next is adding map movement functionality to the rose & deciding if the "prevented" variable should stay or go
+
 - rose should work, still don't know if I should keep prevented variable
+- need to add "to target" and "from origin" args for each script payload
+
+- added "to target" and "from origin" args to "onmapattempt", "onmapstart", "onmapend", and "onmapabort"
+- need to check if working
+- need to do something still about "entering" an "leaving" map vars
