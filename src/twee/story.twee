@@ -54,7 +54,7 @@ Walach Home - areamap demo
 <<set $position to 'Y'>>
 
 :: Start
-<<place_arearose mapname 'demo'>>
+<<place_areamap_rose mapname 'demo'>>
 <<set_areascripts mapname 'demo'>>
     <<onmapattempt to `['G', 'W']`>>
         <<run console.log('to G or W!')>>

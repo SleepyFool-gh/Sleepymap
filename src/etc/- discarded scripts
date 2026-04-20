@@ -1,3 +1,117 @@
+// alternate method to create rose that extracts out the creation of each direction
+function create_areamap_links(argObj) {
+    const { mapname, dir } = argObj;
+    
+    // ERROR: no mapname provided
+    if (! mapname) {
+        throw new Error(`create_areamap_links — no map name provided!`)
+    }
+    else if (! dir) {
+        throw new Error(`create_areamap_links — map "${mapname}" — no direction provided!`)
+    }
+    
+    const this_map = Macro.get('new_areamap').maps[mapname];
+    
+    // ERROR: no map found
+    if (! this_map) {
+        throw new Error(`create_areamap_links — no map found with name "${mapname}"!`)
+    }
+    
+    const { mapareas, mapvars, exits } = this_map;
+
+    const position  = State.getVar(mapvars.position);
+    const disabled  = mapvars.disabled ? State.getVar(mapvars.disabled) : null;
+    const hidden    = mapvars.hidden   ? State.getVar(mapvars.hidden)   : null;
+
+    // ERROR: invalid position, either not set or non-existing or a wall
+    if (
+        (position === null) ||
+        (mapareas[position] === undefined) ||
+        (mapareas[position].type === 'wall')
+    ) {
+        throw new Error(`create_areamap_links — map "${mapname}" — position currently invalid!`)
+    }
+
+    const $dir = $(document.createElement('div'));
+    $dir
+        .addClass('macro-areamap-dir')
+        .attr('data-mapname', mapname)
+        .attr('data-dir', dir);
+
+    if (dir === 'C') {
+        $dir
+            .addClass('macro-areamap-dir')
+            .attr('data-id', position)
+            .attr('data-dir', 'C')
+            .html(mapareas[position].name);
+    }
+    else {
+        for (const id of exits[position][dir]) {
+            const maparea = mapareas[id];
+            const $link = $(document.createElement('a'));
+            $link
+                .addClass('macro-areamap-link')
+                .attr('data-id', id)
+                .attr('data-dir', dir)
+                .attr('data-area', maparea.name)
+                .prop('disabled', !! disabled?.[id])
+                .css({
+                    visibility: hidden?.[id] ? 'hidden' : 'visible',
+                })
+                .html(maparea.name)
+                .appendTo($dir);
+        }
+
+        $dir.on('click', '.macro-areamap-link', function(ev) {
+            const id_target = $(ev.target).attr('data-id');
+            begin_mapmove({
+                mapname,
+                id_target,
+                abort: false,
+            });
+        });
+    }
+
+    return $dir
+}
+function create_areamap_rose(argObj) {
+    const { mapname } = argObj;
+    const autoupdate = argObj.autoupdate ?? options.default.rose_autoupdate;    // default value
+
+    if (! mapname) {
+        throw new Error(`create_areamap_rose — no map name provided!`)
+    }
+
+    const this_map = Macro.get('new_areamap').maps[mapname];
+
+    // ERROR: no map found
+    if (! this_map) {
+        throw new Error(`create_areamap_rose — no map found with name "${mapname}"!`)
+    }
+
+    const $rose = $(document.createElement('div'));
+    $rose
+        .addClass('macro-areamap-rose')
+        .attr('data-map', mapname);
+        
+    for (const dir of ['C', 'N', 'E', 'S', 'W', 'NE', 'NW', 'SE', 'SW']) {
+        const $dir = create_areamap_links({
+            mapname,
+            dir,
+        });
+        $dir.appendTo($rose);
+    }
+
+    $rose.on('click', '.macro-areamap-link', function(ev) {
+        if (autoupdate) {
+            $rose.replaceWith(create_areamap_rose(argObj));
+        }
+    });
+
+    return $rose;
+}
+
+
 // old type checkers
 // ┬ ┬┌─┐┌─┐┌─┐┬ ┬┬
 // │ │└─┐├┤ ├┤ │ ││
