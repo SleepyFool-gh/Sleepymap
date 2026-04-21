@@ -79,9 +79,13 @@ Macro.add(['newareamap', 'new_areamap'], {
         const payload_mapvars = this.payload.find( p => p.name === 'mapvars' );
         if (payload_mapvars) {
             const args = payload_mapvars.args;
+            // REMINDER: changing anything here also requires changing MAPVAR_DEFAULTS
             const template = {
                 position: {
                     required: true,
+                    type: 'string',
+                },
+                frozen: {
                     type: 'string',
                 },
                 disabled: {
@@ -209,10 +213,15 @@ function new_map(argObj) {
     // create mapvars
     const mapvars = this_map.mapvars;
 
+    // REMINDER: changing anything here also requires changing <<mapvars>> template
     const MAPVAR_DEFAULTS = {
         position: {
             sv_name : argObj?.mapvars?.position ?? options.default.position_story_variable,
             val     : '',
+        },
+        frozen: {
+            sv_name : argObj?.mapvars?.frozen,
+            val     : false,
         },
         disabled: {
             sv_name : argObj?.mapvars?.disabled,
@@ -408,8 +417,15 @@ function create_rose(argObj) {
     const { mapareas, mapvars, exits } = this_map;
 
     const position  = State.getVar(mapvars.position);
-    const disabled  = mapvars.disabled ? State.getVar(mapvars.disabled) : null;
-    const hidden    = mapvars.hidden   ? State.getVar(mapvars.hidden)   : null;
+    const frozen    = mapvars.frozen !== undefined      
+                        ? State.getVar(mapvars.frozen) 
+                        : false;
+    const disabled  = mapvars.disabled !== undefined    
+                        ? State.getVar(mapvars.disabled) 
+                        : null;
+    const hidden    = mapvars.hidden   !== undefined    
+                        ? State.getVar(mapvars.hidden)   
+                        : null;
 
     // ERROR: invalid position, either not set or non-existing or a wall
     if (
@@ -453,7 +469,7 @@ function create_rose(argObj) {
                 .attr('data-id', id)
                 .attr('data-dir', dir)
                 .attr('data-area', maparea.name)
-                .prop('disabled', !! disabled?.[id])
+                .prop('disabled', disabled?.[id] || frozen)
                 .css({
                     visibility: hidden?.[id] ? 'hidden' : 'visible',
                 })
@@ -674,13 +690,13 @@ function resolve_mapmove(argObj) {
     const name = argObj.name ?? 'Areamap.resolve_mapmove';
     const this_map = areamaps[mapname];
     const id_origin = State.getVar(this_map.mapvars.position);
-    const blocked   = force_abort 
-                        ? true 
+    const succeeded   = force_abort 
+                        ? false 
                         : this_map.mapvars?.blocked !== undefined
-                            ? State.getVar(this_map.mapvars.blocked)[id_target]
-                            : false;
+                            ? ! State.getVar(this_map.mapvars.blocked)[id_target]
+                            : true;
 
-    if (! blocked) {
+    if (succeeded) {
         // check for any onmapstart scripts
         const scripts_leave = this_map.scripts.filter(script => script.type === 'onmapstart');
         for (const script of scripts_leave) {
@@ -727,7 +743,7 @@ function resolve_mapmove(argObj) {
         mapname, 
         id_origin, 
         id_target, 
-        succeeded: ! blocked,
+        succeeded,
     });
 }
 
