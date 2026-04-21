@@ -363,6 +363,8 @@ class ArgObj {
 }
 
 /* twine-user-script #2: "areamap.js" */
+(() => {
+
 //  ████  ████  █████ ███  ████  █    █  ████
 // █    █ █   █   █    █  █    █ ██   █ █
 // █    █ ████    █    █  █    █ █ █  █  ███
@@ -392,23 +394,23 @@ setup['@areamap/options'] = options;
 // used to define a map so that a player can navigate through it using the regionrose macro
 // comes in both 4 and 8 wind variants
 
+// map container
+const areamaps = {};
+
 // macro wrapper for new_map
 Macro.add(['newareamap', 'new_areamap'], {
 
     // child tags
     tags    :    ['mapvars', 'mapareas'],
 
-    // maps container
-    maps    :    {},
-
     handler() {
 
         const name = this.name;
 
         // ERROR: macro being called outside StoryInit
-        // if (! turns()) {
-        //     return this.error(`${name} — macro must be called during StoryInit!`);
-        // }
+        if (turns() !== 0) {
+            return this.error(`${name} — macro must be called during StoryInit!`);
+        }
 
         // parse args to argsObj
         const template_main = {
@@ -492,23 +494,19 @@ function new_map(argObj) {
     const diagonals = argObj.diagonals ?? options.default.diagonals;    // default value
     const name = argObj.name ?? 'Areamap.new_map';
 
-    const this_macro = Macro.get('new_areamap');
-
     // ERROR: no map name or columns or map array provided
-    if (! mapname) {
+    if (mapname === undefined) {
         throw new Error(`${name} — no map name provided!`);
     }
-    else if (! columns) {
-        throw new Error(`${name} — areamap "${mapname}" — no columns provided!`);
-    }
-    else if (! maparray) {
-        throw new Error(`${name} — areamap "${mapname}" — no array provided!`);
-    }
     // ERROR: map with name already exists
-    else if (this_macro.maps[mapname]) {
+    else if (areamaps[mapname]) {
         throw new Error(`${name} — areamap with name "${mapname}" already exists!`);
     }
-    // ERROR: maparray not an array
+    // ERROR: columns not a number (or undefined)
+    else if (typeof columns !== 'number') {
+        throw new Error(`${name} — areamap "${mapname}" — columns must be a number!`);
+    }
+    // ERROR: maparray not an array (or undefined)
     else if (! Array.isArray(maparray)) {
         throw new Error(`${name} — areamap "${mapname}" — maparray must be an array!`);
     }
@@ -528,7 +526,7 @@ function new_map(argObj) {
         exits       : {},   // populated here, later
         scripts     : [],   // populated in set_scripts, if called
     };
-    this_macro.maps[mapname] = this_map;
+    areamaps[mapname] = this_map;
 
 
 //     █    █  ███  ████   ███  ████  █████  ███   ████
@@ -775,14 +773,14 @@ function create_rose(argObj) {
     const name = argObj.name ?? 'Areamap.create_rose';
 
     // ERROR: no mapname provided
-    if (! mapname) {
+    if (mapname === undefined) {
         throw new Error(`${name} — no map name provided!`);
     }
 
-    const this_map = Macro.get('new_areamap').maps[mapname];
+    const this_map = areamaps[mapname];
 
     // ERROR: no map found
-    if (! this_map) {
+    if (this_map === undefined) {
         throw new Error(`${name} — couldn't find map with name "${mapname}"!`);
     }
 
@@ -881,9 +879,9 @@ Macro.add(['set_areascripts','setareascripts'], {
         const name = this.name;
 
         // ERROR: macro being called outside StoryInit
-        // if (! turns()) {
-        //     return this.error(`${name} — macro must be called during StoryInit!`);
-        // }
+        if (turns() !== 0) {
+            return this.error(`${name} — macro must be called during StoryInit!`);
+        }
         
         const template = {
             mapname: {
@@ -927,14 +925,14 @@ function set_scripts(argObj) {
     const name = argObj.name ?? 'Areamap.set_scripts';
     
     // ERROR: no map name provided
-    if (! mapname) {
+    if (mapname === undefined) {
         throw new Error(`${name} — missing mapname argument`);
     }
     
-    const this_map = Macro.get('new_areamap').maps[mapname];
+    const this_map = areamaps[mapname];
     
     // ERROR: no map found
-    if (! this_map) {
+    if (this_map === undefined) {
         throw new Error(`${name} — couldn't find map with name "${mapname}"!`);
     }
 
@@ -1014,7 +1012,7 @@ function begin_mapmove(argObj) {
     const name = argObj.name ?? 'Areamap.begin_mapmove';
     const abort = argObj.abort ?? false;    // default value
 
-    const this_map = Macro.get('new_areamap').maps[mapname];
+    const this_map = areamaps[mapname];
     const id_origin = State.getVar(this_map.mapvars.position);
 
     // fire began event
@@ -1042,7 +1040,7 @@ $(document).on('areamap:mapmove_began', (event, argObj) => {
 function resolve_mapmove(argObj) {
     const { mapname, id_target, abort } = argObj;
     const name = argObj.name ?? 'Areamap.resolve_mapmove';
-    const this_map = Macro.get('new_areamap').maps[mapname];
+    const this_map = areamaps[mapname];
     const id_origin = State.getVar(this_map.mapvars.position);
 
     if (! abort) {
@@ -1097,8 +1095,64 @@ function resolve_mapmove(argObj) {
 }
 
 
-function getExits(argObj) {
 
+
+//  ███  █   █ █   █
+// █   █ █   █  █ █
+// █████ █   █   █
+// █   █ █   █  █ █
+// █   █  ███  █   █
+// SECTION: auxiliary functions for JS things
+
+function getAreas(argObj) {
+    const { mapname } = argObj;
+    const name = 'Areamap.getAreas';
+    
+    // ERROR: missing args
+    if (mapname === undefined) {
+        throw new Error(`${name} — missing required arguments!`);
+    }
+    
+    const this_map = areamaps[mapname];
+
+    // ERROR: non-extant map
+    if (this_map === undefined) {
+        throw new Error(`${name} — areamap "${mapname}" not found!`);
+    }
+    
+    // return areas
+    return structuredClone(this_map.mapareas);
+}
+
+// fetch exits for a given map & area
+function getExits(argObj) {
+    const { mapname, id } = argObj;
+    const name = 'Areamap.getExits';
+    
+    // ERROR: missing args
+    if (
+        (mapname === undefined) ||
+        (id === undefined)
+    ) {
+        throw new Error(`${name} — missing required arguments!`);
+    }
+    
+    const this_map = areamaps[mapname];
+
+    // ERROR: non-extant map
+    if (this_map === undefined) {
+        throw new Error(`${name} — areamap "${mapname}" not found!`);
+    }
+    // ERROR: non-extant area
+    else if (this_map.mapareas[id] === undefined) {
+        throw new Error(`${name} — areamap "${mapname}" — area "${id}" not found!`);
+    }
+    else if (this_map.mapareas[id].type === 'wall') {
+        throw new Error(`${name} — areamap "${mapname}" — area "${id}" is a wall, walls have no exits!`);
+    }
+    
+    // return exits
+    return structuredClone(this_map.exits[id]);
 }
 
 
@@ -1114,7 +1168,12 @@ window.Areamap = {
     create_rose,
     begin_mapmove,
     set_scripts,
-};</script><tw-passagedata pid="1" name="StoryInit" tags="nobr" position="100,100" size="100,100">&lt;&lt;set 
+    getExits,
+    getAreas,
+};
+
+})();
+</script><tw-passagedata pid="1" name="StoryInit" tags="nobr" position="100,100" size="100,100">&lt;&lt;set 
     setup.areas = {
         Y: {name: &#39;Yard&#39;},
         F: {name: &#39;Front door&#39;},
@@ -1162,7 +1221,7 @@ window.Areamap = {
     disabled    &#39;$disabled&#39;
 &gt;&gt;
 &lt;&lt;/new_areamap&gt;&gt;
-&lt;&lt;set $position to &#39;Y&#39;&gt;&gt;</tw-passagedata><tw-passagedata pid="2" name="Start" tags="" position="225,100" size="100,100">&lt;&lt;place_areamap_rose mapname &#39;demo&#39;&gt;&gt;
+&lt;&lt;set $position to &#39;Y&#39;&gt;&gt;
 &lt;&lt;set_areascripts mapname &#39;demo&#39;&gt;&gt;
     &lt;&lt;onmapattempt to `[&#39;G&#39;, &#39;W&#39;]`&gt;&gt;
         &lt;&lt;run console.log(&#39;to G or W!&#39;)&gt;&gt;
@@ -1174,7 +1233,7 @@ window.Areamap = {
         &lt;&lt;run console.log(&#39;from any!&#39;)&gt;&gt;
     &lt;&lt;onmapabort&gt;&gt;
         &lt;&lt;run console.log(&#39;aborted!&#39;)&gt;&gt;
-&lt;&lt;/set_areascripts&gt;&gt;
+&lt;&lt;/set_areascripts&gt;&gt;</tw-passagedata><tw-passagedata pid="2" name="Start" tags="" position="225,100" size="100,100">&lt;&lt;place_areamap_rose mapname &#39;demo&#39;&gt;&gt;
 /* &lt;&lt;areamap_move
     mapname &#39;demo&#39;
     area &#39;G&#39;

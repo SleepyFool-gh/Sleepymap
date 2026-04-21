@@ -52,9 +52,6 @@ Walach Home - areamap demo
 >>
 <</new_areamap>>
 <<set $position to 'Y'>>
-
-:: Start
-<<place_areamap_rose mapname 'demo'>>
 <<set_areascripts mapname 'demo'>>
     <<onmapattempt to `['G', 'W']`>>
         <<run console.log('to G or W!')>>
@@ -67,6 +64,9 @@ Walach Home - areamap demo
     <<onmapabort>>
         <<run console.log('aborted!')>>
 <</set_areascripts>>
+
+:: Start
+<<place_areamap_rose mapname 'demo'>>
 /* <<areamap_move
     mapname 'demo'
     area 'G'
