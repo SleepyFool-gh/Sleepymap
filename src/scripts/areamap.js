@@ -103,6 +103,7 @@ Macro.add(['newareamap', 'new_areamap'], {
             };
             const mapvars = new ArgObj('mapvars', template, args);
             argObj.mapvars = mapvars;
+
         }
 
         // call function
@@ -467,6 +468,7 @@ function create_rose(argObj) {
         .appendTo($rose);
 
     // create each dir
+    // ordered this way so that grid auto-fills in the correct sequence
     for (const dir of ['NW', 'N', 'NE', 'W', 'E', 'SW', 'S', 'SE']) {
         // create dir container
         const $dir  = $(document.createElement('div'));
@@ -511,6 +513,130 @@ function create_rose(argObj) {
 
     return $rose;
 }
+
+
+
+
+// █    █  ███  ████  █   █ ███ █████ █     █
+// ██  ██ █   █ █   █ █   █  █  █     █     █
+// █ ██ █ █████ ████  █   █  █  ███   █  █  █
+// █    █ █   █ █      █ █   █  █     █ █ █ █
+// █    █ █   █ █       █   ███ █████  █   █
+// SECTION: mapview, the visual map to be displayed
+
+// macro wrapper, creates & places mapview
+Macro.add(['place_mapview', 'placemapview'], {
+    handler: function() {
+        const name = this.name;
+        const template = {
+            mapname: {
+                required: true,
+                type: 'string',
+            },
+            autoupdate: {
+                type: 'boolean',
+            },
+            clickable: {
+                type: 'boolean',
+            },
+            background: {
+                type: 'string',
+                aliases: 'bg',
+            },
+            show_names: {
+                type: 'boolean',
+            },
+        };
+        const argObj = new ArgObj(name, template, this.args);
+        create_mapview({
+            ...argObj,
+            name,
+        }).appendTo(this.output);
+    }
+});
+
+// returns map object
+function create_mapview(argObj) {
+    const { mapname, background } = argObj;
+    const name = argObj.name ?? 'Areamap.create_mapview';
+    const show_names    = argObj.show_names ?? options.default.show_names_on_mapview;   // default value
+    const autoupdate    = argObj.autoupdate ?? options.default.autoupdate_mapview;      // default value
+    const clickable     = argObj.clickable  ?? options.default.clickable_mapview;       // default value
+
+    // ERROR: missing args
+    if (mapname === undefined) {
+        throw new Error(`${name} — missing required args mapname!`);
+    }
+    
+    const this_map = areamaps[mapname];
+    const position = State.getVar(this_map.mapvars.position);
+    
+    // ERROR: non-extant map
+    if (this_map === undefined) {
+        throw new Error(`${name} — areamap "${mapname}" not found!`);
+    }
+    
+    // create map object
+    const $mapview = $(document.createElement('div'));
+    $mapview
+        .addClass('macro-areamap-mapview')
+        .attr('data-mapname', mapname)
+        .attr('data-position', position)
+        .css({
+            '--columns': this_map.columns,
+        });
+    
+
+    // append bg
+    if (background) {
+        $(document.createElement('div'))
+            .addClass('macro-areamap-mapviewbg')
+            .html(background)
+            .appendTo($mapview);
+    }
+
+    // get exits as an array
+    const exit_arr = Object.values(this_map.exits[position]);
+    // create & append tiles
+    for (const id of this_map.maparray) {
+        // if clickable & valid travel destination --> clickable
+        const link  = ! clickable
+                        ? false
+                        : this_map.mapareas[id].type === 'wall'
+                            ? false
+                            : exit_arr.some( dir => dir.has(id));
+        
+        const $tile = $(document.createElement(link ? 'a' : 'div'));
+        $tile
+            .addClass('macro-areamap-tile')
+            .addClass(link ? 'macro-areamap-link' : '')
+            .addClass(id === position ? 'macro-areamap-position' : '')
+            .attr('data-id', id)
+            .html(show_names ? this_map.mapareas[id].name : '');
+        $mapview.append($tile);
+    }
+
+    // if clickable add link functionality
+    if (clickable) {
+        $mapview.on('click', '.macro-areamap-link', function(ev) {
+            const id_target = $(ev.target).attr('data-id');
+            begin_mapmove({
+                mapname,
+                id_target,
+            });
+        });
+    }
+    // if autoupdate enabled, updates on any mapmove
+    if (autoupdate) {
+        $(document).one('areamap:mapmove_resolved', function(ev, data) {
+            $mapview.replaceWith(create_mapview(argObj));
+        });
+    }
+
+    return $mapview;
+}
+
+
 
 
 // █    █  ███  ████       ████  ████ ████  ███ ████  █████  ████
@@ -710,7 +836,7 @@ function resolve_mapmove(argObj) {
     const name = argObj.name ?? 'Areamap.resolve_mapmove';
     const this_map = areamaps[mapname];
     const id_origin = State.getVar(this_map.mapvars.position);
-    const succeeded   = force_abort 
+    const succeeded = force_abort 
                         ? false 
                         : this_map.mapvars?.blocked !== undefined
                             ? ! State.getVar(this_map.mapvars.blocked)[id_target]
@@ -770,127 +896,6 @@ function resolve_mapmove(argObj) {
 
 
 
-// █    █  ███  ████  █   █ ███ █████ █     █
-// ██  ██ █   █ █   █ █   █  █  █     █     █
-// █ ██ █ █████ ████  █   █  █  ███   █  █  █
-// █    █ █   █ █      █ █   █  █     █ █ █ █
-// █    █ █   █ █       █   ███ █████  █   █
-// SECTION: mapview, the visual map to be displayed
-
-// macro wrapper, creates & places mapview
-Macro.add(['place_mapview', 'placemapview'], {
-    handler: function() {
-        const name = this.name;
-        const template = {
-            mapname: {
-                required: true,
-                type: 'string',
-            },
-            autoupdate: {
-                type: 'boolean',
-            },
-            clickable: {
-                type: 'boolean',
-            },
-            background: {
-                type: 'string',
-                aliases: 'bg',
-            },
-            show_names: {
-                type: 'boolean',
-            },
-        };
-        const argObj = new ArgObj(name, template, this.args);
-        create_mapview({
-            ...argObj,
-            name,
-        }).appendTo(this.output);
-    }
-});
-
-// returns map object
-function create_mapview(argObj) {
-    const { mapname, background } = argObj;
-    const name = argObj.name ?? 'Areamap.create_mapview';
-    const show_names    = argObj.show_names ?? options.default.show_names_on_mapview;   // default value
-    const autoupdate    = argObj.autoupdate ?? options.default.autoupdate_mapview;      // default value
-    const clickable     = argObj.clickable  ?? options.default.clickable_mapview;       // default value
-
-    // ERROR: missing args
-    if (mapname === undefined) {
-        throw new Error(`${name} — missing required args mapname!`);
-    }
-    
-    const this_map = areamaps[mapname];
-    const position = State.getVar(this_map.mapvars.position);
-    
-    // ERROR: non-extant map
-    if (this_map === undefined) {
-        throw new Error(`${name} — areamap "${mapname}" not found!`);
-    }
-    
-    // create map object
-    const $mapview = $(document.createElement('div'));
-    $mapview
-        .addClass('macro-areamap-mapview')
-        .attr('data-mapname', mapname)
-        .attr('data-position', position)
-        .css({
-            '--columns': this_map.columns,
-        });
-    
-
-    // append bg
-    if (background) {
-        $(document.createElement('div'))
-            .addClass('macro-areamap-mapviewbg')
-            .html(background)
-            .appendTo($mapview);
-    }
-
-    // get exits as an array
-    const exit_arr = Object.values(this_map.exits[position]);
-    // create & append tiles
-    for (const id of this_map.maparray) {
-        // if clickable & valid travel destination --> clickable
-        const link  = ! clickable
-                        ? false
-                        : this_map.mapareas[id].type === 'wall'
-                            ? false
-                            : exit_arr.some( dir => dir.has(id));
-        
-        const $tile = $(document.createElement(link ? 'a' : 'div'));
-        $tile
-            .addClass('macro-areamap-tile')
-            .addClass(link ? 'macro-areamap-link' : '')
-            .addClass(id === position ? 'macro-areamap-position' : '')
-            .attr('data-id', id)
-            .html(show_names ? this_map.mapareas[id].name : '');
-        $mapview.append($tile);
-    }
-
-    // if clickable add link functionality
-    if (clickable) {
-        $mapview.on('click', '.macro-areamap-link', function(ev) {
-            const id_target = $(ev.target).attr('data-id');
-            begin_mapmove({
-                mapname,
-                id_target,
-            });
-        });
-    }
-    // if autoupdate enabled, updates on any mapmove
-    if (autoupdate) {
-        $(document).one('areamap:mapmove_resolved', function(ev, data) {
-            $mapview.replaceWith(create_mapview(argObj));
-        });
-    }
-
-    return $mapview;
-}
-
-
-
 //  ███  █   █ █   █
 // █   █ █   █  █ █
 // █████ █   █   █
@@ -898,52 +903,18 @@ function create_mapview(argObj) {
 // █   █  ███  █   █
 // SECTION: auxiliary functions for JS things
 
-function get_areas(argObj) {
-    const { mapname } = argObj;
-    const name = 'Areamap.get_areas';
-    
-    // ERROR: missing args
+function get_map(mapname) {
+    // ERROR: missing arg
     if (mapname === undefined) {
-        throw new Error(`${name} — missing required arguments!`);
+        throw new Error('Areamap.get_map — missing required mapname argument!');
     }
-    
-    const this_map = areamaps[mapname];
-
-    // ERROR: non-extant map
-    if (this_map === undefined) {
-        throw new Error(`${name} — areamap "${mapname}" not found!`);
+    else if (areamaps[mapname] === undefined) {
+        throw new Error(`Areamap.get_map — areamap "${mapname}" not found!`);
     }
-    
-    return structuredClone(this_map.mapareas);
+    return structuredClone(areamaps[mapname]);
 }
 
-// fetch exits for a given map & area
-function get_exits(argObj) {
-    const { mapname, id } = argObj;
-    const name = 'Areamap.get_exits';
-    
-    // ERROR: missing args
-    if ((mapname === undefined) || (id === undefined)) {
-        throw new Error(`${name} — missing required arguments!`);
-    }
-    
-    const this_map = areamaps[mapname];
 
-    // ERROR: non-extant map
-    if (this_map === undefined) {
-        throw new Error(`${name} — areamap "${mapname}" not found!`);
-    }
-    // ERROR: non-extant area
-    else if (this_map.mapareas[id] === undefined) {
-        throw new Error(`${name} — areamap "${mapname}" — area "${id}" not found!`);
-    }
-    // ERROR: walls don't have exits
-    else if (this_map.mapareas[id].type === 'wall') {
-        throw new Error(`${name} — areamap "${mapname}" — area "${id}" is a wall, walls have no exits!`);
-    }
-    
-    return structuredClone(this_map.exits[id]);
-}
 
 
 // █████ █   █ ████   ████   ████ █████
@@ -954,12 +925,12 @@ function get_exits(argObj) {
 // SECTION: expose functions
 
 window.Areamap = {
+    get_map,
     new_map,
     create_rose,
-    begin_mapmove,
+    create_mapview,
     set_scripts,
-    get_exits,
-    get_areas,
+    begin_mapmove,
 };
 
 })();

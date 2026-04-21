@@ -1,3 +1,52 @@
+
+function get_areas(argObj) {
+    const { mapname } = argObj;
+    const name = 'Areamap.get_areas';
+    
+    // ERROR: missing args
+    if (mapname === undefined) {
+        throw new Error(`${name} — missing required arguments!`);
+    }
+    
+    const this_map = areamaps[mapname];
+
+    // ERROR: non-extant map
+    if (this_map === undefined) {
+        throw new Error(`${name} — areamap "${mapname}" not found!`);
+    }
+    
+    return structuredClone(this_map.mapareas);
+}
+
+// fetch exits for a given map & area
+function get_exits(argObj) {
+    const { mapname, id } = argObj;
+    const name = 'Areamap.get_exits';
+    
+    // ERROR: missing args
+    if ((mapname === undefined) || (id === undefined)) {
+        throw new Error(`${name} — missing required arguments!`);
+    }
+    
+    const this_map = areamaps[mapname];
+
+    // ERROR: non-extant map
+    if (this_map === undefined) {
+        throw new Error(`${name} — areamap "${mapname}" not found!`);
+    }
+    // ERROR: non-extant area
+    else if (this_map.mapareas[id] === undefined) {
+        throw new Error(`${name} — areamap "${mapname}" — area "${id}" not found!`);
+    }
+    // ERROR: walls don't have exits
+    else if (this_map.mapareas[id].type === 'wall') {
+        throw new Error(`${name} — areamap "${mapname}" — area "${id}" is a wall, walls have no exits!`);
+    }
+    
+    return structuredClone(this_map.exits[id]);
+}
+
+
 // alternate method to create rose that extracts out the creation of each direction
 function create_areamap_links(argObj) {
     const { mapname, dir } = argObj;
