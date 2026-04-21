@@ -385,11 +385,11 @@ setup['@areamap/options'] = options;
 
 
 
-// █    █ █████ █     █       █    █  ███  ████
-// ██   █ █     █     █       ██  ██ █   █ █   █
-// █ █  █ ███   █  █  █       █ ██ █ █████ ████
-// █  █ █ █     █ █ █ █       █    █ █   █ █
-// █   ██ █████  █   █  █████ █    █ █   █ █
+// █    █ █████ █     █     █    █  ███  ████
+// ██   █ █     █     █     ██  ██ █   █ █   █
+// █ █  █ ███   █  █  █     █ ██ █ █████ ████
+// █  █ █ █     █ █ █ █     █    █ █   █ █
+// █   ██ █████  █   █      █    █ █   █ █
 // SECTION: new_map function & macro wrapper
 // used to define a map so that a player can navigate through it using the regionrose macro
 // comes in both 4 and 8 wind variants
@@ -449,19 +449,13 @@ Macro.add(['newareamap', 'new_areamap'], {
                     required: true,
                     type: 'string',
                 },
-                origin: {
-                    type: 'string',
-                },
-                target: {
-                    type: 'string',
-                },
                 disabled: {
                     type: 'string',
                 },
                 hidden: {
                     type: 'string',
                 },
-                prevented: {
+                blocked: {
                     type: 'string',
                 },
             };
@@ -585,14 +579,6 @@ function new_map(argObj) {
             sv_name : argObj?.mapvars?.position ?? options.default.position_story_variable,
             val     : '',
         },
-        origin: {
-            sv_name : argObj?.mapvars?.origin,
-            val     : '',
-        },
-        target: {
-            sv_name : argObj?.mapvars?.target,
-            val     : '',
-        },
         disabled: {
             sv_name : argObj?.mapvars?.disabled,
             val     : Object.keys(mapareas).reduce((obj, area) => { obj[area] = false; return obj; }, {}),
@@ -601,8 +587,8 @@ function new_map(argObj) {
             sv_name : argObj?.mapvars?.hidden,
             val     : Object.keys(mapareas).reduce((obj, area) => { obj[area] = false; return obj; }, {}),
         },
-        prevented: {
-            sv_name : argObj?.mapvars?.prevented,
+        blocked: {
+            sv_name : argObj?.mapvars?.blocked,
             val     : Object.keys(mapareas).reduce((obj, area) => { obj[area] = false; return obj; }, {}),
         },
     };
@@ -846,7 +832,7 @@ function create_rose(argObj) {
         begin_mapmove({
             mapname,
             id_target,
-            abort: false,
+            force_abort: false,
         });
         if (autoupdate) {
             $rose.replaceWith(create_rose(argObj));
@@ -925,8 +911,8 @@ function set_scripts(argObj) {
     const name = argObj.name ?? 'Areamap.set_scripts';
     
     // ERROR: no map name provided
-    if (mapname === undefined) {
-        throw new Error(`${name} — missing mapname argument`);
+    if ((mapname === undefined) || (scripts === undefined)) {
+        throw new Error(`${name} — missing required arguments!`);
     }
     
     const this_map = areamaps[mapname];
@@ -993,7 +979,7 @@ Macro.add(['areamapmove', 'areamap_move'], {
                 type: 'string',
                 aliases: ['target','id', 'area'],
             },
-            abort: {
+            force_abort: {
                 type: 'boolean',
             },
         };
@@ -1010,13 +996,24 @@ function begin_mapmove(argObj) {
 
     const { mapname, id_target } = argObj;
     const name = argObj.name ?? 'Areamap.begin_mapmove';
-    const abort = argObj.abort ?? false;    // default value
+    const force_abort = argObj.force_abort ?? false;    // default value
 
+    // ERROR: missing args
+    if ((mapname === undefined) || (id_target === undefined)) {
+        throw new Error(`${name} — missing required arguments!`);
+    }
+    
     const this_map = areamaps[mapname];
+
+    // ERROR: map not found
+    if (this_map === undefined) {
+        throw new Error(`${name} — areamap "${mapname}" not found!`);
+    }
+
     const id_origin = State.getVar(this_map.mapvars.position);
 
     // fire began event
-    $('#passages').trigger('areamap:mapmove_began', { mapname, id_origin, id_target, abort });
+    $('#passages').trigger('areamap:mapmove_began', { mapname, id_origin, id_target, force_abort });
 
     // check for any scripts to fire when beginning an attempt
     const scripts_attempt = this_map.scripts.filter(script => script.type === 'onmapattempt');
@@ -1038,12 +1035,17 @@ $(document).on('areamap:mapmove_began', (event, argObj) => {
 
 // resolves map movement procedure
 function resolve_mapmove(argObj) {
-    const { mapname, id_target, abort } = argObj;
+    const { mapname, id_target, force_abort } = argObj;
     const name = argObj.name ?? 'Areamap.resolve_mapmove';
     const this_map = areamaps[mapname];
     const id_origin = State.getVar(this_map.mapvars.position);
+    const blocked   = force_abort 
+                        ? true 
+                        : this_map.mapvars?.blocked !== undefined
+                            ? State.getVar(this_map.mapvars.blocked)[id_target]
+                            : false;
 
-    if (! abort) {
+    if (! blocked) {
         // check for any onmapstart scripts
         const scripts_leave = this_map.scripts.filter(script => script.type === 'onmapstart');
         for (const script of scripts_leave) {
@@ -1090,7 +1092,7 @@ function resolve_mapmove(argObj) {
         mapname, 
         id_origin, 
         id_target, 
-        succeeded: ! abort
+        succeeded: ! blocked,
     });
 }
 
@@ -1130,10 +1132,7 @@ function getExits(argObj) {
     const name = 'Areamap.getExits';
     
     // ERROR: missing args
-    if (
-        (mapname === undefined) ||
-        (id === undefined)
-    ) {
+    if ((mapname === undefined) || (id === undefined)) {
         throw new Error(`${name} — missing required arguments!`);
     }
     
@@ -1215,9 +1214,7 @@ window.Areamap = {
 &lt;&lt;mapareas setup.areas&gt;&gt;
 &lt;&lt;mapvars
     position    &#39;$position&#39;
-    origin      &#39;$origin&#39;
-    target      &#39;$target&#39;
-    prevented   &#39;$prevented&#39;
+    hidden      &#39;$hidden&#39;
     disabled    &#39;$disabled&#39;
 &gt;&gt;
 &lt;&lt;/new_areamap&gt;&gt;

@@ -45,9 +45,7 @@ Walach Home - areamap demo
 <<mapareas setup.areas>>
 <<mapvars
     position    '$position'
-    origin      '$origin'
-    target      '$target'
-    prevented   '$prevented'
+    hidden      '$hidden'
     disabled    '$disabled'
 >>
 <</new_areamap>>
