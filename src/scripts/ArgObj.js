@@ -21,6 +21,8 @@
 //////////////////////////////////////////////////
 class ArgObj {
 
+    #ctx; // private field that stores data passed between methods
+
     /**
      * Creates an argument object from the this.args of a SugarCube macro
      * @param {string} id - id, used for error codes
@@ -32,28 +34,30 @@ class ArgObj {
     constructor(id, template, args_in) {
 
         //////////////////////////////////////////////////
-        // ERROR: missing required input
+        // ERROR: invalid id — undefined, not a string, not empty string
         if (
-            (typeof id === 'undefined') ||
-            (typeof template === 'undefined') ||
-            (typeof args_in === 'undefined')
-        ){
-            throw new Error(`ArgObj - constructor requires an "id", "template", and "args_in", in that order; FAILED`)
+            (typeof id !== 'string') || 
+            (id.length === 0)
+        ) {
+            throw new Error(`ArgObj - invalid id "${id}", should be a string; FAILED`)
         }
-        // ERROR: id should be a string
-        if (typeof id !== 'string') {
-            throw new Error(`ArgObj - id for constructor should be a string; FAILED`)
+        // ERROR: invalid template — undefined, not an object, or an empty object
+        else if (
+            (typeof template !== 'object') || 
+            (Object.keys(template).length === 0)
+        ) {
+            throw new Error(`ArgObj - invalid template "${template}", should be a non-empty object; FAILED`)
         }
-        // ERROR: empty template
-        const keys = Object.keys(template);
-        if (! keys.length) {
-            throw new Error(`${id} - ArgObj "template" can't be empty; FAILED`)
+        // ERROR: invalid args_in — undefined or not an array
+        else if (! Array.isArray(args_in)) {
+            throw new Error(`ArgObj - invalid args_in "${args_in}", should be an array; FAILED`)
         }
         // WARNING: empty args_in
-        if (! args_in.length) {
+        else if (args_in.length === 0) {
             console.warn(`${id} - ArgObj "args_in" is empty, no args to parse; ABORTED`);
-            return
+            return this;
         }
+        const keys = Object.keys(template);
 
         //////////////////////////////////////////////////
         // create aliases object
@@ -85,20 +89,17 @@ class ArgObj {
         }
         catch (error) {
             console.error(`${id} - ArgObj failed to parse aliases`);
-            console.error(error);
+            throw error;
         }
         
-        // save vars to #data
-        this["#data"] = {id, template, args_in, keys, aliases};
+        // save vars to #ctx
+        this.#ctx = {id, template, args_in, keys, aliases};
 
         // go through every arg
         let i = 0;
-
         try {
             while (i < args_in.length) {
-
                 const arg_this = args_in[i];
-
                 const key_this = aliases[arg_this];
                     // {object} input
                     if (
@@ -120,7 +121,7 @@ class ArgObj {
         }
         catch (error) {
             console.error(`${id} - ArgObj failed to parse arguments`);
-            console.error(error);
+            throw error;
         }
         
         // check all required keys were provided
@@ -131,14 +132,11 @@ class ArgObj {
                 throw new Error(`${id} - macro input parsing failed, required key "${k}" not provided; FAILED`);
             }
         }
-
-        // delete #data
-        delete this["#data"];
     }
 
     // parse {object} input
     #parse_obj(i) {
-        const { id, args_in, aliases } = this["#data"];
+        const { id, args_in, aliases } = this.#ctx;
         const arg_this = args_in[i];
         try {
             for (const k in arg_this) {
@@ -153,16 +151,16 @@ class ArgObj {
                 this.#write_value(key_this, val_this);
             }
             // i increments by 1
-            return 1
+            return 1;
         }
         catch (error) {
             console.error(`${id} - ArgObj failed to parse {object} input at ${arg_this}`);
-            console.error(error);
+            throw error;
         }
     }
     // parse key value pairs
     #parse_kvp(i) {
-        const { id, args_in, aliases } = this["#data"];
+        const { id, args_in, aliases } = this.#ctx;
         const arg_this = args_in[i];
         const key_this = aliases[arg_this];
         const val_this = args_in[i + 1];
@@ -173,17 +171,17 @@ class ArgObj {
             }
             this.#write_value(key_this, val_this);
             // i increments by 1
-            return 2
+            return 2;
         }
         catch (error) {
             console.error(`${id} - ArgObj failed to parse key value pair at "${arg_this}"`);
-            console.error(error);
+            throw error;
         }
     }
 
     // write value, ie. create property on ArgObj instance
     #write_value(key_this, val_this) {
-        const { id, template } = this["#data"];
+        const { id, template } = this.#ctx;
         // only check types if provided
         if (typeof template[key_this].type !== 'undefined') {
             // convert types to array
@@ -192,7 +190,7 @@ class ArgObj {
                                 : [template[key_this].type];
             // ERROR: failed type validation, author error
             if (! typeArr.includes(typeof val_this)) {
-                throw new Error(`${id} - macro input parser failed to parse key value pair at key "${arg_this}", "${val_this}" is an invalid type ("${typeof val_this}"), expected ${typeArr.toString()}; FAILED`)
+                throw new Error(`${id} - macro input parser failed to parse key value pair at key "${key_this}", "${val_this}" is an invalid type ("${typeof val_this}"), expected ${typeArr.toString()}; FAILED`);
             }
         }
         // WARNING: clobbering, author warning
@@ -203,4 +201,3 @@ class ArgObj {
         this[key_this] = val_this;
     }
 }
-

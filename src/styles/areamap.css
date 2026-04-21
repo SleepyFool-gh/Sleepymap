@@ -1,52 +1,48 @@
 .macro-areamap-rose {
-    display: grid;
-    grid-template-columns: repeat(3, auto);
-    grid-template-rows: repeat(3, auto);
-    border-top: 1px dotted white;
-    border-left: 1px dotted white;
+    display: inline-grid;
+    grid-template-columns: repeat(3, 10rem);
+    grid-template-rows: repeat(3, 5rem);
+    position: relative;
 }
+    .macro-areamap-rosebg,
+    .macro-areamap-mapviewbg {
+        position: absolute;
+        height: 100%;
+        width: 100%;
+        z-index: -1;
+    }
+        .macro-areamap-rosebg > *,
+        .macro-areamap-mapviewbg > * {
+            height: 100%;
+            width: 100%;
+        }
     .macro-areamap-dir {
         display: flex;
         align-items: center;
         justify-content: center;
         flex-direction: column;
         min-height: 3em;
-        border-right: 1px dotted white;
-        border-bottom: 1px dotted white;
     }
         .macro-areamap-dir[data-dir='C'] {
+            font-weight: bold;
             grid-column: 2;
             grid-row: 2;
         }
-        .macro-areamap-dir[data-dir='N'] {
-            grid-column: 2;
-            grid-row: 1;
-        }
-        .macro-areamap-dir[data-dir='E'] {
-            grid-column: 3;
-            grid-row: 2;
-        }
-        .macro-areamap-dir[data-dir='S'] {
-            grid-column: 2;
-            grid-row: 3;
-        }
-        .macro-areamap-dir[data-dir='W'] {
-            grid-column: 1;
-            grid-row: 2;
-        }
-        .macro-areamap-dir[data-dir='NE'] {
-            grid-column: 3;
-            grid-row: 1;
-        }
-        .macro-areamap-dir[data-dir='SE'] {
-            grid-column: 3;
-            grid-row: 3;
-        }
-        .macro-areamap-dir[data-dir='SW'] {
-            grid-column: 1;
-            grid-row: 3;
-        }
-        .macro-areamap-dir[data-dir='NW'] {
-            grid-column: 1;
-            grid-row: 1;
-        }
+.macro-areamap-mapview {
+    display: grid;
+    grid-template-columns: repeat(var(--columns), 1fr);
+    grid-auto-rows: 4rem;
+    position: relative;
+}
+    .macro-areamap-tile {
+        height: 100%;
+        width: 100%;
+        display: grid;
+        place-content: center;
+    }
+    .macro-areamap-position {
+        font-weight: bold;
+    }
+    .macro-areamap-tile:not(.macro-areamap-position):not(.macro-areamap-link) {
+        color: rgba(177, 177, 177, .6);
+    }

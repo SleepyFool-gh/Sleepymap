@@ -105,57 +105,53 @@ var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZa
 		<div id="init-loading"><div>Loading&hellip;</div></div>
 	</div>
 	<!-- UUID://B61B7BF9-BD48-4140-8DFC-9AF87D83CDF0// --><tw-storydata name="Walach Home - areamap demo" startnode="2" creator="Tweego" creator-version="2.1.1+81d1d71" ifid="B61B7BF9-BD48-4140-8DFC-9AF87D83CDF0" zoom="1" format="SugarCube" format-version="2.37.3" options="" hidden><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css">.macro-areamap-rose {
-    display: grid;
-    grid-template-columns: repeat(3, auto);
-    grid-template-rows: repeat(3, auto);
-    border-top: 1px dotted white;
-    border-left: 1px dotted white;
+    display: inline-grid;
+    grid-template-columns: repeat(3, 10rem);
+    grid-template-rows: repeat(3, 5rem);
+    position: relative;
 }
+    .macro-areamap-rosebg,
+    .macro-areamap-mapviewbg {
+        position: absolute;
+        height: 100%;
+        width: 100%;
+        z-index: -1;
+    }
+        .macro-areamap-rosebg > *,
+        .macro-areamap-mapviewbg > * {
+            height: 100%;
+            width: 100%;
+        }
     .macro-areamap-dir {
         display: flex;
         align-items: center;
         justify-content: center;
         flex-direction: column;
         min-height: 3em;
-        border-right: 1px dotted white;
-        border-bottom: 1px dotted white;
     }
         .macro-areamap-dir[data-dir='C'] {
+            font-weight: bold;
             grid-column: 2;
             grid-row: 2;
         }
-        .macro-areamap-dir[data-dir='N'] {
-            grid-column: 2;
-            grid-row: 1;
-        }
-        .macro-areamap-dir[data-dir='E'] {
-            grid-column: 3;
-            grid-row: 2;
-        }
-        .macro-areamap-dir[data-dir='S'] {
-            grid-column: 2;
-            grid-row: 3;
-        }
-        .macro-areamap-dir[data-dir='W'] {
-            grid-column: 1;
-            grid-row: 2;
-        }
-        .macro-areamap-dir[data-dir='NE'] {
-            grid-column: 3;
-            grid-row: 1;
-        }
-        .macro-areamap-dir[data-dir='SE'] {
-            grid-column: 3;
-            grid-row: 3;
-        }
-        .macro-areamap-dir[data-dir='SW'] {
-            grid-column: 1;
-            grid-row: 3;
-        }
-        .macro-areamap-dir[data-dir='NW'] {
-            grid-column: 1;
-            grid-row: 1;
-        }</style><script role="script" id="twine-user-script" type="text/twine-javascript">/* twine-user-script #1: "ArgObj.js" */
+.macro-areamap-mapview {
+    display: grid;
+    grid-template-columns: repeat(var(--columns), 1fr);
+    grid-auto-rows: 4rem;
+    position: relative;
+}
+    .macro-areamap-tile {
+        height: 100%;
+        width: 100%;
+        display: grid;
+        place-content: center;
+    }
+    .macro-areamap-position {
+        font-weight: bold;
+    }
+    .macro-areamap-tile:not(.macro-areamap-position):not(.macro-areamap-link) {
+        color: rgba(177, 177, 177, .6);
+    }</style><script role="script" id="twine-user-script" type="text/twine-javascript">/* twine-user-script #1: "ArgObj.js" */
 //  ███  ████   ███   ████  ████      █
 // █   █ █   █ █     █    █ █   █     █
 // █████ ████  █  ██ █    █ ████      █
@@ -179,6 +175,8 @@ var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZa
 //////////////////////////////////////////////////
 class ArgObj {
 
+    #ctx; // private field that stores data passed between methods
+
     /**
      * Creates an argument object from the this.args of a SugarCube macro
      * @param {string} id - id, used for error codes
@@ -190,28 +188,30 @@ class ArgObj {
     constructor(id, template, args_in) {
 
         //////////////////////////////////////////////////
-        // ERROR: missing required input
+        // ERROR: invalid id — undefined, not a string, not empty string
         if (
-            (typeof id === 'undefined') ||
-            (typeof template === 'undefined') ||
-            (typeof args_in === 'undefined')
-        ){
-            throw new Error(`ArgObj - constructor requires an "id", "template", and "args_in", in that order; FAILED`)
+            (typeof id !== 'string') || 
+            (id.length === 0)
+        ) {
+            throw new Error(`ArgObj - invalid id "${id}", should be a string; FAILED`)
         }
-        // ERROR: id should be a string
-        if (typeof id !== 'string') {
-            throw new Error(`ArgObj - id for constructor should be a string; FAILED`)
+        // ERROR: invalid template — undefined, not an object, or an empty object
+        else if (
+            (typeof template !== 'object') || 
+            (Object.keys(template).length === 0)
+        ) {
+            throw new Error(`ArgObj - invalid template "${template}", should be a non-empty object; FAILED`)
         }
-        // ERROR: empty template
-        const keys = Object.keys(template);
-        if (! keys.length) {
-            throw new Error(`${id} - ArgObj "template" can't be empty; FAILED`)
+        // ERROR: invalid args_in — undefined or not an array
+        else if (! Array.isArray(args_in)) {
+            throw new Error(`ArgObj - invalid args_in "${args_in}", should be an array; FAILED`)
         }
         // WARNING: empty args_in
-        if (! args_in.length) {
+        else if (args_in.length === 0) {
             console.warn(`${id} - ArgObj "args_in" is empty, no args to parse; ABORTED`);
-            return
+            return this;
         }
+        const keys = Object.keys(template);
 
         //////////////////////////////////////////////////
         // create aliases object
@@ -243,20 +243,17 @@ class ArgObj {
         }
         catch (error) {
             console.error(`${id} - ArgObj failed to parse aliases`);
-            console.error(error);
+            throw error;
         }
         
-        // save vars to #data
-        this["#data"] = {id, template, args_in, keys, aliases};
+        // save vars to #ctx
+        this.#ctx = {id, template, args_in, keys, aliases};
 
         // go through every arg
         let i = 0;
-
         try {
             while (i < args_in.length) {
-
                 const arg_this = args_in[i];
-
                 const key_this = aliases[arg_this];
                     // {object} input
                     if (
@@ -278,7 +275,7 @@ class ArgObj {
         }
         catch (error) {
             console.error(`${id} - ArgObj failed to parse arguments`);
-            console.error(error);
+            throw error;
         }
         
         // check all required keys were provided
@@ -289,14 +286,11 @@ class ArgObj {
                 throw new Error(`${id} - macro input parsing failed, required key "${k}" not provided; FAILED`);
             }
         }
-
-        // delete #data
-        delete this["#data"];
     }
 
     // parse {object} input
     #parse_obj(i) {
-        const { id, args_in, aliases } = this["#data"];
+        const { id, args_in, aliases } = this.#ctx;
         const arg_this = args_in[i];
         try {
             for (const k in arg_this) {
@@ -311,16 +305,16 @@ class ArgObj {
                 this.#write_value(key_this, val_this);
             }
             // i increments by 1
-            return 1
+            return 1;
         }
         catch (error) {
             console.error(`${id} - ArgObj failed to parse {object} input at ${arg_this}`);
-            console.error(error);
+            throw error;
         }
     }
     // parse key value pairs
     #parse_kvp(i) {
-        const { id, args_in, aliases } = this["#data"];
+        const { id, args_in, aliases } = this.#ctx;
         const arg_this = args_in[i];
         const key_this = aliases[arg_this];
         const val_this = args_in[i + 1];
@@ -331,17 +325,17 @@ class ArgObj {
             }
             this.#write_value(key_this, val_this);
             // i increments by 1
-            return 2
+            return 2;
         }
         catch (error) {
             console.error(`${id} - ArgObj failed to parse key value pair at "${arg_this}"`);
-            console.error(error);
+            throw error;
         }
     }
 
     // write value, ie. create property on ArgObj instance
     #write_value(key_this, val_this) {
-        const { id, template } = this["#data"];
+        const { id, template } = this.#ctx;
         // only check types if provided
         if (typeof template[key_this].type !== 'undefined') {
             // convert types to array
@@ -350,7 +344,7 @@ class ArgObj {
                                 : [template[key_this].type];
             // ERROR: failed type validation, author error
             if (! typeArr.includes(typeof val_this)) {
-                throw new Error(`${id} - macro input parser failed to parse key value pair at key "${arg_this}", "${val_this}" is an invalid type ("${typeof val_this}"), expected ${typeArr.toString()}; FAILED`)
+                throw new Error(`${id} - macro input parser failed to parse key value pair at key "${key_this}", "${val_this}" is an invalid type ("${typeof val_this}"), expected ${typeArr.toString()}; FAILED`);
             }
         }
         // WARNING: clobbering, author warning
@@ -361,7 +355,6 @@ class ArgObj {
         this[key_this] = val_this;
     }
 }
-
 /* twine-user-script #2: "areamap.js" */
 (() => {
 
@@ -377,7 +370,10 @@ const options = {
         wall_id                 : ".",
         diagonals               : false,
         position_story_variable : "@areamap/pos",
-        rose_autoupdate         : true,
+        autoupdate_rose         : true,
+        autoupdate_mapview      : true,
+        clickable_mapview       : true,
+        show_names_on_mapview   : true,
     }
 }
 setup['@areamap/options'] = options;
@@ -409,7 +405,7 @@ Macro.add(['newareamap', 'new_areamap'], {
 
         // ERROR: macro being called outside StoryInit
         if (turns() !== 0) {
-            return this.error(`${name} — macro must be called during StoryInit!`);
+            throw new Error(`${name} — macro must be called during StoryInit!`);
         }
 
         // parse args to argsObj
@@ -444,9 +440,13 @@ Macro.add(['newareamap', 'new_areamap'], {
         const payload_mapvars = this.payload.find( p => p.name === 'mapvars' );
         if (payload_mapvars) {
             const args = payload_mapvars.args;
+            // REMINDER: changing anything here also requires changing MAPVAR_DEFAULTS
             const template = {
                 position: {
                     required: true,
+                    type: 'string',
+                },
+                frozen: {
                     type: 'string',
                 },
                 disabled: {
@@ -574,10 +574,15 @@ function new_map(argObj) {
     // create mapvars
     const mapvars = this_map.mapvars;
 
+    // REMINDER: changing anything here also requires changing <<mapvars>> template
     const MAPVAR_DEFAULTS = {
         position: {
             sv_name : argObj?.mapvars?.position ?? options.default.position_story_variable,
             val     : '',
+        },
+        frozen: {
+            sv_name : argObj?.mapvars?.frozen,
+            val     : false,
         },
         disabled: {
             sv_name : argObj?.mapvars?.disabled,
@@ -740,6 +745,10 @@ Macro.add(['place_areamap_rose'], {
             autoupdate: {
                 type: 'boolean',
             },
+            background: {
+                type: 'string',
+                aliases: 'bg',
+            }
         };
         const argObj = new ArgObj(name, template, this.args);
         create_rose({
@@ -754,8 +763,8 @@ Macro.add(['place_areamap_rose'], {
 function create_rose(argObj) {
 
     // get values, use default as needed
-    const { mapname } = argObj;
-    const autoupdate = argObj.autoupdate ?? options.default.rose_autoupdate;    // default value
+    const { mapname, background } = argObj;
+    const autoupdate = argObj.autoupdate ?? options.default.autoupdate_rose;    // default value
     const name = argObj.name ?? 'Areamap.create_rose';
 
     // ERROR: no mapname provided
@@ -773,8 +782,15 @@ function create_rose(argObj) {
     const { mapareas, mapvars, exits } = this_map;
 
     const position  = State.getVar(mapvars.position);
-    const disabled  = mapvars.disabled ? State.getVar(mapvars.disabled) : null;
-    const hidden    = mapvars.hidden   ? State.getVar(mapvars.hidden)   : null;
+    const frozen    = mapvars.frozen !== undefined      
+                        ? State.getVar(mapvars.frozen) 
+                        : false;
+    const disabled  = mapvars.disabled !== undefined    
+                        ? State.getVar(mapvars.disabled) 
+                        : null;
+    const hidden    = mapvars.hidden   !== undefined    
+                        ? State.getVar(mapvars.hidden)   
+                        : null;
 
     // ERROR: invalid position, either not set or non-existing or a wall
     if (
@@ -789,7 +805,16 @@ function create_rose(argObj) {
     const $rose =   $(document.createElement('div'));
     $rose
         .addClass('macro-areamap-rose')
-        .attr('data-map', mapname);
+        .attr('data-mapname', mapname)
+        .attr('data-position', position);
+
+    // insert background
+    if (background) {
+        $(document.createElement('div'))
+            .addClass('macro-areamap-rosebg')
+            .html(background)
+            .appendTo($rose);
+    }
 
     // create center
     $(document.createElement('div'))
@@ -800,7 +825,7 @@ function create_rose(argObj) {
         .appendTo($rose);
 
     // create each dir
-    for (const dir of ['N', 'E', 'S', 'W', 'NE', 'NW', 'SE', 'SW']) {
+    for (const dir of ['NW', 'N', 'NE', 'W', 'E', 'SW', 'S', 'SE']) {
         // create dir container
         const $dir  = $(document.createElement('div'));
         $dir
@@ -808,7 +833,7 @@ function create_rose(argObj) {
             .attr('data-dir', dir)
             .appendTo($rose);
 
-        // add links
+        // add links to rose
         // diagonals will be empty if not enabled
         for (const id of exits[position][dir]) {
             const maparea = mapareas[id];
@@ -817,8 +842,8 @@ function create_rose(argObj) {
                 .addClass('macro-areamap-link')
                 .attr('data-id', id)
                 .attr('data-dir', dir)
-                .attr('data-area', maparea.name)
-                .prop('disabled', !! disabled?.[id])
+                .attr('data-maparea', maparea.name)
+                .prop('disabled', disabled?.[id] || frozen)
                 .css({
                     visibility: hidden?.[id] ? 'hidden' : 'visible',
                 })
@@ -827,19 +852,24 @@ function create_rose(argObj) {
         }
     }
 
+    // click listener that triggers mapmove & rose refresh
     $rose.on('click', '.macro-areamap-link', function(ev) {
         const id_target = $(ev.target).attr('data-id');
         begin_mapmove({
             mapname,
             id_target,
-            force_abort: false,
         });
-        if (autoupdate) {
-            $rose.replaceWith(create_rose(argObj));
-        }
     });
+    // if autoupdate enabled, updates on any mapmove
+    if (autoupdate) {
+        $(document).one('areamap:mapmove_resolved', function(ev, data) {
+            if (data.mapname === mapname){
+                $rose.replaceWith(create_rose(argObj));
+            }
+        });
+    }
 
-    return $rose
+    return $rose;
 }
 
 
@@ -866,9 +896,9 @@ Macro.add(['set_areascripts','setareascripts'], {
 
         // ERROR: macro being called outside StoryInit
         if (turns() !== 0) {
-            return this.error(`${name} — macro must be called during StoryInit!`);
+            throw new Error(`${name} — macro must be called during StoryInit!`);
         }
-        
+
         const template = {
             mapname: {
                 required: true,
@@ -878,6 +908,7 @@ Macro.add(['set_areascripts','setareascripts'], {
         const argObj = new ArgObj(name, template, this.args);
         const mapname = argObj.mapname;
 
+        // parse each payload, push to array, attach to argObj
         const scripts = [];
         for(let i = 1; i < this.payload.length; i++) {
             const p = this.payload[i];
@@ -1029,7 +1060,7 @@ function begin_mapmove(argObj) {
 }
 
 // document listener to catch events an resolve
-$(document).on('areamap:mapmove_began', (event, argObj) => {
+$(document).on('areamap:mapmove_began', (ev, argObj) => {
     resolve_mapmove(argObj);
 });
 
@@ -1039,13 +1070,13 @@ function resolve_mapmove(argObj) {
     const name = argObj.name ?? 'Areamap.resolve_mapmove';
     const this_map = areamaps[mapname];
     const id_origin = State.getVar(this_map.mapvars.position);
-    const blocked   = force_abort 
-                        ? true 
+    const succeeded   = force_abort 
+                        ? false 
                         : this_map.mapvars?.blocked !== undefined
-                            ? State.getVar(this_map.mapvars.blocked)[id_target]
-                            : false;
+                            ? ! State.getVar(this_map.mapvars.blocked)[id_target]
+                            : true;
 
-    if (! blocked) {
+    if (succeeded) {
         // check for any onmapstart scripts
         const scripts_leave = this_map.scripts.filter(script => script.type === 'onmapstart');
         for (const script of scripts_leave) {
@@ -1092,10 +1123,133 @@ function resolve_mapmove(argObj) {
         mapname, 
         id_origin, 
         id_target, 
-        succeeded: ! blocked,
+        succeeded,
     });
 }
 
+
+
+
+// █    █  ███  ████  █   █ ███ █████ █     █
+// ██  ██ █   █ █   █ █   █  █  █     █     █
+// █ ██ █ █████ ████  █   █  █  ███   █  █  █
+// █    █ █   █ █      █ █   █  █     █ █ █ █
+// █    █ █   █ █       █   ███ █████  █   █
+// SECTION: mapview, the visual map to be displayed
+
+// macro wrapper, creates & places mapview
+Macro.add(['place_mapview', 'placemapview'], {
+    handler: function() {
+        const name = this.name;
+        const template = {
+            mapname: {
+                required: true,
+                type: 'string',
+            },
+            autoupdate: {
+                type: 'boolean',
+            },
+            clickable: {
+                type: 'boolean',
+            },
+            background: {
+                type: 'string',
+                aliases: 'bg',
+            },
+            show_names: {
+                type: 'boolean',
+            },
+        };
+        const argObj = new ArgObj(name, template, this.args);
+        create_mapview({
+            ...argObj,
+            name,
+        }).appendTo(this.output);
+    }
+});
+
+// returns map object
+function create_mapview(argObj) {
+    const { mapname, background } = argObj;
+    const name = argObj.name ?? 'Areamap.create_mapview';
+    const show_names    = argObj.show_names ?? options.default.show_names_on_mapview;   // default value
+    const autoupdate    = argObj.autoupdate ?? options.default.autoupdate_mapview;      // default value
+    const clickable     = argObj.clickable  ?? options.default.clickable_mapview;       // default value
+
+    // ERROR: missing args
+    if (mapname === undefined) {
+        throw new Error(`${name} — missing required args mapname!`);
+    }
+    
+    const this_map = areamaps[mapname];
+    const position = State.getVar(this_map.mapvars.position);
+    
+    // ERROR: non-extant map
+    if (this_map === undefined) {
+        throw new Error(`${name} — areamap "${mapname}" not found!`);
+    }
+    
+    // create map object
+    const $mapview = $(document.createElement('div'));
+    $mapview
+        .addClass('macro-areamap-mapview')
+        .attr('data-mapname', mapname)
+        .attr('data-position', position)
+        .css({
+            '--columns': this_map.columns,
+        });
+    
+
+    // append bg
+    if (background) {
+        $(document.createElement('div'))
+            .addClass('macro-areamap-mapviewbg')
+            .html(background)
+            .appendTo($mapview);
+    }
+
+    // get exits as an array
+    const exit_arr = Object.values(this_map.exits[position]);
+    // create & append tiles
+    for (const id of this_map.maparray) {
+        // if clickable & valid travel destination --> clickable
+        const link  = ! clickable
+                        ? false
+                        : this_map.mapareas[id].type === 'wall'
+                            ? false
+                            : exit_arr.some( dir => dir.has(id));
+        
+        const $tile = $(document.createElement(link ? 'a' : 'div'));
+        $tile
+            .addClass('macro-areamap-tile')
+            .addClass(link ? 'macro-areamap-link' : '')
+            .addClass(id === position ? 'macro-areamap-position' : '')
+            .attr('data-id', id)
+            .html(show_names ? this_map.mapareas[id].name : '');
+        $mapview.append($tile);
+    }
+
+    // if clickable add link functionality
+    if (clickable) {
+        $mapview.on('click', '.macro-areamap-link', function(ev) {
+            const id_target = $(ev.target).attr('data-id');
+            begin_mapmove({
+                mapname,
+                id_target,
+            });
+        });
+    }
+    // if autoupdate enabled, updates on any mapmove
+    if (autoupdate) {
+        $(document).one('areamap:mapmove_resolved', function(ev, data) {
+            if (data.mapname === mapname) {
+                $mapview.replaceWith(create_mapview(argObj));
+            }
+        });
+    }
+
+    return $mapview;
+}
 
 
 
@@ -1106,9 +1260,9 @@ function resolve_mapmove(argObj) {
 // █   █  ███  █   █
 // SECTION: auxiliary functions for JS things
 
-function getAreas(argObj) {
+function get_areas(argObj) {
     const { mapname } = argObj;
-    const name = 'Areamap.getAreas';
+    const name = 'Areamap.get_areas';
     
     // ERROR: missing args
     if (mapname === undefined) {
@@ -1122,14 +1276,13 @@ function getAreas(argObj) {
         throw new Error(`${name} — areamap "${mapname}" not found!`);
     }
     
-    // return areas
     return structuredClone(this_map.mapareas);
 }
 
 // fetch exits for a given map & area
-function getExits(argObj) {
+function get_exits(argObj) {
     const { mapname, id } = argObj;
-    const name = 'Areamap.getExits';
+    const name = 'Areamap.get_exits';
     
     // ERROR: missing args
     if ((mapname === undefined) || (id === undefined)) {
@@ -1146,11 +1299,11 @@ function getExits(argObj) {
     else if (this_map.mapareas[id] === undefined) {
         throw new Error(`${name} — areamap "${mapname}" — area "${id}" not found!`);
     }
+    // ERROR: walls don't have exits
     else if (this_map.mapareas[id].type === 'wall') {
         throw new Error(`${name} — areamap "${mapname}" — area "${id}" is a wall, walls have no exits!`);
     }
     
-    // return exits
     return structuredClone(this_map.exits[id]);
 }
 
@@ -1167,8 +1320,8 @@ window.Areamap = {
     create_rose,
     begin_mapmove,
     set_scripts,
-    getExits,
-    getAreas,
+    get_exits,
+    get_areas,
 };
 
 })();
@@ -1230,12 +1383,15 @@ window.Areamap = {
         &lt;&lt;run console.log(&#39;from any!&#39;)&gt;&gt;
     &lt;&lt;onmapabort&gt;&gt;
         &lt;&lt;run console.log(&#39;aborted!&#39;)&gt;&gt;
-&lt;&lt;/set_areascripts&gt;&gt;</tw-passagedata><tw-passagedata pid="2" name="Start" tags="" position="225,100" size="100,100">&lt;&lt;place_areamap_rose mapname &#39;demo&#39;&gt;&gt;
-/* &lt;&lt;areamap_move
+&lt;&lt;/set_areascripts&gt;&gt;</tw-passagedata><tw-passagedata pid="2" name="Start" tags="" position="225,100" size="100,100">&lt;&lt;place_areamap_rose 
     mapname &#39;demo&#39;
-    area &#39;G&#39;
-    abort `1 &gt; 0`
-&gt;&gt; */
+    background &#39;&lt;img src=&quot;./assets/rose.png&quot;&gt;&#39;
+&gt;&gt;
+&lt;&lt;place_mapview 
+    mapname &#39;demo&#39; 
+    background &#39;&lt;img src=&quot;./assets/house.jpg&quot;&gt;&#39;
+    show_names true
+&gt;&gt;
 &lt;style&gt;
     .macro-showrose-rose {
         display: grid;

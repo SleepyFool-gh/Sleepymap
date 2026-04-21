@@ -64,12 +64,15 @@ Walach Home - areamap demo
 <</set_areascripts>>
 
 :: Start
-<<place_areamap_rose mapname 'demo'>>
-/* <<areamap_move
+<<place_areamap_rose 
     mapname 'demo'
-    area 'G'
-    abort `1 > 0`
->> */
+    background '<img src="./assets/rose.png">'
+>>
+<<place_mapview 
+    mapname 'demo' 
+    background '<img src="./assets/house.jpg">'
+    show_names true
+>>
 <style>
     .macro-showrose-rose {
         display: grid;
