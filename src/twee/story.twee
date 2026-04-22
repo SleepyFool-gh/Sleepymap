@@ -60,9 +60,16 @@ Walach Home - areamap demo
 <<place_areamap_rose 
     mapname 'demo'
     background '<img src="./assets/rose.png">'
+    autoupdate false
+>>
+<<place_areamap_rose 
+    mapname 'demo'
+    background '<img src="./assets/rose.png">'
+    autoupdate true
 >>
 <<place_mapview 
     mapname 'demo' 
     background '<img src="./assets/house.jpg">'
     show_names true
+    autoupdate true
 >>

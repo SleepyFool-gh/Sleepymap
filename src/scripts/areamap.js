@@ -449,7 +449,9 @@ function create_rose(argObj) {
     $rose
         .addClass('macro-areamap-rose')
         .attr('data-mapname', mapname)
-        .attr('data-position', position);
+        .attr('data-position', position)
+        .attr('data-autoupdate', autoupdate)
+        .data('argObj', argObj);
 
     // insert background
     if (background) {
@@ -504,12 +506,6 @@ function create_rose(argObj) {
             id_target,
         });
     });
-    // if autoupdate enabled, updates on any mapmove
-    if (autoupdate) {
-        $(document).one('areamap:mapmove_resolved', function(ev, data) {
-            $rose.replaceWith(create_rose(argObj));
-        });
-    }
 
     return $rose;
 }
@@ -582,6 +578,8 @@ function create_mapview(argObj) {
         .addClass('macro-areamap-mapview')
         .attr('data-mapname', mapname)
         .attr('data-position', position)
+        .attr('data-autoupdate', autoupdate)
+        .data('argObj', argObj)
         .css({
             '--columns': this_map.columns,
         });
@@ -626,15 +624,37 @@ function create_mapview(argObj) {
             });
         });
     }
-    // if autoupdate enabled, updates on any mapmove
-    if (autoupdate) {
-        $(document).one('areamap:mapmove_resolved', function(ev, data) {
-            $mapview.replaceWith(create_mapview(argObj));
-        });
-    }
 
     return $mapview;
 }
+
+
+
+
+//  ███  █   █ █████  ████  █   █ ████  ████   ███  █████ █████
+// █   █ █   █   █   █    █ █   █ █   █ █   █ █   █   █   █
+// █████ █   █   █   █    █ █   █ ████  █   █ █████   █   ███
+// █   █ █   █   █   █    █ █   █ █     █   █ █   █   █   █
+// █   █  ███    █    ████   ███  █     ████  █   █   █   █████
+// SECTION: rose & mapview autoupdate handler
+$(document).on('areamap:mapmove_resolved', function(ev, data) {
+    const $roses = $('.macro-areamap-rose[data-autoupdate="true"]');
+    $roses.each( function() {
+        const $rose = $(this);
+        const argObj = $rose.data('argObj');
+        if (argObj.mapname == data.mapname) {
+            $rose.replaceWith(create_rose(argObj));
+        }
+    });
+    const $mapviews = $('.macro-areamap-mapview[data-autoupdate="true"]');
+    $mapviews.each( function() {
+        const $mapview = $(this);
+        const argObj = $mapview.data('argObj');
+        if (argObj.mapname == data.mapname) {
+            $mapview.replaceWith(create_mapview(argObj));
+        }
+    });
+});
 
 
 
