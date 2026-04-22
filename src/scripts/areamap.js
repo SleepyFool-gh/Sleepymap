@@ -489,9 +489,9 @@ function create_rose(argObj) {
                 .attr('data-id', id)
                 .attr('data-dir', dir)
                 .attr('data-maparea', maparea.name)
-                .prop('disabled', disabled?.[id] || frozen)
+                .attr('disabled', disabled?.[id] || frozen)
                 .css({
-                    visibility: hidden?.[id] ? 'hidden' : 'visible',
+                    visibility: hidden?.[id] ? 'hidden' : '',
                 })
                 .html(maparea.name)
                 .appendTo($dir);
@@ -500,6 +500,11 @@ function create_rose(argObj) {
 
     // click listener that triggers mapmove & rose refresh
     $rose.on('click', '.macro-areamap-link', function(ev) {
+        // link disabled, do nothing
+        if ($(ev.target).attr('disabled')) {
+            return;
+        }
+        // attempt move to target
         const id_target = $(ev.target).attr('data-id');
         begin_mapmove({
             mapname,
@@ -564,8 +569,18 @@ function create_mapview(argObj) {
         throw new Error(`${name} — missing required args mapname!`);
     }
     
-    const this_map = areamaps[mapname];
-    const position = State.getVar(this_map.mapvars.position);
+    const this_map  = areamaps[mapname];
+    const mapvars   = this_map.mapvars;
+    const position  = State.getVar(this_map.mapvars.position);
+    const frozen    = mapvars.frozen !== undefined      
+                        ? State.getVar(mapvars.frozen) 
+                        : false;
+    const disabled  = mapvars.disabled !== undefined    
+                        ? State.getVar(mapvars.disabled) 
+                        : null;
+    const hidden    = mapvars.hidden   !== undefined    
+                        ? State.getVar(mapvars.hidden)   
+                        : null;
     
     // ERROR: non-extant map
     if (this_map === undefined) {
@@ -610,6 +625,10 @@ function create_mapview(argObj) {
             .addClass(link ? 'macro-areamap-link' : '')
             .addClass(id === position ? 'macro-areamap-position' : '')
             .attr('data-id', id)
+            .attr('disabled', disabled?.[id] || frozen)
+            .css({
+                visibility: hidden?.[id] ? 'hidden' : '',
+            })
             .html(show_names ? this_map.mapareas[id].name : '');
         $mapview.append($tile);
     }
@@ -617,6 +636,11 @@ function create_mapview(argObj) {
     // if clickable add link functionality
     if (clickable) {
         $mapview.on('click', '.macro-areamap-link', function(ev) {
+            // if disabled, do nothing
+            if ($(ev.target).attr('disabled')) {
+                return;
+            }
+            // attempt mapmove
             const id_target = $(ev.target).attr('data-id');
             begin_mapmove({
                 mapname,

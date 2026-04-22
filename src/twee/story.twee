@@ -55,6 +55,8 @@ Walach Home - areamap demo
         <<run console.log('aborted!')>>
 <</set_areascripts>>
 <<set $blocked['D'] = true>>
+<<set $disabled['K'] = true>>
+<<set $hidden['C'] = true>>
 
 :: Start
 <<place_areamap_rose 

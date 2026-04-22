@@ -847,7 +847,7 @@ function create_rose(argObj) {
                 .attr('data-id', id)
                 .attr('data-dir', dir)
                 .attr('data-maparea', maparea.name)
-                .prop('disabled', disabled?.[id] || frozen)
+                .attr('disabled', disabled?.[id] || frozen)
                 .css({
                     visibility: hidden?.[id] ? 'hidden' : 'visible',
                 })
@@ -858,40 +858,21 @@ function create_rose(argObj) {
 
     // click listener that triggers mapmove & rose refresh
     $rose.on('click', '.macro-areamap-link', function(ev) {
+        // link disabled, do nothing
+        if ($(ev.target).attr('disabled')) {
+            return;
+        }
+        // attempt move to target
         const id_target = $(ev.target).attr('data-id');
         begin_mapmove({
             mapname,
             id_target,
         });
     });
-    // if autoupdate enabled, updates on any mapmove
-    // if (autoupdate) {
-    //     $(document).one('areamap:mapmove_resolved', function(ev, data) {
-    //         $rose.replaceWith(create_rose(argObj));
-    //     });
-    // }
 
     return $rose;
 }
-// rose & mapview autoupdate handler
-$(document).on('areamap:mapmove_resolved', function(ev, data) {
-    const $roses = $('.macro-areamap-rose[data-autoupdate="true"]');
-    $roses.each( function() {
-        const $rose = $(this);
-        const argObj = $rose.data('argObj');
-        if (argObj.mapname == data.mapname) {
-            $rose.replaceWith(create_rose(argObj));
-        }
-    });
-    const $mapviews = $('.macro-areamap-mapview[data-autoupdate="true"]');
-    $mapviews.each( function() {
-        const $mapview = $(this);
-        const argObj = $mapview.data('argObj');
-        if (argObj.mapname == data.mapname) {
-            $mapview.replaceWith(create_mapview(argObj));
-        }
-    });
-});
+
 
 
 
@@ -946,8 +927,18 @@ function create_mapview(argObj) {
         throw new Error(`${name} — missing required args mapname!`);
     }
     
-    const this_map = areamaps[mapname];
-    const position = State.getVar(this_map.mapvars.position);
+    const this_map  = areamaps[mapname];
+    const mapvars   = this_map.mapvars;
+    const position  = State.getVar(this_map.mapvars.position);
+    const frozen    = mapvars.frozen !== undefined      
+                        ? State.getVar(mapvars.frozen) 
+                        : false;
+    const disabled  = mapvars.disabled !== undefined    
+                        ? State.getVar(mapvars.disabled) 
+                        : null;
+    const hidden    = mapvars.hidden   !== undefined    
+                        ? State.getVar(mapvars.hidden)   
+                        : null;
     
     // ERROR: non-extant map
     if (this_map === undefined) {
@@ -964,7 +955,7 @@ function create_mapview(argObj) {
         .data('argObj', argObj)
         .css({
             '--columns': this_map.columns,
-        })
+        });
     
 
     // append bg
@@ -992,6 +983,10 @@ function create_mapview(argObj) {
             .addClass(link ? 'macro-areamap-link' : '')
             .addClass(id === position ? 'macro-areamap-position' : '')
             .attr('data-id', id)
+            .attr('disabled', disabled?.[id] || frozen)
+            .css({
+                visibility: hidden?.[id] ? 'hidden' : '',
+            })
             .html(show_names ? this_map.mapareas[id].name : '');
         $mapview.append($tile);
     }
@@ -999,6 +994,11 @@ function create_mapview(argObj) {
     // if clickable add link functionality
     if (clickable) {
         $mapview.on('click', '.macro-areamap-link', function(ev) {
+            // if disabled, do nothing
+            if ($(ev.target).attr('disabled')) {
+                return;
+            }
+            // attempt mapmove
             const id_target = $(ev.target).attr('data-id');
             begin_mapmove({
                 mapname,
@@ -1006,15 +1006,37 @@ function create_mapview(argObj) {
             });
         });
     }
-    // // if autoupdate enabled, updates on any mapmove
-    // if (autoupdate) {
-    //     $(document).one('areamap:mapmove_resolved', function(ev, data) {
-    //         $mapview.replaceWith(create_mapview(argObj));
-    //     });
-    // }
 
     return $mapview;
 }
+
+
+
+
+//  ███  █   █ █████  ████  █   █ ████  ████   ███  █████ █████
+// █   █ █   █   █   █    █ █   █ █   █ █   █ █   █   █   █
+// █████ █   █   █   █    █ █   █ ████  █   █ █████   █   ███
+// █   █ █   █   █   █    █ █   █ █     █   █ █   █   █   █
+// █   █  ███    █    ████   ███  █     ████  █   █   █   █████
+// SECTION: rose & mapview autoupdate handler
+$(document).on('areamap:mapmove_resolved', function(ev, data) {
+    const $roses = $('.macro-areamap-rose[data-autoupdate="true"]');
+    $roses.each( function() {
+        const $rose = $(this);
+        const argObj = $rose.data('argObj');
+        if (argObj.mapname == data.mapname) {
+            $rose.replaceWith(create_rose(argObj));
+        }
+    });
+    const $mapviews = $('.macro-areamap-mapview[data-autoupdate="true"]');
+    $mapviews.each( function() {
+        const $mapview = $(this);
+        const argObj = $mapview.data('argObj');
+        if (argObj.mapname == data.mapname) {
+            $mapview.replaceWith(create_mapview(argObj));
+        }
+    });
+});
 
 
 
@@ -1365,7 +1387,9 @@ window.Areamap = {
     &lt;&lt;onmapabort&gt;&gt;
         &lt;&lt;run console.log(&#39;aborted!&#39;)&gt;&gt;
 &lt;&lt;/set_areascripts&gt;&gt;
-&lt;&lt;set $blocked[&#39;D&#39;] = true&gt;&gt;</tw-passagedata><tw-passagedata pid="2" name="Start" tags="" position="225,100" size="100,100">&lt;&lt;place_areamap_rose 
+&lt;&lt;set $blocked[&#39;D&#39;] = true&gt;&gt;
+&lt;&lt;set $disabled[&#39;K&#39;] = true&gt;&gt;
+&lt;&lt;set $hidden[&#39;C&#39;] = true&gt;&gt;</tw-passagedata><tw-passagedata pid="2" name="Start" tags="" position="225,100" size="100,100">&lt;&lt;place_areamap_rose 
     mapname &#39;demo&#39;
     background &#39;&lt;img src=&quot;./assets/rose.png&quot;&gt;&#39;
     autoupdate false

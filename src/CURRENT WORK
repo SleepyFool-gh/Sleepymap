@@ -10,9 +10,8 @@
 - added "to target" and "from origin" args to "onmapattempt", "onmapstart", "onmapend", and "onmapabort"
 - seems to work
 - added ability to block movement via story var, renamed abort to force_abort
-
 - added mapview & and the ability to navigate with either map or rose
+
+- moved autoupdate listener for rose & mapview onto document
+- fixed disabled & hidden functionality
 - need to do something still about "origin" and "target" map vars
-- currently $rose and $mapview replace on EVERY areamap:mapmove_resolved event,
-  - change so that it only replaces when an update is needed?
-  - reliance on $().one means that I can't put conditionals to prevent firing inside the listener
