@@ -1374,33 +1374,58 @@ window.Areamap = {
 })();
 </script><tw-passagedata pid="1" name="StoryInit" tags="nobr" position="100,100" size="100,100">&lt;&lt;set 
     setup.areas = {
-        Y: {name: &#39;Yard&#39;},
-        F: {name: &#39;Front door&#39;},
-        L: {name: &#39;Living room&#39;},
-        B: {name: &#39;Bedroom&#39;},
-        W: {name: &#39;Washroom&#39;},
-        H: {name: &#39;Hall&#39;},
-        K: {name: &#39;Kitchen&#39;},
-        G: {name: &#39;Garage&#39;},
-        D: {name: &#39;Dungeon&#39;},
-        C: {name: &#39;Courtyard&#39;},
+        GB  :   {name: &#39;Guest Bedroom&#39;},
+        UH  :   {name: &#39;Hallway&#39;},
+        LR  :   {name: &#39;Living Room&#39;},
+        KT  :   {name: &#39;Kitchen&#39;},
+        FY  :   {name: &#39;Foyer&#39;},
+        CY  :   {name: &#39;Courtyard&#39;},
+        LH  :   {name: &#39;Hallway&#39;},
+        WR  :   {name: &#39;Waiting Room&#39;},
+        PR  :   {name: &#39;Parlor&#39;},
+        MB  :   {name: &#39;Master Bedroom&#39;},
+        LB  :   {name: &#39;Laboratory&#39;},
+        &quot;#&quot; :   {name: &#39;&#39;, type: &#39;wall&#39;}
     };
 &gt;&gt;
 
 
 &lt;&lt;new_areamap 
     mapname     &#39;demo&#39;
-    columns     6
+    columns     21
     diagonals   false
 &gt;&gt;
-    .   .   .   .   .   .
-    G   G   H   K   C   .
-    Y   .   H   K   C   .
-    Y   F   H   L   C   .
-    Y   .   H   .   C   .
-    .   W   H   B   .   .
-    .   .   .   .   .   .
-    .   .   .   B   D   .
+    .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
+    .   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   .
+    .   #   GB  GB  GB  GB  #   UH  UH  UH  UH  UH  UH  UH  UH  UH  UH  UH  UH  #   .
+    .   #   GB  GB  GB  GB  GB  UH  #   #   #   #   #   #   #   UH  UH  #   #   #   .
+    .   #   GB  GB  GB  GB  GB  UH  #   #   #   #   #   #   #   UH  UH  #   FY  #   .
+    .   #   GB  GB  GB  GB  #   UH  #   KT  KT  KT  KT  KT  #   UH  UH  #   FY  #   .
+    .   #   #   #   #   #   #   UH  #   KT  KT  KT  KT  KT  FY  FY  FY  FY  FY  #   .
+    .   #   LR  LR  LR  LR  LR  LR  #   KT  KT  KT  KT  KT  FY  FY  FY  FY  FY  #   .
+    .   #   LR  LR  LR  LR  LR  LR  #   KT  KT  KT  KT  #   #   FY  FY  #   #   #   #
+    .   #   LR  LR  LR  LR  LR  LR  #   KT  KT  KT  KT  #   CY  CY  CY  CY  CY  .   .
+    .   #   LR  LR  LR  LR  LR  LR  #   KT  KT  KT  KT  #   CY  CY  CY  CY  CY  .   .
+    .   #   LR  LR  LR  LR  LR  LR  #   KT  KT  KT  KT  #   CY  CY  CY  CY  CY  #   #
+    .   #   LR  LR  LR  LR  LR  LR  #   KT  KT  KT  KT  #   CY  CY  CY  CY  CY  #   .
+    .   #   LR  LR  LR  LR  LR  LR  #   KT  KT  KT  KT  #   CY  CY  CY  CY  CY  #   .
+    .   #   #   #   #   #   #   #   #   #   #   #   #   #   CY  CY  CY  CY  CY  #   #
+    .   .   .   .   .   .   .   .   .   .   .   .   .   .   CY  CY  CY  CY  CY  .   .
+    .   .   .   .   .   .   .   .   .   .   .   .   .   .   CY  CY  CY  CY  CY  .   .
+    .   #   #   #   #   #   #   #   #   #   #   #   #   #   CY  CY  CY  CY  CY  #   #
+    .   #   PR  PR  PR  PR  LH  LH  LH  LH  LH  LH  LH  #   CY  CY  CY  CY  CY  #   .
+    .   #   PR  PR  PR  PR  #   #   #   #   #   LH  LH  #   CY  CY  CY  CY  CY  #   .
+    .   #   PR  PR  PR  PR  #   #   #   #   #   LH  LH  #   CY  CY  CY  CY  CY  #   .
+    .   #   PR  PR  PR  PR  #   WR  WR  WR  #   LH  LH  #   CY  CY  CY  CY  CY  #   .
+    .   #   PR  PR  PR  PR  #   WR  WR  WR  WR  WR  WR  #   #   WR  WR  #   #   #   .
+    .   #   PR  PR  PR  PR  #   WR  WR  WR  WR  WR  WR  WR  WR  WR  WR  WR  WR  #   .
+    .   #   PR  PR  PR  PR  #   #   #   WR  #   #   #   #   #   #   #   WR  #   #   .
+    .   #   #   MB  MB  #   #   #   #   LB  #   #   #   #   #   #   #   LB  #   #   .
+    .   #   MB  MB  MB  MB  #   LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  #   .
+    .   #   MB  MB  MB  MB  #   LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  #   .
+    .   #   MB  MB  MB  MB  #   LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  #   .
+    .   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   .
+    .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 &lt;&lt;mapareas setup.areas&gt;&gt;
 &lt;&lt;mapvars
     position    &#39;$position&#39;
@@ -1410,7 +1435,7 @@ window.Areamap = {
     frozen      &#39;$frozen&#39;
 &gt;&gt;
 &lt;&lt;/new_areamap&gt;&gt;
-&lt;&lt;set $position to &#39;Y&#39;&gt;&gt;
+&lt;&lt;set $position to &#39;CY&#39;&gt;&gt;
 &lt;&lt;set_areascripts mapname &#39;demo&#39;&gt;&gt;
     &lt;&lt;onmapattempt to `[&#39;G&#39;, &#39;W&#39;]`&gt;&gt;
         &lt;&lt;run console.log(&#39;to G or W!&#39;)&gt;&gt;
@@ -1422,10 +1447,7 @@ window.Areamap = {
         &lt;&lt;run console.log(&#39;from any!&#39;)&gt;&gt;
     &lt;&lt;onmapabort&gt;&gt;
         &lt;&lt;run console.log(&#39;aborted!&#39;)&gt;&gt;
-&lt;&lt;/set_areascripts&gt;&gt;
-&lt;&lt;set $blocked[&#39;D&#39;] = true&gt;&gt;
-&lt;&lt;set $disabled[&#39;K&#39;] = true&gt;&gt;
-&lt;&lt;set $hidden[&#39;C&#39;] = true&gt;&gt;</tw-passagedata><tw-passagedata pid="2" name="Start" tags="" position="225,100" size="100,100">&lt;&lt;place_areamap_rose 
+&lt;&lt;/set_areascripts&gt;&gt;</tw-passagedata><tw-passagedata pid="2" name="Start" tags="" position="225,100" size="100,100">&lt;&lt;place_areamap_rose 
     mapname &#39;demo&#39;
     background &#39;&lt;img src=&quot;./assets/rose.png&quot;&gt;&#39;
     autoupdate false
@@ -1437,8 +1459,8 @@ window.Areamap = {
 &gt;&gt;
 &lt;&lt;place_mapview 
     mapname &#39;demo&#39; 
-    background &#39;&lt;img src=&quot;./assets/house.jpg&quot;&gt;&#39;
-    show_names true
+    background &#39;&lt;img src=&quot;./assets/house.png&quot;&gt;&#39;
+    show_names false
     autoupdate true
 &gt;&gt;</tw-passagedata></tw-storydata>
 	<script id="script-sugarcube" type="text/javascript">

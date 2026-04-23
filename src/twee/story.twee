@@ -5,33 +5,58 @@ Walach Home - areamap demo
 :: StoryInit [nobr]
  <<set 
     setup.areas = {
-        Y: {name: 'Yard'},
-        F: {name: 'Front door'},
-        L: {name: 'Living room'},
-        B: {name: 'Bedroom'},
-        W: {name: 'Washroom'},
-        H: {name: 'Hall'},
-        K: {name: 'Kitchen'},
-        G: {name: 'Garage'},
-        D: {name: 'Dungeon'},
-        C: {name: 'Courtyard'},
+        GB  :   {name: 'Guest Bedroom'},
+        UH  :   {name: 'Hallway'},
+        LR  :   {name: 'Living Room'},
+        KT  :   {name: 'Kitchen'},
+        FY  :   {name: 'Foyer'},
+        CY  :   {name: 'Courtyard'},
+        LH  :   {name: 'Hallway'},
+        WR  :   {name: 'Waiting Room'},
+        PR  :   {name: 'Parlor'},
+        MB  :   {name: 'Master Bedroom'},
+        LB  :   {name: 'Laboratory'},
+        "#" :   {name: '', type: 'wall'}
     };
 >>
 
 
 <<new_areamap 
     mapname     'demo'
-    columns     6
+    columns     21
     diagonals   false
 >>
-    .   .   .   .   .   .
-    G   G   H   K   C   .
-    Y   .   H   K   C   .
-    Y   F   H   L   C   .
-    Y   .   H   .   C   .
-    .   W   H   B   .   .
-    .   .   .   .   .   .
-    .   .   .   B   D   .
+    .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
+    .   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   .
+    .   #   GB  GB  GB  GB  #   UH  UH  UH  UH  UH  UH  UH  UH  UH  UH  UH  UH  #   .
+    .   #   GB  GB  GB  GB  GB  UH  #   #   #   #   #   #   #   UH  UH  #   #   #   .
+    .   #   GB  GB  GB  GB  GB  UH  #   #   #   #   #   #   #   UH  UH  #   FY  #   .
+    .   #   GB  GB  GB  GB  #   UH  #   KT  KT  KT  KT  KT  #   UH  UH  #   FY  #   .
+    .   #   #   #   #   #   #   UH  #   KT  KT  KT  KT  KT  FY  FY  FY  FY  FY  #   .
+    .   #   LR  LR  LR  LR  LR  LR  #   KT  KT  KT  KT  KT  FY  FY  FY  FY  FY  #   .
+    .   #   LR  LR  LR  LR  LR  LR  #   KT  KT  KT  KT  #   #   FY  FY  #   #   #   #
+    .   #   LR  LR  LR  LR  LR  LR  #   KT  KT  KT  KT  #   CY  CY  CY  CY  CY  .   .
+    .   #   LR  LR  LR  LR  LR  LR  #   KT  KT  KT  KT  #   CY  CY  CY  CY  CY  .   .
+    .   #   LR  LR  LR  LR  LR  LR  #   KT  KT  KT  KT  #   CY  CY  CY  CY  CY  #   #
+    .   #   LR  LR  LR  LR  LR  LR  #   KT  KT  KT  KT  #   CY  CY  CY  CY  CY  #   .
+    .   #   LR  LR  LR  LR  LR  LR  #   KT  KT  KT  KT  #   CY  CY  CY  CY  CY  #   .
+    .   #   #   #   #   #   #   #   #   #   #   #   #   #   CY  CY  CY  CY  CY  #   #
+    .   .   .   .   .   .   .   .   .   .   .   .   .   .   CY  CY  CY  CY  CY  .   .
+    .   .   .   .   .   .   .   .   .   .   .   .   .   .   CY  CY  CY  CY  CY  .   .
+    .   #   #   #   #   #   #   #   #   #   #   #   #   #   CY  CY  CY  CY  CY  #   #
+    .   #   PR  PR  PR  PR  LH  LH  LH  LH  LH  LH  LH  #   CY  CY  CY  CY  CY  #   .
+    .   #   PR  PR  PR  PR  #   #   #   #   #   LH  LH  #   CY  CY  CY  CY  CY  #   .
+    .   #   PR  PR  PR  PR  #   #   #   #   #   LH  LH  #   CY  CY  CY  CY  CY  #   .
+    .   #   PR  PR  PR  PR  #   WR  WR  WR  #   LH  LH  #   CY  CY  CY  CY  CY  #   .
+    .   #   PR  PR  PR  PR  #   WR  WR  WR  WR  WR  WR  #   #   WR  WR  #   #   #   .
+    .   #   PR  PR  PR  PR  #   WR  WR  WR  WR  WR  WR  WR  WR  WR  WR  WR  WR  #   .
+    .   #   PR  PR  PR  PR  #   #   #   WR  #   #   #   #   #   #   #   WR  #   #   .
+    .   #   #   MB  MB  #   #   #   #   LB  #   #   #   #   #   #   #   LB  #   #   .
+    .   #   MB  MB  MB  MB  #   LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  #   .
+    .   #   MB  MB  MB  MB  #   LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  #   .
+    .   #   MB  MB  MB  MB  #   LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  #   .
+    .   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   .
+    .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 <<mapareas setup.areas>>
 <<mapvars
     position    '$position'
@@ -41,7 +66,7 @@ Walach Home - areamap demo
     frozen      '$frozen'
 >>
 <</new_areamap>>
-<<set $position to 'Y'>>
+<<set $position to 'CY'>>
 <<set_areascripts mapname 'demo'>>
     <<onmapattempt to `['G', 'W']`>>
         <<run console.log('to G or W!')>>
@@ -54,9 +79,6 @@ Walach Home - areamap demo
     <<onmapabort>>
         <<run console.log('aborted!')>>
 <</set_areascripts>>
-<<set $blocked['D'] = true>>
-<<set $disabled['K'] = true>>
-<<set $hidden['C'] = true>>
 
 :: Start
 <<place_areamap_rose 
@@ -71,7 +93,7 @@ Walach Home - areamap demo
 >>
 <<place_mapview 
     mapname 'demo' 
-    background '<img src="./assets/house.jpg">'
-    show_names true
+    background '<img src="./assets/house.png">'
+    show_names false
     autoupdate true
 >>

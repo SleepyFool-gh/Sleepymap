@@ -42,6 +42,7 @@
     }
     .macro-areamap-position {
         font-weight: bold;
+        backdrop-filter: brightness(1.25);
     }
     .macro-areamap-tile:not(.macro-areamap-position):not(.macro-areamap-link) {
         color: rgba(177, 177, 177, .6);
