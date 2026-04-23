@@ -15,5 +15,5 @@
 - fixed disabled & hidden functionality
 
 - updated demo map
-- need to do something about "origin" and "target" mapvars on new_map?
+- added newmap({ mapview }) functionality & update_map(argObj)
 - need to fix css for mapview

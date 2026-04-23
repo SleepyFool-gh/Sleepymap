@@ -325,7 +325,7 @@ function new_map(argObj) {
 //   │ │├─┘ ││├─┤ │ ├┤   ├┤ ┌┴┬┘│ │ └─┐
 //   └─┘┴  ─┴┘┴ ┴ ┴ └─┘  └─┘┴ └─┴ ┴ └─┘
 //  SECTION: update exits object
-    update_exits({mapname});
+    update_exits({ mapname });
 }
 
 
@@ -1051,9 +1051,10 @@ function get_map(argObj) {
 }
 
 function update_map(argObj) {
-    const { mapname, columns, maparray, mapview, mapareas } = argObj;
+    const { mapname, diagonals, columns, maparray, mapview, mapareas } = argObj;
     const name = 'Areamap.update_map';
     const this_map = areamaps[mapname];
+    let exits_need_updating = false;
 
     // ERROR: missing arg
     if (mapname === undefined) {
@@ -1064,21 +1065,29 @@ function update_map(argObj) {
         throw new Error(`${name} — areamap "${mapname}" not found!`);
     }
 
+//   ┌┬┐┬┌─┐┌─┐┌─┐┌┐┌┌─┐┬  ┌─┐
+//    │││├─┤│ ┬│ ││││├─┤│  └─┐
+//   ─┴┘┴┴ ┴└─┘└─┘┘└┘┴ ┴┴─┘└─┘
+//  SECTION:diagonals
+    if (diagonals !== undefined) {
+        // ERROR: diagonals not boolean
+        if (typeof diagonals !== 'boolean') {
+            throw new Error(`${name} — areamap "${mapname}" — diagonals must be a boolean!`);
+        }
+        this_map.diagonals = diagonals;
+        exits_need_updating = true;
+    }
+
 //   ┌─┐┌─┐┬  ┬ ┬┌┬┐┌┐┌┌─┐   ┬   ┌┬┐┌─┐┌─┐┌─┐┬─┐┬─┐┌─┐┬ ┬
 //   │  │ ││  │ │││││││└─┐  ┌┼─  │││├─┤├─┘├─┤├┬┘├┬┘├─┤└┬┘
 //   └─┘└─┘┴─┘└─┘┴ ┴┘└┘└─┘  └┘   ┴ ┴┴ ┴┴  ┴ ┴┴└─┴└─┴ ┴ ┴
 //  SECTION: columns & maparray
     // ERROR: columns not a number
-    if (
-        (columns !== undefined) &&
-        (typeof columns !== 'number')
-    ) {
+    if ((columns !== undefined) && (typeof columns !== 'number')) {
         throw new Error(`${name} — areamap "${mapname}" — columns must be a number!`);
     }
     // ERROR: maparray not an array (or undefined)
-    else if (
-        (maparray !== undefined)    &&
-        (! Array.isArray(maparray)) 
+    else if ((maparray !== undefined) && (! Array.isArray(maparray)) 
     ) {
         throw new Error(`${name} — areamap "${mapname}" — maparray must be an array!`);
     }
@@ -1089,7 +1098,7 @@ function update_map(argObj) {
         }
         this_map.columns = columns ?? this_map.columns;
         this_map.maparray = maparray ?? this_map.maparray;
-        update_exits({ mapname });
+        exits_need_updating = true;
     }
 
 //   ┌┬┐┌─┐┌─┐┬  ┬┬┌─┐┬ ┬
@@ -1140,6 +1149,8 @@ function update_map(argObj) {
                 console.warn(`${name} — areamap "${mapname}" — maparea "${id}" is not an object!`);
                 continue;
             }
+
+            // update valid keys in mapareas
             for (const key in maparea) {
                 // WARNING: maparea id is immutable
                 if (key === 'id') {
@@ -1153,8 +1164,15 @@ function update_map(argObj) {
                     continue;
                 }
                 this_map.mapareas[id][key] = maparea[key];
+                if (key === 'type') {
+                    exits_need_updating = true;
+                }
             }
         }
+    }
+    // if exits / structure changed
+    if (exits_need_updating) {
+        update_exits({ mapname });
     }
 }
 
