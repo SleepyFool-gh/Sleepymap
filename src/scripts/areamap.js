@@ -186,8 +186,9 @@ function new_map(argObj) {
     [...new Set(maparray)].forEach( function(id) {
         mapareas[id] = {
             id      : id,                                       // area identifier
-            name    : argObj.mapareas?.[id]?.name ?? id,       // name, use maparea name if found
-            type    : argObj.mapareas?.[id]?.type ?? 'floor',  // area type, use maparea type if found
+            name    : argObj.mapareas?.[id]?.name ?? id,        // name, use maparea name if found
+            type    : argObj.mapareas?.[id]?.type ?? 'floor',   // type, use maparea type if found
+            tile    : argObj.mapareas?.[id]?.tile ?? undefined, // tile, use maparea tile if found
         };
     });
     // overwrite with default wall
@@ -197,6 +198,7 @@ function new_map(argObj) {
             id      : id,
             name    : argObj.mapareas?.[id]?.name ?? id,
             type    : argObj.mapareas?.[id]?.type ?? 'wall',
+            tile    : argObj.mapareas?.[id]?.tile ?? undefined,
         };
     }
 
@@ -264,18 +266,43 @@ function new_map(argObj) {
         mapvars[key] = sv_name;
         State.setVar(sv_name, MAPVAR_DEFAULTS[key].val);
     }
+    
+
+//   ┬ ┬┌─┐┌┬┐┌─┐┌┬┐┌─┐  ┌─┐─┐ ┬┬┌┬┐┌─┐
+//   │ │├─┘ ││├─┤ │ ├┤   ├┤ ┌┴┬┘│ │ └─┐
+//   └─┘┴  ─┴┘┴ ┴ ┴ └─┘  └─┘┴ └─┴ ┴ └─┘
+//  SECTION: update exits object
+    update_exits({mapname});
+}
 
 
-//     █████ █   █ ███ █████  ████
-//     █      █ █   █    █   █
-//     ███     █    █    █    ███
-//     █      █ █   █    █       █
-//     █████ █   █ ███   █   ████
-//      SECTION: exits
-//      backbone that checks exits for each area
+
+
+// █████ █   █ ███ █████  ████
+// █      █ █   █    █   █
+// ███     █    █    █    ███
+// █      █ █   █    █       █
+// █████ █   █ ███   █   ████
+// SECTION: areamap backbone, updates exits object
+function update_exits(argObj) {
+
+    const { mapname } = argObj;
+    const name = argObj.name ?? 'Areamap.update_exits';
+
+    // ERROR: mapname missing
+    if (mapname === undefined) {
+        throw new Error(`${name} — mapname is required!`);
+    }
+
+    const this_map = areamaps[mapname];
+    // ERROR: non-extant map
+    if (this_map === undefined) {
+        throw new Error(`${name} — map "${mapname}" does not exist!`);
+    }
+
+    const { maparray, mapareas, columns, diagonals, exits } = this_map;
 
     // create empty exits object
-    const exits = this_map.exits;
     Object.keys(mapareas).forEach( function(id) {
         exits[id] = {
             N   : new Set(),
@@ -363,7 +390,7 @@ function new_map(argObj) {
             }
         }
     }
-};
+}
 
 
 
@@ -500,12 +527,14 @@ function create_rose(argObj) {
 
     // click listener that triggers mapmove & rose refresh
     $rose.on('click', '.macro-areamap-link', function(ev) {
+        // uses "this" because that is the element that matches the selector ^
+        // whereas ev.target is the thing clicked, which maybe inside the matched element
         // link disabled, do nothing
-        if ($(ev.target).attr('disabled')) {
+        if ($(this).attr('disabled')) {
             return;
         }
         // attempt move to target
-        const id_target = $(ev.target).attr('data-id');
+        const id_target = $(this).attr('data-id');
         begin_mapmove({
             mapname,
             id_target,
@@ -612,10 +641,11 @@ function create_mapview(argObj) {
     const exit_arr = Object.values(this_map.exits[position]);
     // create & append tiles
     for (const id of this_map.maparray) {
+        const maparea = this_map.mapareas[id];
         // if clickable & valid travel destination --> clickable
         const link  = ! clickable
                         ? false
-                        : this_map.mapareas[id].type === 'wall'
+                        : maparea.type === 'wall'
                             ? false
                             : exit_arr.some( dir => dir.has(id));
         
@@ -629,19 +659,24 @@ function create_mapview(argObj) {
             .css({
                 visibility: hidden?.[id] ? 'hidden' : '',
             })
-            .html(show_names ? this_map.mapareas[id].name : '');
+            .html(
+                ((maparea.tile !== undefined) ? maparea.tile : '') +
+                (show_names ? `<span>${maparea.name}</span>` : '')
+            );
         $mapview.append($tile);
     }
 
     // if clickable add link functionality
     if (clickable) {
         $mapview.on('click', '.macro-areamap-link', function(ev) {
+            // uses "this" because that is the element that matches the selector ^
+            // whereas ev.target is the thing clicked, which maybe inside the matched element
             // if disabled, do nothing
-            if ($(ev.target).attr('disabled')) {
+            if ($(this).attr('disabled')) {
                 return;
             }
             // attempt mapmove
-            const id_target = $(ev.target).attr('data-id');
+            const id_target = $(this).attr('data-id');
             begin_mapmove({
                 mapname,
                 id_target,
@@ -971,6 +1006,7 @@ function get_map(mapname) {
 window.Areamap = {
     get_map,
     new_map,
+    update_exits,
     create_rose,
     create_mapview,
     set_scripts,
