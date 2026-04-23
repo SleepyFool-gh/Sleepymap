@@ -148,6 +148,7 @@ var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZa
     }
     .macro-areamap-position {
         font-weight: bold;
+        backdrop-filter: brightness(1.25);
     }
     .macro-areamap-tile:not(.macro-areamap-position):not(.macro-areamap-link) {
         color: rgba(177, 177, 177, .6);
@@ -397,7 +398,7 @@ const areamaps = {};
 Macro.add(['newareamap', 'new_areamap'], {
 
     // child tags
-    tags    :    ['mapvars', 'mapareas'],
+    tags    :    ['mapview', 'mapvars', 'mapareas'],
 
     handler() {
 
@@ -424,6 +425,23 @@ Macro.add(['newareamap', 'new_areamap'], {
 
         // create map array from payload
         argObj.maparray = this.payload[0].contents.trim().split(/\s+/g);
+
+        // if <<mapview>> exists
+        const payload_mapview = this.payload.find( p => p.name === 'mapview' );
+        if (payload_mapview) {
+            const args = payload_mapview.args;
+            const template = {
+                columns: {
+                    required: true,
+                    type: 'number',
+                },
+            }
+            const argObj_mapview = new ArgObj(name, template, args);
+            argObj.mapview = {
+                columns: argObj_mapview.columns,
+                array: payload_mapview.contents.trim().split(/\s+/g),
+            };
+        }
 
         // if <<mapareas>> exists
         // should be an object of values to write into the area data when areas are being generated
@@ -461,7 +479,6 @@ Macro.add(['newareamap', 'new_areamap'], {
             };
             const mapvars = new ArgObj('mapvars', template, args);
             argObj.mapvars = mapvars;
-
         }
 
         // call function
@@ -516,12 +533,47 @@ function new_map(argObj) {
         columns,
         maparray,
         diagonals,
-        mapareas    : {},   // populated here, later
-        mapvars     : {},   // populated here, later
-        exits       : {},   // populated here, later
-        scripts     : [],   // populated in set_scripts, if called
+        mapview     : undefined,    // populated here, later
+        mapareas    : {},           // populated here, later
+        mapvars     : {},           // populated here, later
+        exits       : {},           // populated here, later
+        scripts     : [],           // populated in set_scripts, if called
     };
     areamaps[mapname] = this_map;
+
+
+//     █    █  ███  ████  █   █ ███ █████ █     █
+//     ██  ██ █   █ █   █ █   █  █  █     █     █
+//     █ ██ █ █████ ████  █   █  █  ███   █  █  █
+//     █    █ █   █ █      █ █   █  █     █ █ █ █
+//     █    █ █   █ █       █   ███ █████  █   █
+//      SECTION: mapview object on areamaps
+
+    const mapview = argObj.mapview;
+    if (mapview !== undefined) {
+        // ERROR: mapview not an object
+        if (typeof mapview !== 'object') {
+            throw new Error(`${name} — areamap "${mapname}" — mapview must be an object containing "columns" & "array" properties!`);
+        }
+        // ERROR: mapview.columns not a number (or undefined)
+        else if (typeof mapview.columns !== 'number') {
+            throw new Error(`${name} — areamap "${mapname}" — mapview.columns must be a number!`);
+        }
+        // ERROR: mapview.array not an array (or undefined)
+        else if (! Array.isArray(mapview.array)) {
+            throw new Error(`${name} — areamap "${mapname}" — mapview.array must be an array!`);
+        }
+        // ERROR: mapview.array not rectangular
+        else if (mapview.array.length % mapview.columns !== 0) {
+            throw new Error(`${name} — areamap "${mapname}" — mapview.array must be rectangular (whole number multiple of mapview.columns)!`);
+        }
+        // WARNING: empty mapview.array
+        else if (mapview.array.length === 0) {
+            console.warn(`${name} — areamap "${mapname}" — mapview.array is empty!`);
+        }
+
+        this_map.mapview = mapview;
+    }
 
 
 //     █    █  ███  ████   ███  ████  █████  ███   ████
@@ -975,6 +1027,8 @@ function create_mapview(argObj) {
     }
     
     // create map object
+    // use maparray & columns if no mapview object
+    const mapview = this_map.mapview ?? {columns: this_map.columns, array: this_map.maparray};
     const $mapview = $(document.createElement('div'));
     $mapview
         .addClass('macro-areamap-mapview')
@@ -983,7 +1037,7 @@ function create_mapview(argObj) {
         .attr('data-autoupdate', autoupdate)
         .data('argObj', argObj)
         .css({
-            '--columns': this_map.columns,
+            '--columns': mapview.columns,
         });
     
 
@@ -998,7 +1052,7 @@ function create_mapview(argObj) {
     // get exits as an array
     const exit_arr = Object.values(this_map.exits[position]);
     // create & append tiles
-    for (const id of this_map.maparray) {
+    for (const id of mapview.array) {
         const maparea = this_map.mapareas[id];
         // if clickable & valid travel destination --> clickable
         const link  = ! clickable
@@ -1400,6 +1454,38 @@ window.Areamap = {
     .   #   GB  GB  GB  GB  #   UH  UH  UH  UH  UH  UH  UH  UH  UH  UH  UH  UH  #   .
     .   #   GB  GB  GB  GB  GB  UH  #   #   #   #   #   #   #   UH  UH  #   #   #   .
     .   #   GB  GB  GB  GB  GB  UH  #   #   #   #   #   #   #   UH  UH  #   FY  #   .
+    .   #   GB  GB  GB  GB  #   UH  #   KT  KT  KT  KT  KT  #   UH  UH  #   FY  #   .
+    .   #   #   #   #   #   #   UH  #   KT  KT  KT  KT  KT  FY  FY  FY  FY  FY  #   .
+    .   #   LR  LR  LR  LR  LR  LR  #   KT  KT  KT  KT  KT  FY  FY  FY  FY  FY  #   .
+    .   #   LR  LR  LR  LR  LR  LR  #   KT  KT  KT  KT  #   #   FY  FY  #   #   #   #
+    .   #   LR  LR  LR  LR  LR  LR  #   KT  KT  KT  KT  #   CY  CY  CY  CY  CY  .   .
+    .   #   LR  LR  LR  LR  LR  LR  #   KT  KT  KT  KT  #   CY  CY  CY  CY  CY  .   .
+    .   #   LR  LR  LR  LR  LR  LR  #   KT  KT  KT  KT  #   CY  CY  CY  CY  CY  #   #
+    .   #   LR  LR  LR  LR  LR  LR  #   KT  KT  KT  KT  #   CY  CY  CY  CY  CY  #   .
+    .   #   LR  LR  LR  LR  LR  LR  #   KT  KT  KT  KT  #   CY  CY  CY  CY  CY  #   .
+    .   #   #   #   #   #   #   #   #   #   #   #   #   #   CY  CY  CY  CY  CY  #   #
+    .   .   .   .   .   .   .   .   .   .   .   .   .   .   CY  CY  CY  CY  CY  .   .
+    .   .   .   .   .   .   .   .   .   .   .   .   .   .   CY  CY  CY  CY  CY  .   .
+    .   #   #   #   #   #   #   #   #   #   #   #   #   #   CY  CY  CY  CY  CY  #   #
+    .   #   PR  PR  PR  PR  LH  LH  LH  LH  LH  LH  LH  #   CY  CY  CY  CY  CY  #   .
+    .   #   PR  PR  PR  PR  #   #   #   #   #   LH  LH  #   CY  CY  CY  CY  CY  #   .
+    .   #   PR  PR  PR  PR  #   #   #   #   #   LH  LH  #   CY  CY  CY  CY  CY  #   .
+    .   #   PR  PR  PR  PR  #   WR  WR  WR  #   LH  LH  #   CY  CY  CY  CY  CY  #   .
+    .   #   PR  PR  PR  PR  #   WR  WR  WR  WR  WR  WR  #   #   WR  WR  #   #   #   .
+    .   #   PR  PR  PR  PR  #   WR  WR  WR  WR  WR  WR  WR  WR  WR  WR  WR  WR  #   .
+    .   #   PR  PR  PR  PR  #   #   #   WR  #   #   #   #   #   #   #   WR  #   #   .
+    .   #   #   MB  MB  #   #   #   #   LB  #   #   #   #   #   #   #   LB  #   #   .
+    .   #   MB  MB  MB  MB  #   LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  #   .
+    .   #   MB  MB  MB  MB  #   LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  #   .
+    .   #   MB  MB  MB  MB  #   LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  #   .
+    .   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   .
+    .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
+&lt;&lt;mapview columns 21&gt;&gt;
+    .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
+    .   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   .
+    .   #   GB  GB  GB  GB  #   UH  UH  UH  UH  UH  UH  UH  UH  UH  UH  UH  UH  #   .
+    .   #   GB  GB  GB  GB  #   UH  #   #   #   #   #   #   #   UH  UH  #   #   #   .
+    .   #   GB  GB  GB  GB  #   UH  #   #   #   #   #   #   #   UH  UH  #   FY  #   .
     .   #   GB  GB  GB  GB  #   UH  #   KT  KT  KT  KT  KT  #   UH  UH  #   FY  #   .
     .   #   #   #   #   #   #   UH  #   KT  KT  KT  KT  KT  FY  FY  FY  FY  FY  #   .
     .   #   LR  LR  LR  LR  LR  LR  #   KT  KT  KT  KT  KT  FY  FY  FY  FY  FY  #   .

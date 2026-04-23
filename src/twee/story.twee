@@ -57,6 +57,38 @@ Walach Home - areamap demo
     .   #   MB  MB  MB  MB  #   LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  #   .
     .   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   .
     .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
+<<mapview columns 21>>
+    .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
+    .   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   .
+    .   #   GB  GB  GB  GB  #   UH  UH  UH  UH  UH  UH  UH  UH  UH  UH  UH  UH  #   .
+    .   #   GB  GB  GB  GB  #   UH  #   #   #   #   #   #   #   UH  UH  #   #   #   .
+    .   #   GB  GB  GB  GB  #   UH  #   #   #   #   #   #   #   UH  UH  #   FY  #   .
+    .   #   GB  GB  GB  GB  #   UH  #   KT  KT  KT  KT  KT  #   UH  UH  #   FY  #   .
+    .   #   #   #   #   #   #   UH  #   KT  KT  KT  KT  KT  FY  FY  FY  FY  FY  #   .
+    .   #   LR  LR  LR  LR  LR  LR  #   KT  KT  KT  KT  KT  FY  FY  FY  FY  FY  #   .
+    .   #   LR  LR  LR  LR  LR  LR  #   KT  KT  KT  KT  #   #   FY  FY  #   #   #   #
+    .   #   LR  LR  LR  LR  LR  LR  #   KT  KT  KT  KT  #   CY  CY  CY  CY  CY  .   .
+    .   #   LR  LR  LR  LR  LR  LR  #   KT  KT  KT  KT  #   CY  CY  CY  CY  CY  .   .
+    .   #   LR  LR  LR  LR  LR  LR  #   KT  KT  KT  KT  #   CY  CY  CY  CY  CY  #   #
+    .   #   LR  LR  LR  LR  LR  LR  #   KT  KT  KT  KT  #   CY  CY  CY  CY  CY  #   .
+    .   #   LR  LR  LR  LR  LR  LR  #   KT  KT  KT  KT  #   CY  CY  CY  CY  CY  #   .
+    .   #   #   #   #   #   #   #   #   #   #   #   #   #   CY  CY  CY  CY  CY  #   #
+    .   .   .   .   .   .   .   .   .   .   .   .   .   .   CY  CY  CY  CY  CY  .   .
+    .   .   .   .   .   .   .   .   .   .   .   .   .   .   CY  CY  CY  CY  CY  .   .
+    .   #   #   #   #   #   #   #   #   #   #   #   #   #   CY  CY  CY  CY  CY  #   #
+    .   #   PR  PR  PR  PR  LH  LH  LH  LH  LH  LH  LH  #   CY  CY  CY  CY  CY  #   .
+    .   #   PR  PR  PR  PR  #   #   #   #   #   LH  LH  #   CY  CY  CY  CY  CY  #   .
+    .   #   PR  PR  PR  PR  #   #   #   #   #   LH  LH  #   CY  CY  CY  CY  CY  #   .
+    .   #   PR  PR  PR  PR  #   WR  WR  WR  #   LH  LH  #   CY  CY  CY  CY  CY  #   .
+    .   #   PR  PR  PR  PR  #   WR  WR  WR  WR  WR  WR  #   #   WR  WR  #   #   #   .
+    .   #   PR  PR  PR  PR  #   WR  WR  WR  WR  WR  WR  WR  WR  WR  WR  WR  WR  #   .
+    .   #   PR  PR  PR  PR  #   #   #   WR  #   #   #   #   #   #   #   WR  #   #   .
+    .   #   #   MB  MB  #   #   #   #   LB  #   #   #   #   #   #   #   LB  #   #   .
+    .   #   MB  MB  MB  MB  #   LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  #   .
+    .   #   MB  MB  MB  MB  #   LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  #   .
+    .   #   MB  MB  MB  MB  #   LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  #   .
+    .   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   .
+    .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 <<mapareas setup.areas>>
 <<mapvars
     position    '$position'

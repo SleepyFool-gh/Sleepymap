@@ -11,7 +11,9 @@
 - seems to work
 - added ability to block movement via story var, renamed abort to force_abort
 - added mapview & and the ability to navigate with either map or rose
-
 - moved autoupdate listener for rose & mapview onto document
 - fixed disabled & hidden functionality
-- need to do something still about "origin" and "target" map vars
+
+- updated demo map
+- need to do something about "origin" and "target" mapvars on new_map?
+- need to fix css for mapview

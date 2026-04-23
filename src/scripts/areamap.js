@@ -39,7 +39,7 @@ const areamaps = {};
 Macro.add(['newareamap', 'new_areamap'], {
 
     // child tags
-    tags    :    ['mapvars', 'mapareas'],
+    tags    :    ['mapview', 'mapvars', 'mapareas'],
 
     handler() {
 
@@ -67,6 +67,23 @@ Macro.add(['newareamap', 'new_areamap'], {
         // create map array from payload
         argObj.maparray = this.payload[0].contents.trim().split(/\s+/g);
 
+        // if <<mapview>> exists
+        const payload_mapview = this.payload.find( p => p.name === 'mapview' );
+        if (payload_mapview) {
+            const args = payload_mapview.args;
+            const template = {
+                columns: {
+                    required: true,
+                    type: 'number',
+                },
+            }
+            const argObj_mapview = new ArgObj(name, template, args);
+            argObj.mapview = {
+                columns: argObj_mapview.columns,
+                array: payload_mapview.contents.trim().split(/\s+/g),
+            };
+        }
+
         // if <<mapareas>> exists
         // should be an object of values to write into the area data when areas are being generated
         const mapareas = this.payload.find( p => p.name === 'mapareas' )?.args[0]
@@ -82,7 +99,7 @@ Macro.add(['newareamap', 'new_areamap'], {
         const payload_mapvars = this.payload.find( p => p.name === 'mapvars' );
         if (payload_mapvars) {
             const args = payload_mapvars.args;
-            // REMINDER: changing anything here also requires changing MAPVAR_DEFAULTS
+            // SYNC REMINDER: changing here also requires changing MAPVAR_DEFAULTS
             const template = {
                 position: {
                     required: true,
@@ -103,7 +120,6 @@ Macro.add(['newareamap', 'new_areamap'], {
             };
             const mapvars = new ArgObj('mapvars', template, args);
             argObj.mapvars = mapvars;
-
         }
 
         // call function
@@ -158,12 +174,47 @@ function new_map(argObj) {
         columns,
         maparray,
         diagonals,
-        mapareas    : {},   // populated here, later
-        mapvars     : {},   // populated here, later
-        exits       : {},   // populated here, later
-        scripts     : [],   // populated in set_scripts, if called
+        mapview     : undefined,    // populated here, later
+        mapareas    : {},           // populated here, later
+        mapvars     : {},           // populated here, later
+        exits       : {},           // populated here, later
+        scripts     : [],           // populated in set_scripts, if called
     };
     areamaps[mapname] = this_map;
+
+
+//     █    █  ███  ████  █   █ ███ █████ █     █
+//     ██  ██ █   █ █   █ █   █  █  █     █     █
+//     █ ██ █ █████ ████  █   █  █  ███   █  █  █
+//     █    █ █   █ █      █ █   █  █     █ █ █ █
+//     █    █ █   █ █       █   ███ █████  █   █
+//      SECTION: mapview object on areamaps
+
+    const mapview = argObj.mapview;
+    if (mapview !== undefined) {
+        // ERROR: mapview not an object
+        if (typeof mapview !== 'object') {
+            throw new Error(`${name} — areamap "${mapname}" — mapview must be an object containing "columns" & "array" properties!`);
+        }
+        // ERROR: mapview.columns not a number (or undefined)
+        else if (typeof mapview.columns !== 'number') {
+            throw new Error(`${name} — areamap "${mapname}" — mapview.columns must be a number!`);
+        }
+        // ERROR: mapview.array not an array (or undefined)
+        else if (! Array.isArray(mapview.array)) {
+            throw new Error(`${name} — areamap "${mapname}" — mapview.array must be an array!`);
+        }
+        // ERROR: mapview.array not rectangular
+        else if (mapview.array.length % mapview.columns !== 0) {
+            throw new Error(`${name} — areamap "${mapname}" — mapview.array must be rectangular (whole number multiple of mapview.columns)!`);
+        }
+        // WARNING: empty mapview.array
+        else if (mapview.array.length === 0) {
+            console.warn(`${name} — areamap "${mapname}" — mapview.array is empty!`);
+        }
+
+        this_map.mapview = mapview;
+    }
 
 
 //     █    █  ███  ████   ███  ████  █████  ███   ████
@@ -184,6 +235,7 @@ function new_map(argObj) {
     const mapareas = this_map.mapareas;
     // take unique values from map array, create areas for each
     [...new Set(maparray)].forEach( function(id) {
+        // SYNC REMINDER: changing here also requires changing default wall below & update_map fn
         mapareas[id] = {
             id      : id,                                       // area identifier
             name    : argObj.mapareas?.[id]?.name ?? id,        // name, use maparea name if found
@@ -194,6 +246,7 @@ function new_map(argObj) {
     // overwrite with default wall
     {
         const id = options.default.wall_id;
+        // SYNC REMINDER: changing here also requires changing forEach ^ & update_map fn
         mapareas[id] = {
             id      : id,
             name    : argObj.mapareas?.[id]?.name ?? id,
@@ -219,7 +272,7 @@ function new_map(argObj) {
     // create mapvars
     const mapvars = this_map.mapvars;
 
-    // REMINDER: changing anything here also requires changing <<mapvars>> template
+    // SYNC REMINDER: changing anything here also requires changing <<mapvars>> template
     const MAPVAR_DEFAULTS = {
         position: {
             sv_name : argObj?.mapvars?.position ?? options.default.position_story_variable,
@@ -289,14 +342,14 @@ function update_exits(argObj) {
     const { mapname } = argObj;
     const name = argObj.name ?? 'Areamap.update_exits';
 
+    const this_map = areamaps[mapname];
+
     // ERROR: mapname missing
     if (mapname === undefined) {
         throw new Error(`${name} — mapname is required!`);
     }
-
-    const this_map = areamaps[mapname];
     // ERROR: non-extant map
-    if (this_map === undefined) {
+    else if (this_map === undefined) {
         throw new Error(`${name} — map "${mapname}" does not exist!`);
     }
 
@@ -376,7 +429,7 @@ function update_exits(argObj) {
                 continue;
             }
             // if dir is a diagonal and diagonals not enabled, continue
-            if (check.diagonal && (! diagonals)) {
+            else if (check.diagonal && (! diagonals)) {
                 continue;
             }
             // get neighbor
@@ -437,15 +490,14 @@ function create_rose(argObj) {
     const autoupdate = argObj.autoupdate ?? options.default.autoupdate_rose;    // default value
     const name = argObj.name ?? 'Areamap.create_rose';
 
+    const this_map = areamaps[mapname];
+
     // ERROR: no mapname provided
     if (mapname === undefined) {
         throw new Error(`${name} — no map name provided!`);
     }
-
-    const this_map = areamaps[mapname];
-
     // ERROR: no map found
-    if (this_map === undefined) {
+    else if (this_map === undefined) {
         throw new Error(`${name} — couldn't find map with name "${mapname}"!`);
     }
 
@@ -472,7 +524,7 @@ function create_rose(argObj) {
     }
 
     // create rose
-    const $rose =   $(document.createElement('div'));
+    const $rose = $(document.createElement('div'));
     $rose
         .addClass('macro-areamap-rose')
         .attr('data-mapname', mapname)
@@ -593,12 +645,17 @@ function create_mapview(argObj) {
     const autoupdate    = argObj.autoupdate ?? options.default.autoupdate_mapview;      // default value
     const clickable     = argObj.clickable  ?? options.default.clickable_mapview;       // default value
 
+    const this_map = areamaps[mapname];
+
     // ERROR: missing args
     if (mapname === undefined) {
         throw new Error(`${name} — missing required args mapname!`);
     }
-    
-    const this_map  = areamaps[mapname];
+    // ERROR: non-extant map
+    else if (this_map === undefined) {
+        throw new Error(`${name} — areamap "${mapname}" not found!`);
+    }
+
     const mapvars   = this_map.mapvars;
     const position  = State.getVar(this_map.mapvars.position);
     const frozen    = mapvars.frozen !== undefined      
@@ -611,12 +668,9 @@ function create_mapview(argObj) {
                         ? State.getVar(mapvars.hidden)   
                         : null;
     
-    // ERROR: non-extant map
-    if (this_map === undefined) {
-        throw new Error(`${name} — areamap "${mapname}" not found!`);
-    }
-    
     // create map object
+    // use maparray & columns if no mapview object
+    const mapview = this_map.mapview ?? {columns: this_map.columns, array: this_map.maparray};
     const $mapview = $(document.createElement('div'));
     $mapview
         .addClass('macro-areamap-mapview')
@@ -625,7 +679,7 @@ function create_mapview(argObj) {
         .attr('data-autoupdate', autoupdate)
         .data('argObj', argObj)
         .css({
-            '--columns': this_map.columns,
+            '--columns': mapview.columns,
         });
     
 
@@ -640,7 +694,7 @@ function create_mapview(argObj) {
     // get exits as an array
     const exit_arr = Object.values(this_map.exits[position]);
     // create & append tiles
-    for (const id of this_map.maparray) {
+    for (const id of mapview.array) {
         const maparea = this_map.mapareas[id];
         // if clickable & valid travel destination --> clickable
         const link  = ! clickable
@@ -874,15 +928,14 @@ function begin_mapmove(argObj) {
     const name = argObj.name ?? 'Areamap.begin_mapmove';
     const force_abort = argObj.force_abort ?? false;    // default value
 
+    const this_map = areamaps[mapname];
+
     // ERROR: missing args
     if ((mapname === undefined) || (id_target === undefined)) {
         throw new Error(`${name} — missing required arguments!`);
     }
-    
-    const this_map = areamaps[mapname];
-
     // ERROR: map not found
-    if (this_map === undefined) {
+    else if (this_map === undefined) {
         throw new Error(`${name} — areamap "${mapname}" not found!`);
     }
 
@@ -982,15 +1035,127 @@ function resolve_mapmove(argObj) {
 // █   █  ███  █   █
 // SECTION: auxiliary functions for JS things
 
-function get_map(mapname) {
+function get_map(argObj) {
+    const mapname = argObj.mapname;
+    const name = 'Areamap.get_map';
+    const this_map = areamaps[mapname];
     // ERROR: missing arg
     if (mapname === undefined) {
-        throw new Error('Areamap.get_map — missing required mapname argument!');
+        throw new Error(`${name} — missing required mapname argument!`);
     }
-    else if (areamaps[mapname] === undefined) {
-        throw new Error(`Areamap.get_map — areamap "${mapname}" not found!`);
+    // ERROR: non-extant map
+    else if (this_map === undefined) {
+        throw new Error(`${name} — areamap "${mapname}" not found!`);
     }
     return structuredClone(areamaps[mapname]);
+}
+
+function update_map(argObj) {
+    const { mapname, columns, maparray, mapview, mapareas } = argObj;
+    const name = 'Areamap.update_map';
+    const this_map = areamaps[mapname];
+
+    // ERROR: missing arg
+    if (mapname === undefined) {
+        throw new Error(`${name} — missing required mapname argument!`);
+    }
+    // ERROR: non-extant map
+    else if (this_map === undefined) {
+        throw new Error(`${name} — areamap "${mapname}" not found!`);
+    }
+
+//   ┌─┐┌─┐┬  ┬ ┬┌┬┐┌┐┌┌─┐   ┬   ┌┬┐┌─┐┌─┐┌─┐┬─┐┬─┐┌─┐┬ ┬
+//   │  │ ││  │ │││││││└─┐  ┌┼─  │││├─┤├─┘├─┤├┬┘├┬┘├─┤└┬┘
+//   └─┘└─┘┴─┘└─┘┴ ┴┘└┘└─┘  └┘   ┴ ┴┴ ┴┴  ┴ ┴┴└─┴└─┴ ┴ ┴
+//  SECTION: columns & maparray
+    // ERROR: columns not a number
+    if (
+        (columns !== undefined) &&
+        (typeof columns !== 'number')
+    ) {
+        throw new Error(`${name} — areamap "${mapname}" — columns must be a number!`);
+    }
+    // ERROR: maparray not an array (or undefined)
+    else if (
+        (maparray !== undefined)    &&
+        (! Array.isArray(maparray)) 
+    ) {
+        throw new Error(`${name} — areamap "${mapname}" — maparray must be an array!`);
+    }
+    if ((columns !== undefined) || (maparray !== undefined)) {
+        // ERROR: maparray not rectangular
+        if ((maparray?.length ?? this_map.maparray.length) % (columns ?? this_map.columns) !== 0) {
+            throw new Error(`${name} — areamap "${mapname}" — new columns or maparray would break rectangularity!`);
+        }
+        this_map.columns = columns ?? this_map.columns;
+        this_map.maparray = maparray ?? this_map.maparray;
+        update_exits({ mapname });
+    }
+
+//   ┌┬┐┌─┐┌─┐┬  ┬┬┌─┐┬ ┬
+//   │││├─┤├─┘└┐┌┘│├┤ │││
+//   ┴ ┴┴ ┴┴   └┘ ┴└─┘└┴┘
+//  SECTION: mapview
+    if (mapview !== undefined) {
+        // ERROR: mapview not an object
+        if (typeof mapview !== 'object') {
+            throw new Error(`${name} — areamap "${mapname}" — mapview must be an object containing "columns" & "array" properties!`);
+        }
+        // ERROR: mapview.columns not a number (or undefined)
+        else if (typeof mapview.columns !== 'number') {
+            throw new Error(`${name} — areamap "${mapname}" — mapview.columns must be a number!`);
+        }
+        // ERROR: mapview.array not an array (or undefined)
+        else if (! Array.isArray(mapview.array)) {
+            throw new Error(`${name} — areamap "${mapname}" — mapview.array must be an array!`);
+        }
+        // ERROR: mapview.array not rectangular
+        else if (mapview.array.length % mapview.columns !== 0) {
+            throw new Error(`${name} — areamap "${mapname}" — mapview.array must be rectangular (whole number multiple of mapview.columns)!`);
+        }
+        // WARNING: empty mapview.array
+        else if (mapview.array.length === 0) {
+            console.warn(`${name} — areamap "${mapname}" — mapview.array is empty!`);
+        }
+        this_map.mapview = mapview;
+    }
+
+//   ┌┬┐┌─┐┌─┐┌─┐┬─┐┌─┐┌─┐┌─┐
+//   │││├─┤├─┘├─┤├┬┘├┤ ├─┤└─┐
+//   ┴ ┴┴ ┴┴  ┴ ┴┴└─└─┘┴ ┴└─┘
+//  SECTION: mapareas
+    if (mapareas !== undefined) {
+        // ERROR: mapareas not an object
+        if (typeof mapareas !== 'object') {
+            throw new Error(`${name} — areamap "${mapname}" — mapareas must be an object!`);
+        }
+        for (const [id, maparea] of Object.entries(mapareas)) {
+            // WARNING: non-extant maparea for map
+            if (this_map.mapareas[id] === undefined) {
+                console.warn(`${name} — areamap "${mapname}" — maparea "${id}" not found!`);
+                continue;
+            }
+            // WARNING: maparea not an object
+            else if (typeof maparea !== 'object') {
+                console.warn(`${name} — areamap "${mapname}" — maparea "${id}" is not an object!`);
+                continue;
+            }
+            for (const key in maparea) {
+                // WARNING: maparea id is immutable
+                if (key === 'id') {
+                    console.warn(`${name} — areamap "${mapname}" — maparea "${id}", id is immutable!`);
+                    continue;
+                }
+                // WARNING: unknown maparea update property
+                // SYNC REMINDER: changing here requires changing maparea creation fn
+                else if (! ['name', 'type', 'tile'].includes(key)) {
+                    console.warn(`${name} — areamap "${mapname}" — maparea "${id}", unknown property "${key}" — only name, type, and tile are allowed!`);
+                    continue;
+                }
+                this_map.mapareas[id][key] = maparea[key];
+            }
+        }
+    }
 }
 
 
@@ -1004,13 +1169,13 @@ function get_map(mapname) {
 // SECTION: expose functions
 
 window.Areamap = {
-    get_map,
     new_map,
-    update_exits,
     create_rose,
     create_mapview,
     set_scripts,
     begin_mapmove,
+    get_map,
+    update_map,
 };
 
 })();
