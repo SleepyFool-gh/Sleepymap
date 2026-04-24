@@ -235,7 +235,7 @@ function new_map(argObj) {
     const mapareas = this_map.mapareas;
     // take unique values from map array, create areas for each
     [...new Set(maparray)].forEach( function(id) {
-        // SYNC REMINDER: changing here also requires changing default wall below & update_map fn
+        // SYNC REMINDER: changing here also requires changing default wall below & edit_map fn
         mapareas[id] = {
             id      : id,                                       // area identifier
             name    : argObj.mapareas?.[id]?.name ?? id,        // name, use maparea name if found
@@ -246,7 +246,7 @@ function new_map(argObj) {
     // overwrite with default wall
     {
         const id = options.default.wall_id;
-        // SYNC REMINDER: changing here also requires changing forEach ^ & update_map fn
+        // SYNC REMINDER: changing here also requires changing forEach ^ & edit_map fn
         mapareas[id] = {
             id      : id,
             name    : argObj.mapareas?.[id]?.name ?? id,
@@ -750,7 +750,7 @@ function create_mapview(argObj) {
 // █   █ █   █   █   █    █ █   █ █     █   █ █   █   █   █
 // █   █  ███    █    ████   ███  █     ████  █   █   █   █████
 // SECTION: rose & mapview autoupdate handler
-$(document).on('areamap:mapmove_resolved', function(ev, data) {
+$(document).on(['areamap:mapmove_resolved', 'areamap:map_edited'], function(ev, data) {
     const $roses = $('.macro-areamap-rose[data-autoupdate="true"]');
     $roses.each( function() {
         const $rose = $(this);
@@ -1050,9 +1050,9 @@ function get_map(argObj) {
     return structuredClone(areamaps[mapname]);
 }
 
-function update_map(argObj) {
+function edit_map(argObj) {
     const { mapname, diagonals, columns, maparray, mapview, mapareas } = argObj;
-    const name = 'Areamap.update_map';
+    const name = 'Areamap.edit_map';
     const this_map = areamaps[mapname];
     let exits_need_updating = false;
 
@@ -1174,8 +1174,42 @@ function update_map(argObj) {
     if (exits_need_updating) {
         update_exits({ mapname });
     }
+    // update roses & mapviews
+    $('#passages').trigger('areamap:map_edited', { mapname });
 }
 
+// manual update $rose function
+function update_rose(argObj) {
+    const { $rose } = argObj;
+    const name = 'Areamap.update_rose';
+
+    // ERROR: $rose isn't a jQuery obj
+    if (! ($rose instanceof jQuery)) {
+        throw new Error(`${name} — $rose must be a jQuery instance!`);
+    }
+    else if ($rose.length === 0) {
+        throw new Error(`${name} — $rose is empty!`);
+    }
+
+    // update rose using argObj stored on rose
+    $rose.replaceWith(create_rose($rose.data('argObj')));
+}
+// manual update mapview function
+function update_mapview(argObj) {
+    const { $mapview } = argObj;
+    const name = 'Areamap.update_mapview';
+
+    // ERROR: $mapview isn't a jQuery obj
+    if (! ($mapview instanceof jQuery)) {
+        throw new Error(`${name} — $mapview must be a jQuery instance!`);
+    }
+    else if ($mapview.length === 0) {
+        throw new Error(`${name} — $mapview is empty!`);
+    }
+
+    // update mapview using argObj stored on mapview
+    $mapview.replaceWith(create_mapview($mapview.data('argObj')));
+}
 
 
 
@@ -1193,7 +1227,9 @@ window.Areamap = {
     set_scripts,
     begin_mapmove,
     get_map,
-    update_map,
+    edit_map,
+    update_rose,
+    update_mapview,
 };
 
 })();

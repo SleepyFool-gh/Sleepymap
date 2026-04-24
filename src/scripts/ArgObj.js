@@ -67,7 +67,7 @@ class ArgObj {
                 // add own name first
                 aliases[k] = k;
                 // if no aliases, skip
-                if (typeof template[k].aliases === 'undefined') {
+                if (template[k].aliases === undefined) {
                     continue;
                 }
                 // wrap aliases in an array if not in one
@@ -80,7 +80,7 @@ class ArgObj {
                         throw new Error(`${id} - ArgObj failed, aliases should be a string or an array of strings; FAILED`)
                     }
                     // ERROR: clobbering existing alias
-                    if (typeof aliases[a] !== 'undefined') {
+                    if (aliases[a] !== undefined) {
                         throw new Error(`${id} - ArgObj failed, clobbering existing name/aliases "${a}"; FAILED`)
                     }
                     aliases[a] = k;
@@ -102,15 +102,11 @@ class ArgObj {
                 const arg_this = args_in[i];
                 const key_this = aliases[arg_this];
                     // {object} input
-                    if (
-                        typeof arg_this === 'object'
-                    ) {
+                    if (typeof arg_this === 'object') {
                         i += this.#parse_obj(i);
                     }
                     // kvp input
-                    else if (
-                        typeof key_this !== 'undefined'
-                    ) {
+                    else if (key_this !== undefined) {
                         i += this.#parse_kvp(i);
                     }
                     // ERROR: unknown input, author error
@@ -143,7 +139,7 @@ class ArgObj {
                 const key_this = aliases[k];
                 const val_this = arg_this[k];
                 // WARNING: template doesn't contain key, author error
-                if (typeof key_this === 'undefined') {
+                if (key_this === undefined) {
                     console.warn(`${id} - macro input parser can't identify key "${k}" or any aliases for it; IGNORED`);
                     continue;
                 }
@@ -167,7 +163,7 @@ class ArgObj {
         try {
             // ERROR: undefined input for key, author error
             if (args_in.length <= i + 1) {
-                throw new Error(`${id} - macro input parser failed to parse key value pair at key "${arg_this}", missing value; FAILED`)
+                throw new Error(`${id} - macro input parser couldn't pair key "${arg_this}" with any value (missing); FAILED`)
             }
             this.#write_value(key_this, val_this);
             // i increments by 1
@@ -183,7 +179,7 @@ class ArgObj {
     #write_value(key_this, val_this) {
         const { id, template } = this.#ctx;
         // only check types if provided
-        if (typeof template[key_this].type !== 'undefined') {
+        if (template[key_this].type !== undefined) {
             // convert types to array
             const typeArr   = Array.isArray(template[key_this].type) 
                                 ? template[key_this].type 
@@ -194,7 +190,7 @@ class ArgObj {
             }
         }
         // WARNING: clobbering, author warning
-        if (typeof this[key_this] !== 'undefined') {
+        if (this[key_this] !== undefined) {
             console.warn(`${id} - macro input parser clobbered key "${key_this}" previous val "${this[key_this]}" with new val "${val_this}"; CLOBBERED`);
         }
         // write values
