@@ -113,17 +113,17 @@ Walach Home - areamap demo
 <</set_areascripts>>
 
 :: Start
-<<place_areamap_rose 
+<<place_arearose 
     mapname 'demo'
     background '<img src="./assets/rose.png">'
     autoupdate false
 >>
-<<place_areamap_rose 
+<<place_arearose 
     mapname 'demo'
     background '<img src="./assets/rose.png">'
     autoupdate true
 >>
-<<place_mapview 
+<<place_areamapview 
     mapname 'demo' 
     background '<img src="./assets/house.png">'
     show_names false

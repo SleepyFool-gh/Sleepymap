@@ -457,7 +457,7 @@ function update_exits(argObj) {
 
 // macro wrapper, calls the create_rose function (which returns a $rose object)
 // then attaches it to the macro output
-Macro.add(['place_areamap_rose'], {
+Macro.add(['place_arearose', 'placearearose'], {
     handler() {
         const name = this.name;
         const template = {
@@ -607,7 +607,7 @@ function create_rose(argObj) {
 // SECTION: mapview, the visual map to be displayed
 
 // macro wrapper, creates & places mapview
-Macro.add(['place_mapview', 'placemapview'], {
+Macro.add(['place_areamapview', 'placeareamapview'], {
     handler: function() {
         const name = this.name;
         const template = {
@@ -1179,6 +1179,21 @@ function edit_map(argObj) {
 }
 
 // manual update $rose function
+// macro wrapper
+Macro.add(['update_arearose', 'updatearearose'], {
+    handler: function() {
+        const name = this.name;
+        const template = {
+            $rose: {
+                required: true,
+                type: 'string',
+                aliases: ['rose', 'selector'],
+            },
+        };
+        const argObj = new ArgObj(name, template, this.args);
+        update_rose({$rose: $(argObj.$rose)});
+    }
+});
 function update_rose(argObj) {
     const { $rose } = argObj;
     const name = 'Areamap.update_rose';
@@ -1187,14 +1202,38 @@ function update_rose(argObj) {
     if (! ($rose instanceof jQuery)) {
         throw new Error(`${name} — $rose must be a jQuery instance!`);
     }
+    // ERROR: empty jQuery instance
     else if ($rose.length === 0) {
         throw new Error(`${name} — $rose is empty!`);
     }
-
+    
     // update rose using argObj stored on rose
-    $rose.replaceWith(create_rose($rose.data('argObj')));
+    $rose.each( function() {
+        if (! $(this).hasClass('macro-areamap-rose')) {
+            console.warn(`${name} — provided jQuery object is not an areamap rose!`);
+            console.warn($(this));
+            return
+        }
+        $(this).replaceWith(create_rose($(this).data('argObj')));
+    });
 }
+
 // manual update mapview function
+// macro wrapper
+Macro.add(['update_areamapview', 'updateareamapview'], {
+    handler: function() {
+        const name = this.name;
+        const template = {
+            $mapview: {
+                required: true,
+                type: 'string',
+                aliases: ['mapview', 'selector'],
+            },
+        };
+        const argObj = new ArgObj(name, template, this.args);
+        update_mapview({$mapview: $(argObj.$mapview)});
+    }
+});
 function update_mapview(argObj) {
     const { $mapview } = argObj;
     const name = 'Areamap.update_mapview';
@@ -1203,12 +1242,20 @@ function update_mapview(argObj) {
     if (! ($mapview instanceof jQuery)) {
         throw new Error(`${name} — $mapview must be a jQuery instance!`);
     }
+    // ERROR: empty jQuery instance
     else if ($mapview.length === 0) {
         throw new Error(`${name} — $mapview is empty!`);
     }
 
     // update mapview using argObj stored on mapview
-    $mapview.replaceWith(create_mapview($mapview.data('argObj')));
+    $mapview.each( function() {
+        if (! $(this).hasClass('macro-areamap-mapview')) {
+            console.warn(`${name} — provided jQuery object is not an areamap mapview!`);
+            console.warn($(this));
+            return
+        }
+        $(this).replaceWith(create_mapview($(this).data('argObj')));
+    });
 }
 
 
