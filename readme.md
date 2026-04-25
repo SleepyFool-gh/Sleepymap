@@ -1,3 +1,12 @@
+<!--
+ ███ █    █ █████ ████   ████
+  █  ██   █   █   █   █ █    █
+  █  █ █  █   █   ████  █    █
+  █  █  █ █   █   █   █ █    █
+ ███ █   ██   █   █   █  ████
+ SECTION: intro
+-->
+
 # `Areamap` Library
 
 `Areamap` is a map library for SugarCube designed for room-to-room movement like **Darkest Dungeon** or node-to-node movement like **Faster Than Light** — NOT for grid movement like **Zelda** or **Final Fantasy Tactics**.
@@ -17,6 +26,18 @@
 - **Configurable defaults:** for various settings
 
 &nbsp;
+
+
+
+
+<!--
+ █    █  ███   ████ ████   ████   ████
+ ██  ██ █   █ █     █   █ █    █ █
+ █ ██ █ █████ █     ████  █    █  ███
+ █    █ █   █ █     █   █ █    █     █
+ █    █ █   █  ████ █   █  ████  ████
+ SECTION: macros
+-->
 
 ## Macros:
 
@@ -97,8 +118,8 @@ Assigns TwineScript logic to run during the `mapmove` process. Arguments can be 
     - `<<onmapend>>`: Only runs when mapmove succeeds, after position is updated
     - `<<onmapabort>>`: Only runs when mapmove fails
     - **Arguments:** All these child tags take the same arguments
-        - `to`: (string|string[]|"any") *(optional)* id(s) of the `maparea` the player is moving to; either as a string, an array of strings, or "any"
-        - `from`: (string|string[]|"any") *(optional)* id(s) of the `maparea` the player is moving from; either as a string, an array of strings, or "any"
+        - `to`: (string|array<string>|"any") *(optional)* id(s) of the `maparea` the player is moving to; either as a string, an array of strings, or "any"
+        - `from`: (string|array<string>|"any") *(optional)* id(s) of the `maparea` the player is moving from; either as a string, an array of strings, or "any"
 
 &nbsp;
 
@@ -112,6 +133,18 @@ Manually triggers a `mapmove` attempt. Using this macro circumvents any checks t
 
 &nbsp;
 
+
+
+
+<!--
+ █    █ █████ █████ █   █  ████  ████   ████
+ ██  ██ █       █   █   █ █    █ █   █ █
+ █ ██ █ ███     █   █████ █    █ █   █  ███
+ █    █ █       █   █   █ █    █ █   █     █
+ █    █ █████   █   █   █  ████  ████  ████
+ SECTION: methods
+-->
+
 ## JavaScript Methods:
 
 Javascript methods are stored on the `Areamap` window object. All methods take an `argObj` argument object.
@@ -122,11 +155,11 @@ Creates a new `areamap`. The `<<new_areamap>>` macro is a wrapper for this metho
 - **argObj Properties:**
     - `mapname`: (string) name of `areamap`
     - `columns`: (number) number of columns in the map grid
-    - `maparray`: (string[]) 1D array of `maparea` ids representing the map navigation logic, length must be divisible by `columns`
+    - `maparray`: (array<string>) 1D array of `maparea` ids representing the map navigation logic, length must be divisible by `columns`
     - `diagonals`: (boolean) *(optional)* whether diagonal movement is allowed, default set in `options`
     - `mapview`: (object) *(optional)* data defining a separate grid for the mapview
         - `mapview.columns`: (number) number of columns in the `mapview` grid
-        - `mapview.array`: (string[]) 1D array of `maparea` ids representing the mapview navigation logic, length must be divisible by `mapview.columns`
+        - `mapview.array`: (array<string>) 1D array of `maparea` ids representing the mapview navigation logic, length must be divisible by `mapview.columns`
     - `mapareas`: (object) *(optional)* additional metadata for `mapareas`, partial objects will be filled with default values
         - `mapareas.name`: (string) *(optional)* used for links in `roses` & for the `show_names` option in `mapviews`, default is the `maparea` id
         - `mapareas.type`: ("floor"|"wall") *(optional)* `floors` can be occupied by a player, `walls` can't and block movement; default `"floor"`
@@ -138,13 +171,158 @@ Creates a new `areamap`. The `<<new_areamap>>` macro is a wrapper for this metho
         - `mapvars.blocked`: (string) *(optional)* stores whether `mapmove` to each `maparea` should fail, as an object of booleans
         - `mapvars.frozen`: (string) *(optional)* stores whether ALL `rose` and `mapview` links for an `areamap` are `disabled`, as a boolean
 
+&nbsp;
 
-### `set_areascripts`
-Assigns TwineScript logic to run during the `mapmove` process. `<<set_areascripts>>` macro is a wrapper for this method.
+### `create_rose`
+Creates a jQuery `rose` element. The `<<place_arearose>>` macro calls this method and appends the result to the macro output.
 
-### 
+- **argObj Properties:**
+    - `mapname`: (string) name of the `areamap`
+    - `autoupdate`: (boolean) *(optional)* whether the `rose` automatically updates, default set in `options`
+    - `background`: (HTML string) *(optional)* inserted as a background element
 
 &nbsp;
+
+### `update_rose`
+Manually updates `rose` elements in the DOM. If the jQuery object passed to this method references multiple `roses`, all of them will update. Non-`rose` elements will be ignored. The `<<update_arearose>>` macro is a wrapper for this method. 
+
+- **argObj Properties:**
+    - `rose`: (jQuery object) the specific `$rose` element to refresh
+
+&nbsp;
+
+### `create_mapview`
+Creates a jQuery `mapview` element. The `<<place_mapview>>` macro calls this method and appends the result to the macro output.
+
+- **argObj Properties:**
+    - `mapname`: (string) name of the `areamap`
+    - `autoupdate`: (boolean) *(optional)* whether the `mapview` automatically updates, default set in `options`
+    - `clickable`: (boolean) *(optional)* whether `mapareas` can be clicked to navigate, default set in `options`
+    - `show_names`: (boolean) *(optional)* whether to display names for each `maparea`, default set in `options`
+    - `background`: (HTML string) *(optional)* inserted as a background element
+
+&nbsp;
+
+### `update_mapview`
+Manually updates `mapview` elements in the DOM. If the jQuery object passed to this method references multiple `mapviews`, all of them will update. Non-`mapview` elements will be ignored. The `<<update_mapview>>` macro is a wrapper for this method.
+
+- **argObj Properties:**
+    - `mapview`: (jQuery object) the specific `$mapview` element to refresh
+
+&nbsp;
+
+### `set_areascripts`
+Assigns `TwineScript` logic to run during the `mapmove` process. The `<<set_areascripts>>` macro is a wrapper for this method. The four script types supported by this method are:
+    - `onmapattempt`: always fire, immediately before `mapmove` pass/fail is determined
+    - `onmapstart`: fires if `mapmove` succeeds, immediately before the player's location is updated
+    - `onmapend`: fires if `mapmove` succeeds, immediately after the player's location is updated
+    - `onmapabort`: fires if `mapmove` fails
+
+- **argObj Properties:**
+    - `mapname`: (string) name of the `areamap`
+    - `scripts`: (array<object>) an array of script objects to assign to the map, each object ha
+        - `type`: (`"onmapattempt"`|`"onmapstart"`|`"onmapend"`|`"onmapabort"`) the event trigger
+        - `contents`: (string) the `TwineScript` code to execute
+        - `areas`: (object)
+            - `areas.to`: (string|array<string>|"any") *(optional)* id(s) of the `maparea` the player is moving to
+            - `areas.from`: (string|array<string>|"any") *(optional)* id(s) of the `maparea` the player is moving from
+
+&nbsp;
+
+### `begin_mapmove`
+Begins the `mapmove` procedure and fires the `areamap:mapmove_began` event. The `<<areamapmove>>` macro is a wrapper for this method.
+
+- **argObj Properties:**
+    - `mapname`: (string) name of the `areamap`
+    - `id_target`: (string) the `maparea` id to move to
+    - `force_abort`: (boolean) *(optional)* `true` forces the `mapmove` to fail, default `false`
+
+&nbsp;
+
+### `get_map`
+Retrieves a copy of a map object.
+
+- **argObj Properties:**
+    - `mapname`: (string) name of the `areamap` to retrieve
+- **Returns:** An object containing the map's structure, including `mapname`, `columns`, `maparray`, `diagonals`, `mapview`, `mapareas`, `mapvars`, `exits`, and `scripts`.
+
+&nbsp;
+
+### `edit_map`
+Allows for dynamic modification of an existing `areamap`. This method will automatically update the `areamap`'s navigation logic and update any `roses` or `mapviews` set to autoupdate.
+
+- **argObj Properties:**
+    - `mapname`: (string) name of the `areamap` to modify
+    - `diagonals`: (boolean) *(optional)* new diagonal movement state
+    - `columns`: (number) *(optional)* new column count, must form a rectangular grid with `maparray`
+    - `maparray`: (array<string>) *(optional)* new logic grid array, must form a rectangular grid with `columns`
+    - `mapview`: (object) *(optional)* new `mapview` configuration
+        - `mapview.columns`: (number) *(optional)* new column count, must form a rectangular grid with `mapview.array`
+        - `mapview.array`: (array<string>) *(optional)* new `mapview` array, must form a rectangular grid with `mapview.columns`
+    - `mapareas`: (object) *(optional)* update metadata for one or more `mapareas`, incomplete objects will retain existing values for missing data
+        - `mapareas.[id]`: (object)
+            - `mapareas.[id].name`: (string) *(optional)* new name
+            - `mapareas.[id].type`: ("floor"|"wall") *(optional)* new maparea type
+            - `mapareas.[id].tile`: (HTML string) *(optional)* new HTML string to display in `maparea`
+
+&nbsp;
+
+
+
+<!--
+ █████ █   █ █████ █    █ █████  ████
+ █     █   █ █     ██   █   █   █
+ ███   █   █ ███   █ █  █   █    ███
+ █      █ █  █     █  █ █   █       █
+ █████   █   █████ █   ██   █   ████
+ SECTION: events
+-->
+
+## Events:
+
+`Areamap` fires several events that allow for manipulating player movement and tracking map changes. All `Areamap` events fire off `#passages` and resolve on `document`. Authors that intend to intercept `Areamap` events should place their listeners on `#story`.
+
+### `areamap:mapmove_began`
+Triggered immediately when any `mapmove` attempt begins
+
+  - **Event Data:**
+    - `mapname`: (string) name of the `areamap` triggering the `mapmove`
+    - `id_origin`: (string) id of `maparea` the player is moving from
+    - `id_target`: (string) id of `maparea` the player is moving to
+    - `force_abort`: (boolean) true forces the `mapmove` to fail
+
+&nbsp;
+
+### `areamap:mapmove_resolved`
+Triggered after any `mapmove` resolves
+
+- **Event Data:**
+    - `mapname`: (string) name of the `areamap` that triggered the `mapmove`
+    - `id_origin`: (string) the `maparea` ID the player moved from
+    - `id_target`: (string) the `maparea` ID the player moved to
+    - `succeeded`: (boolean) whether the movement was successful
+
+&nbsp;
+
+### `areamap:map_edited`
+Triggered after the `edit_map` method completes, useful if you need to perform additional UI updates not covered by the standard `autoupdate` functionality.
+
+- **Event Data:**
+    - `mapname`: (string) name of the `areamap` that was modified
+
+&nbsp;
+
+
+
+
+<!--
+  ████  ████  █████ ███  ████  █    █  ████
+ █    █ █   █   █    █  █    █ ██   █ █
+ █    █ ████    █    █  █    █ █ █  █  ███
+ █    █ █       █    █  █    █ █  █ █     █
+  ████  █       █   ███  ████  █   ██ ████
+ SECTION: options
+-->
 
 ## Options:
 
