@@ -1,4 +1,25 @@
-<div id=mc>
+<style>
+    .container-lg.px-3.my-5.markdown-body {
+        margin-top: 0 !important;
+        height: 100svh;
+    }
+    .container-lg.px-3.my-5.markdown-body > h1 {
+        display: none;
+    }
+    #mc-wrapper {
+        display: grid;
+        grid-template-columns: 25% 75%;
+        align-items: flex-start;
+        gap: 20px;
+    }
+    #toc {
+        overflow: auto;
+    }
+    #md {
+        overflow: auto;
+    }
+</style>
+<div id='mc-wrapper'>
 <aside id='toc' markdown='1'>
 ## Table of Contents
 
@@ -569,19 +590,3 @@ Triggered after the `edit_map` method completes, useful if you need to perform a
         - used in: `<<place_mapview>>` and `Areamap.create_mapview`
 </section>
 </div>
-<style>
-  #mc {
-    display: flex;
-    flex-direction: row;
-    align-items: flex-start;
-    gap: 20px;
-  }
-  #toc {
-    width: 25%;
-    position: sticky;
-    top: 20px;
-  }
-  #md {
-    width: 75%;
-  }
-</style>
