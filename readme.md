@@ -35,7 +35,7 @@
 - [Options](#options)
 </aside>
 
-<section id='md' markdown='1'>
+<section id='mc' markdown='1'>
 <!--
  ███ █    █ █████ ████   ████
   █  ██   █   █   █   █ █    █
@@ -568,18 +568,18 @@ Triggered after the `edit_map` method completes, useful if you need to perform a
         - used in: `<<place_mapview>>` and `Areamap.create_mapview`
 </section>
 <style>
-  .wrapper {
+  body > .markdown-body {
     display: flex;
     flex-direction: row;
     align-items: flex-start;
     gap: 20px;
   }
-  .toc-sidebar {
+  #toc {
     width: 25%;
     position: sticky;
     top: 20px;
   }
-  .main-content {
+  #mc {
     width: 75%;
   }
 </style>
