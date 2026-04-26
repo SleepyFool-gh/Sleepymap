@@ -1,3 +1,4 @@
+<div id=mc>
 <aside id='toc' markdown='1'>
 ## Table of Contents
 
@@ -35,7 +36,7 @@
 - [Options](#options)
 </aside>
 
-<section id='mc' markdown='1'>
+<section id='md' markdown='1'>
 <!--
  ███ █    █ █████ ████   ████
   █  ██   █   █   █   █ █    █
@@ -567,8 +568,9 @@ Triggered after the `edit_map` method completes, useful if you need to perform a
         - value: `false`
         - used in: `<<place_mapview>>` and `Areamap.create_mapview`
 </section>
+</div>
 <style>
-  body > .markdown-body {
+  #mc {
     display: flex;
     flex-direction: row;
     align-items: flex-start;
@@ -579,7 +581,7 @@ Triggered after the `edit_map` method completes, useful if you need to perform a
     position: sticky;
     top: 20px;
   }
-  #mc {
+  #md {
     width: 75%;
   }
 </style>
