@@ -1,11 +1,4 @@
-
-<style>
-body > .markdown-body {
-    display: flex;
-}
-</style>
-
-<div id='toc'>
+<div id='toc' markdown='1'>
 ## Table of Contents
 
 - [Macros](#macros)
@@ -42,7 +35,7 @@ body > .markdown-body {
 - [Options](#options)
 </div>
 
-<div id='md'>
+<div id='md' markdown='1'>
 <!--
  ███ █    █ █████ ████   ████
   █  ██   █   █   █   █ █    █
@@ -120,7 +113,7 @@ Defines a new `areamap`. This macro **must** be called in `StoryInit`. It accept
             - `type`: ("floor"|"wall") *(optional)* `floors` can be occupied by a player, `walls` can't and block movement; default `"floor"`
             - `tile`: (HTML string) *(optional)* inserted into each space in the `mapview`, default none
 - **Examples:**
-    ```liquid
+    ```js
     <<set _mapareas = {
         MB: {name: 'Master Bedroom'},
         GB: {name: 'Guest Bedroom'},
@@ -168,7 +161,7 @@ Generates a 3x3 grid of directional links for navigation.
     - `autoupdate`: (boolean) *(optional)* whether the `rose` automatically updates after each `mapmove` or when the areamap changes, default set in `options`
     - `background`: (HTML string) *(optional)* inserted as a background element for the `rose`
 - **Examples:**
-    ```liquid
+    ```js
     <<place_arearose
         mapname     'small_house'
         background  '<img src="./assets/rose.png">'
@@ -182,7 +175,7 @@ Manually updates a `rose` element.
 - **Arguments:** 
     - `rose`: (selector string) jQuery selector for the `rose` element to update
 - **Examples:**
-    ```liquid
+    ```js
     <<update_arearose rose '.macro-areamap-rose'>>
     ```
 
@@ -197,7 +190,7 @@ Renders a visual representation of the `areamap` with the tiles configured in th
     - `show_names`: (boolean) *(optional)* whether to display names for each `maparea`, default set in `options`
     - `background`: (HTML string) *(optional)* inserted as a background element for the `mapview`
 - **Examples:**
-    ```liquid
+    ```js
     <<place_mapview
         mapname     'small_house'
         background  '<img src="./assets/small_house.png">'
@@ -211,7 +204,7 @@ Manually updates a `mapview` element.
 - **Arguments:** 
     - `mapview`: (selector string) jQuery selector for the `mapview` element to update
 - **Examples:**
-    ```liquid
+    ```js
     <<update_mapview mapview '.macro-areamap-mapview'>>
     ```
 
@@ -234,7 +227,7 @@ Assigns TwineScript logic to run during the `mapmove` process. Arguments can be 
     - **Contents:**
         - TwineScript to run when the tag is triggered
 - **Examples:**
-    ```liquid
+    ```js
     <<set_areascripts mapname 'small_house'>>
         <<onmapattempt>>
             <<run $time++>>
@@ -254,7 +247,7 @@ Manually triggers a `mapmove` attempt. Using this macro circumvents any checks t
     - `target`: (string) `maparea` to move to
     - `force_abort`: (boolean) *(optional)* `true` forces the `mapmove` to fail, default `false`
 - **Examples:**
-    ```liquid
+    ```js
     <<areamapmove mapname 'small_house' target 'MB'>>
     ```
 
@@ -301,7 +294,7 @@ Creates a new `areamap`. The `<<new_areamap>>` macro is a wrapper for this metho
         - `mapvars.blocked`: (string) *(optional)* stores whether `mapmove` to each `maparea` should fail, as an object of booleans
         - `mapvars.frozen`: (string) *(optional)* stores whether ALL `rose` and `mapview` links for an `areamap` are `disabled`, as a boolean
 - **Examples:**
-    ```liquid
+    ```js
     Areamap.new_areamap({
         mapname  : 'small_house',
         start    : 'ST',
@@ -332,7 +325,7 @@ Creates a jQuery `rose` element. The `<<place_arearose>>` macro calls this metho
     - `background`: (HTML string) *(optional)* inserted as a background element
 - **Returns:** (jQuery object) the created `$rose` element
 - **Examples:**
-    ```liquid
+    ```js
     Areamap.create_rose({
         mapname    : 'small_house',
         autoupdate : true,
@@ -347,7 +340,7 @@ Manually updates `rose` elements in the DOM. If the jQuery object passed to this
 - **argObj Properties:**
     - `rose`: (jQuery object) the specific `$rose` element to refresh
 - **Examples:**
-    ```liquid
+    ```js
     Areamap.update_rose({
         rose: $('#rose-element'),
     });
@@ -365,7 +358,7 @@ Creates a jQuery `mapview` element. The `<<place_mapview>>` macro calls this met
     - `background`: (HTML string) *(optional)* inserted as a background element
 - **Returns:** (jQuery object) the created `$mapview` element
 - **Examples:**
-    ```liquid
+    ```js
     Areamap.create_mapview({
         mapname    : 'small_house',
         clickable  : true,
@@ -380,7 +373,7 @@ Manually updates `mapview` elements in the DOM. If the jQuery object passed to t
 - **argObj Properties:**
     - `mapview`: (jQuery object) the specific `$mapview` element to refresh
 - **Examples:**
-    ```liquid
+    ```js
     Areamap.update_mapview({
         mapview: $('#mapview-element'),
     });
@@ -404,7 +397,7 @@ Assigns `TwineScript` logic to run during the `mapmove` process. The `<<set_area
             - `scripts[].areas.to`: (string|array\<string\>|"any") *(optional)* id(s) of the `maparea` the player is moving to
             - `scripts[].areas.from`: (string|array\<string\>|"any") *(optional)* id(s) of the `maparea` the player is moving from
 - **Examples:**
-    ```liquid
+    ```js
     Areamap.set_areascripts({
         mapview: $('#mapview-element'),
         scripts: [
@@ -439,7 +432,7 @@ Begins the `mapmove` procedure and fires the `areamap:mapmove_began` event. The 
     - `id_target`: (string) the `maparea` id to move to
     - `force_abort`: (boolean) *(optional)* `true` forces the `mapmove` to fail, default `false`
 - **Examples:**
-    ```liquid
+    ```js
     Areamap.begin_mapmove({
         mapname: 'small_house',
         id_target: 'PT',
@@ -455,7 +448,7 @@ Retrieves a copy of a map object. Manipulating the returned object *will not* af
     - `mapname`: (string) name of the `areamap` to retrieve
 - **Returns:** An object containing the map's structure, including `mapname`, `columns`, `maparray`, `diagonals`, `mapview`, `mapareas`, `mapvars`, `exits`, and `scripts`.
 - **Examples:**
-    ```liquid
+    ```js
     const myMap = Areamap.get_map({
         mapname: 'small_house',
     });
@@ -479,7 +472,7 @@ Allows for dynamic modification of an existing `areamap`. This method will autom
             - `mapareas.[id].type`: ("floor"|"wall") *(optional)* new maparea type
             - `mapareas.[id].tile`: (HTML string) *(optional)* new HTML string to display in `maparea`
 - **Examples:**
-    ```liquid
+    ```js
     Areamap.edit_map({
         mapname: 'small_house',
         mapareas: {
@@ -574,3 +567,19 @@ Triggered after the `edit_map` method completes, useful if you need to perform a
         - value: `false`
         - used in: `<<place_mapview>>` and `Areamap.create_mapview`
 </div>
+<style>
+  .wrapper {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 20px;
+  }
+  .toc-sidebar {
+    width: 25%;
+    position: sticky;
+    top: 20px;
+  }
+  .main-content {
+    width: 75%;
+  }
+</style>
