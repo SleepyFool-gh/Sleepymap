@@ -1,4 +1,4 @@
-<div id='toc' markdown='1'>
+<aside id='toc' markdown='1'>
 ## Table of Contents
 
 - [Macros](#macros)
@@ -33,9 +33,9 @@
     - [`areamap:mapmove_resolved`](#areamapmapmove_resolved)
     - [`areamap:map_edited`](#areamapmap_edited)
 - [Options](#options)
-</div>
+</aside>
 
-<div id='md' markdown='1'>
+<section id='md' markdown='1'>
 <!--
  ███ █    █ █████ ████   ████
   █  ██   █   █   █   █ █    █
@@ -566,7 +566,7 @@ Triggered after the `edit_map` method completes, useful if you need to perform a
     - `setup['@areamap/options'].default.show_names_on_mapview`: (boolean) whether the `mapview` shows names for the `mapareas`
         - value: `false`
         - used in: `<<place_mapview>>` and `Areamap.create_mapview`
-</div>
+</section>
 <style>
   .wrapper {
     display: flex;
