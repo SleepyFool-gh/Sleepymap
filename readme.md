@@ -13,6 +13,11 @@
 
 `Areamap` takes a space-separated 2D text grid and converts it into a functional map for player navigation (`mapmove`). All grid spaces with the same `maparea` id will be treated as one big room, regardless of how many grid spaces it occupies or whether it is continuous.
 
+<video width="640" height="360" controls>
+  <source src="./demo/small_house.mkv" type="video/mkv">
+  Your browser does not support the video tag.
+</video>
+
 #### Features:
 
 - **Built-in navigation options:**
@@ -89,7 +94,7 @@ Defines a new `areamap`. This macro **must** be called in `StoryInit`. It accept
     - `columns`: (number) # of columns in the logic representation grid
     - `diagonals`: (boolean) *(optional)* whether diagonal movement is allowed
 - **Contents:** 
-    * 2D space-separated text grid representing map logic, must be rectangular.
+    - 2D space-separated text grid representing map logic, must be rectangular.
 - **Child Tags:**
     - `<<mapview>>`: Defines a different 2D grid to use for `mapview` instead of the map logic grid
         - **Arguments:** `columns` (number) # of columns in the visual representation grid
@@ -109,53 +114,40 @@ Defines a new `areamap`. This macro **must** be called in `StoryInit`. It accept
 - **Examples:**
     ```html
     <<set _mapareas = {
-        BD: {name: 'Bedroom'},
+        MB: {name: 'Master Bedroom'},
         GB: {name: 'Guest Bedroom'},
         HW: {name: 'Hallway'},
-        LV: {name: 'Living Room'},
+        LR: {name: 'Living Room'},
         ST: {name: 'Stairs'},
         DR: {name: 'Dining Room'},
         KT: {name: 'Kitchen'},
         PT: {name: 'Pantry'},
     }>>
     <<new_areamap 
-        mapname     'house'
-        columns     4
+        mapname     'small_house'
+        columns     7
         diagonals   false
+        start       'KT'
     >>
-        .   ST  LR  .
-        .   .   LR  .
-        .   GB  LR  .
-        BD  HW  HW  .
-        .   .   .   .
-        .   ST  .   .
-        .   DR  KT  .
-        .   PT  .   .
-    <<mapview columns 9>>
-        .   .   .   .   .   .   .   .   .
-        .   BD  BD  ST  ST  LR  LR  LR  .
-        .   BD  BD  GB  GB  LR  LR  LR  .
-        .   BD  BD  GB  GB  LR  LR  LR  .
-        .   BD  BD  GB  GB  LR  LR  LR  .
-        .   HW  HW  HW  HW  LR  LR  LR  .
-        .   .   .   .   .   .   .   .   .
-        .   DR  DR  ST  ST  KT  KT  KT  .
-        .   DR  DR  DR  DR  KT  KT  KT  .
-        .   DR  DR  DR  DR  KT  KT  KT  .
-        .   DR  DR  DR  DR  KT  KT  KT  .
-        .   DR  DR  DR  DR  KT  KT  KT  .
-        .   PT  PT  PT  PT  PT  .   .   .
-        .   PT  PT  PT  PT  PT  .   .   .
-        .   PT  PT  PT  PT  PT  .   .   .
-        .   .   .   .   .   .   .   .   .
-    <<mapareas setup.areas>>
-    <<mapvars
-        position    '$position'
-        hidden      '$hidden'
-        disabled    '$disabled'
-        blocked     '$blocked'
-        frozen      '$frozen'
+        .   .   .   .   LR  LR  LR
+        .   KT  .   .   LR  .   ST
+        PT  DR  ST  .   HW  .   .
+        .   .   .   .   HW  .   .
+        .   .   .   .   HW  GB  .
+        .   .   .   .   MB  .   .
+    <<mapview 
+        columns     16
     >>
+        .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
+        .   .   .   .   KT  KT  KT  KT  KT  .   LR  LR  LR  LR  LR  .
+        .   .   .   .   KT  KT  KT  KT  KT  .   LR  LR  LR  LR  LR  .
+        .   PT  PT  PT  KT  KT  KT  KT  KT  .   LR  LR  LR  LR  LR  .
+        .   PT  PT  PT  DR  DR  DR  DR  ST  .   HW  GB  GB  GB  ST  .
+        .   PT  PT  PT  DR  DR  DR  DR  ST  .   HW  GB  GB  GB  ST  .
+        .   PT  PT  PT  DR  DR  DR  DR  DR  .   HW  MB  MB  MB  MB  .
+        .   PT  PT  PT  DR  DR  DR  DR  DR  .   HW  MB  MB  MB  MB  .
+        .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
+    <<mapareas _mapareas>>
     <</new_areamap>>
     ```
 
@@ -167,6 +159,13 @@ Generates a 3x3 grid of directional links for navigation.
     - `mapname`: (string) name of `areamap`
     - `autoupdate`: (boolean) *(optional)* whether the `rose` automatically updates after each `mapmove` or when the areamap changes, default set in `options`
     - `background`: (HTML string) *(optional)* inserted as a background element for the `rose`
+- **Examples:**
+    ```html
+    <<place_arearose
+        mapname     'small_house'
+        background  '<img src="./assets/rose.png">'
+    >>
+    ```
 
 
 ### `<<update_arearose>>`
@@ -174,6 +173,10 @@ Manually updates a `rose` element.
 
 - **Arguments:** 
     - `rose`: (selector string) jQuery selector for the `rose` element to update
+- **Examples:**
+    ```html
+    <<update_arearose rose '.macro-areamap-rose'>>
+    ```
 
 
 ### `<<place_mapview>>`
@@ -185,6 +188,13 @@ Renders a visual representation of the `areamap` with the tiles configured in th
     - `clickable`: (boolean) *(optional)* whether mapareas can be clicked to navigate, default set in `options`
     - `show_names`: (boolean) *(optional)* whether to display names for each `maparea`, default set in `options`
     - `background`: (HTML string) *(optional)* inserted as a background element for the `mapview`
+- **Examples:**
+    ```html
+    <<place_mapview
+        mapname     'small_house'
+        background  '<img src="./assets/small_house.png">'
+    >>
+    ```
 
 
 ### `<<update_mapview>>`
@@ -192,6 +202,10 @@ Manually updates a `mapview` element.
 
 - **Arguments:** 
     - `mapview`: (selector string) jQuery selector for the `mapview` element to update
+- **Examples:**
+    ```html
+    <<update_mapview mapview '.macro-areamap-mapview'>>
+    ```
 
 
 ### `<<set_areascripts>>`
@@ -199,6 +213,8 @@ Assigns TwineScript logic to run during the `mapmove` process. Arguments can be 
     - when `mapmove` succeeds: `<<onmapstart>>` then `<<onmapend>>`
     - when `mapmove` fails: `<<onmapabort>>`
 
+- **Arguments:**
+    - `mapname`: (string) name of `areamap`
 - **Child Tags:**
     - `<<onmapattempt>>`: Always runs, immediately when a mapmove is attempted
     - `<<onmapstart>>`: Only runs when `mapmove` succeeds, before position is updated
@@ -207,6 +223,19 @@ Assigns TwineScript logic to run during the `mapmove` process. Arguments can be 
     - **Arguments:** All these child tags take the same arguments
         - `to`: (string|array\<string\>|"any") *(optional)* id(s) of the `maparea` the player is moving to; either as a string, an array of strings, or "any"
         - `from`: (string|array\<string\>|"any") *(optional)* id(s) of the `maparea` the player is moving from; either as a string, an array of strings, or "any"
+    - **Contents:**
+        - TwineScript to run when the tag is triggered
+- **Examples:**
+    ```html
+    <<set_areascripts mapname 'small_house'>>
+        <<onmapattempt>>
+            <<run $time++>>
+        <<onmapstart from 'ST'>>
+            <<run $energy-->>
+        <<onmapend to ['KT', 'PT']>>
+            <<run $hunger++>>
+    <</set_areascripts>>
+    ```
 
 
 ### `<<areamapmove>>`
@@ -216,6 +245,10 @@ Manually triggers a `mapmove` attempt. Using this macro circumvents any checks t
     - `mapname`: (string) name of `areamap`
     - `target`: (string) `maparea` to move to
     - `force_abort`: (boolean) *(optional)* `true` forces the `mapmove` to fail, default `false`
+- **Examples:**
+    ```html
+    <<areamapmove mapname 'small_house' target 'MB'>>
+    ```
 
 
 <br>
