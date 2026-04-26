@@ -1,35 +1,11 @@
-<!--
- ███ █    █ █████ ████   ████
-  █  ██   █   █   █   █ █    █
-  █  █ █  █   █   ████  █    █
-  █  █  █ █   █   █   █ █    █
- ███ █   ██   █   █   █  ████
- SECTION: intro
--->
 
-# `Areamap` Library
+<style>
+body > .markdown-body {
+    display: flex;
+}
+</style>
 
-`Areamap` is a map library for SugarCube designed for room-to-room movement like **Darkest Dungeon** or node-to-node movement like **Faster Than Light** — NOT for grid movement like **Zelda** or **Final Fantasy Tactics**.
-
-`Areamap` takes a space-separated 2D text grid and converts it into a functional map for player navigation (`mapmove`). All grid spaces with the same `maparea` id will be treated as one big room, regardless of how many grid spaces it occupies or whether it is continuous.
-
-<video width="690" height="607" controls>
-  <source src="./demo/small_house.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
-
-#### Features:
-
-- **Built-in navigation options:**
-    1) compass rose with directional buttons (`rose`)
-    2) visual map with optionally clickable `mapareas` (`mapview`)
-- **TwineScripts payloads:** Scripts can be assigned to run at various stages of the `mapmove` process.
-- **Separation of map logic & map view:** The 2D grid used to generate the `mapview` can be configured independently from the 2D grid useed for map logic.
-- **Linked `story variables`:** Map state can be linked to `story variables` for map behavior manipulation.
-- **Movement link manipulation:** Movement links can be `hidden` (links hidden), `disabled` (links disabled, `mapmove` prevented), or `blocked` (links available, `mapmove` attempted but fails).
-- **JavaScript methods:** for manipulating `areamaps`, `roses`, and `mapviews`
-- **Configurable defaults:** for various settings
-
+<div id='toc'>
 ## Table of Contents
 
 - [Macros](#macros)
@@ -64,6 +40,40 @@
     - [`areamap:mapmove_resolved`](#areamapmapmove_resolved)
     - [`areamap:map_edited`](#areamapmap_edited)
 - [Options](#options)
+</div>
+
+<div id='md'>
+<!--
+ ███ █    █ █████ ████   ████
+  █  ██   █   █   █   █ █    █
+  █  █ █  █   █   ████  █    █
+  █  █  █ █   █   █   █ █    █
+ ███ █   ██   █   █   █  ████
+ SECTION: intro
+-->
+
+# `Areamap` Library
+
+`Areamap` is a map library for SugarCube designed for room-to-room movement like **Darkest Dungeon** or node-to-node movement like **Faster Than Light** — NOT for grid movement like **Zelda** or **Final Fantasy Tactics**.
+
+`Areamap` takes a space-separated 2D text grid and converts it into a functional map for player navigation (`mapmove`). All grid spaces with the same `maparea` id will be treated as one big room, regardless of how many grid spaces it occupies or whether it is continuous.
+
+<video width="690" height="607" controls>
+  <source src="./demo/small_house.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+
+#### Features:
+
+- **Built-in navigation options:**
+    1) compass rose with directional buttons (`rose`)
+    2) visual map with optionally clickable `mapareas` (`mapview`)
+- **TwineScripts payloads:** Scripts can be assigned to run at various stages of the `mapmove` process.
+- **Separation of map logic & map view:** The 2D grid used to generate the `mapview` can be configured independently from the 2D grid useed for map logic.
+- **Linked `story variables`:** Map state can be linked to `story variables` for map behavior manipulation.
+- **Movement link manipulation:** Movement links can be `hidden` (links hidden), `disabled` (links disabled, `mapmove` prevented), or `blocked` (links available, `mapmove` attempted but fails).
+- **JavaScript methods:** for manipulating `areamaps`, `roses`, and `mapviews`
+- **Configurable defaults:** for various settings
 
 <p align="center">
     &bull; &bull; &bull;
@@ -563,3 +573,4 @@ Triggered after the `edit_map` method completes, useful if you need to perform a
     - `setup['@areamap/options'].default.show_names_on_mapview`: (boolean) whether the `mapview` shows names for the `mapareas`
         - value: `false`
         - used in: `<<place_mapview>>` and `Areamap.create_mapview`
+</div>
