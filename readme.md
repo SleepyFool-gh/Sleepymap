@@ -13,7 +13,7 @@
 
 `Areamap` takes a space-separated 2D text grid and converts it into a functional map for player navigation (`mapmove`). All grid spaces with the same `maparea` id will be treated as one big room, regardless of how many grid spaces it occupies or whether it is continuous.
 
-<video width="640" height="360" controls>
+<video width="690" height="607" controls>
   <source src="./demo/small_house.mp4" type="video/mp4">
   Your browser does not support the video tag.
 </video>
@@ -65,11 +65,9 @@
     - [`areamap:map_edited`](#areamapmap_edited)
 - [Options](#options)
 
-<br>
-    <p align="center">
+<p align="center">
     &bull; &bull; &bull;
-    </p>
-<br>
+</p>
 
 
 
@@ -112,7 +110,7 @@ Defines a new `areamap`. This macro **must** be called in `StoryInit`. It accept
             - `type`: ("floor"|"wall") *(optional)* `floors` can be occupied by a player, `walls` can't and block movement; default `"floor"`
             - `tile`: (HTML string) *(optional)* inserted into each space in the `mapview`, default none
 - **Examples:**
-    ```xml
+    ```html
     <<set _mapareas = {
         MB: {name: 'Master Bedroom'},
         GB: {name: 'Guest Bedroom'},
@@ -160,7 +158,7 @@ Generates a 3x3 grid of directional links for navigation.
     - `autoupdate`: (boolean) *(optional)* whether the `rose` automatically updates after each `mapmove` or when the areamap changes, default set in `options`
     - `background`: (HTML string) *(optional)* inserted as a background element for the `rose`
 - **Examples:**
-    ```xml
+    ```html
     <<place_arearose
         mapname     'small_house'
         background  '<img src="./assets/rose.png">'
@@ -174,7 +172,7 @@ Manually updates a `rose` element.
 - **Arguments:** 
     - `rose`: (selector string) jQuery selector for the `rose` element to update
 - **Examples:**
-    ```xml
+    ```html
     <<update_arearose rose '.macro-areamap-rose'>>
     ```
 
@@ -189,7 +187,7 @@ Renders a visual representation of the `areamap` with the tiles configured in th
     - `show_names`: (boolean) *(optional)* whether to display names for each `maparea`, default set in `options`
     - `background`: (HTML string) *(optional)* inserted as a background element for the `mapview`
 - **Examples:**
-    ```xml
+    ```html
     <<place_mapview
         mapname     'small_house'
         background  '<img src="./assets/small_house.png">'
@@ -203,7 +201,7 @@ Manually updates a `mapview` element.
 - **Arguments:** 
     - `mapview`: (selector string) jQuery selector for the `mapview` element to update
 - **Examples:**
-    ```xml
+    ```html
     <<update_mapview mapview '.macro-areamap-mapview'>>
     ```
 
@@ -226,7 +224,7 @@ Assigns TwineScript logic to run during the `mapmove` process. Arguments can be 
     - **Contents:**
         - TwineScript to run when the tag is triggered
 - **Examples:**
-    ```xml
+    ```html
     <<set_areascripts mapname 'small_house'>>
         <<onmapattempt>>
             <<run $time++>>
@@ -246,16 +244,13 @@ Manually triggers a `mapmove` attempt. Using this macro circumvents any checks t
     - `target`: (string) `maparea` to move to
     - `force_abort`: (boolean) *(optional)* `true` forces the `mapmove` to fail, default `false`
 - **Examples:**
-    ```xml
+    ```html
     <<areamapmove mapname 'small_house' target 'MB'>>
     ```
 
-
-<br>
-    <p align="center">
+<p align="center">
     &bull; &bull; &bull;
-    </p>
-<br>
+</p>
 
 
 
@@ -386,11 +381,9 @@ Allows for dynamic modification of an existing `areamap`. This method will autom
             - `mapareas.[id].type`: ("floor"|"wall") *(optional)* new maparea type
             - `mapareas.[id].tile`: (HTML string) *(optional)* new HTML string to display in `maparea`
 
-<br>
-    <p align="center">
+<p align="center">
     &bull; &bull; &bull;
-    </p>
-<br>
+</p>
 
 
 
@@ -434,11 +427,9 @@ Triggered after the `edit_map` method completes, useful if you need to perform a
 - **Event Data:**
     - `mapname`: (string) name of the `areamap` that was modified
 
-<br>
-    <p align="center">
+<p align="center">
     &bull; &bull; &bull;
-    </p>
-<br>
+</p>
 
 
 
