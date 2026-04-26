@@ -1,6 +1,5 @@
 :: StoryTitle
-Walach Home - areamap demo
-
+Areamap demo -  small house
 
 :: StoryInit [nobr]
 <<set _mapareas = {
@@ -38,13 +37,6 @@ Walach Home - areamap demo
     .   PT  PT  PT  DR  DR  DR  DR  DR  .   HW  MB  MB  MB  MB  .
     .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 <<mapareas _mapareas>>
-<<mapvars
-    position    '$position'
-    hidden      '$hidden'
-    disabled    '$disabled'
-    blocked     '$blocked'
-    frozen      '$frozen'
->>
 <</new_areamap>>
 /* <<set $position = 'KT'>> */
 
@@ -52,13 +44,12 @@ Walach Home - areamap demo
 <<place_areamapview
     mapname     'small_house'
     background  '<img src="./assets/small_house.png">'
-    autoupdate  true
 >>
 <<place_arearose
     mapname     'small_house'
     background  '<img src="./assets/rose.png">'
     autoupdate  true
 >>
-<<link 'update rose'>>
-    <<update_arearose rose '.macro-areamap-rose'>>
+<<link 'teleport to pantry'>>
+    <<areamapmove mapname 'small_house' target 'PT'>>
 <</link>>
