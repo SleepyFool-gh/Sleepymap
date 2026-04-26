@@ -27,25 +27,33 @@
 
 ## Table of Contents
 
-- [Features](#features)
 - [Macros](#macros)
-    - [`<<new_areamap>>`](#new_areamap)
-    - [`<<place_arearose>>`](#place_arearose)
-    - [`<<update_arearose>>`](#update_arearose)
-    - [`<<place_mapview>>`](#place_mapview)
-    - [`<<update_mapview>>`](#update_mapview)
-    - [`<<set_areascripts>>`](#set_areascripts)
-    - [`<<areamapmove>>`](#areamapmove)
+    - Initialization
+        - [`<<new_areamap>>`](#new_areamap)
+    - Interface Items
+        - [`<<place_arearose>>`](#place_arearose)
+        - [`<<update_arearose>>`](#update_arearose)
+        - [`<<place_mapview>>`](#place_mapview)
+        - [`<<update_mapview>>`](#update_mapview)
+    - Scripts
+        - [`<<set_areascripts>>`](#set_areascripts)
+    - Movement
+        - [`<<areamapmove>>`](#areamapmove)
 - [JavaScript Methods](#javascript-methods)
-    - [`new_areamap`](#new_areamap-1)
-    - [`create_rose`](#create_rose)
-    - [`update_rose`](#update_rose)
-    - [`create_mapview`](#create_mapview)
-    - [`update_mapview`](#update_mapview-1)
-    - [`set_areascripts`](#set_areascripts-1)
-    - [`begin_mapmove`](#begin_mapmove)
-    - [`get_map`](#get_map)
-    - [`edit_map`](#edit_map)
+    - Initialization
+        - [`new_areamap`](#new_areamap-1)
+    - Interface Items
+        - [`create_rose`](#create_rose)
+        - [`update_rose`](#update_rose)
+        - [`create_mapview`](#create_mapview)
+        - [`update_mapview`](#update_mapview-1)
+    - Scripts
+        - [`set_areascripts`](#set_areascripts-1)
+    - Movement
+        - [`begin_mapmove`](#begin_mapmove)
+    - Utilities
+        - [`get_map`](#get_map)
+        - [`edit_map`](#edit_map)
 - [Events](#events)
     - [`areamap:mapmove_began`](#areamapmapmove_began)
     - [`areamap:mapmove_resolved`](#areamapmapmove_resolved)
@@ -70,13 +78,14 @@
  SECTION: macros
 -->
 
-## Macros:
+## Macros
 
 ### `<<new_areamap>>`
 Defines a new `areamap`. This macro **must** be called in `StoryInit`. It accepts a 2D grid layout via its contents and supports optional child tags for advanced configuration.
 
 - **Arguments:** 
     - `mapname`: (string) name of `areamap`
+    - `start`: (string) starting position in map, must be a valid `maparea` id
     - `columns`: (number) # of columns in the logic representation grid
     - `diagonals`: (boolean) *(optional)* whether diagonal movement is allowed
 - **Contents:** 
@@ -97,6 +106,58 @@ Defines a new `areamap`. This macro **must** be called in `StoryInit`. It accept
             - `name`: (string) *(optional)* used for links in `roses` & for the `show_names` option in `mapviews`, default is the `maparea` id
             - `type`: ("floor"|"wall") *(optional)* `floors` can be occupied by a player, `walls` can't and block movement; default `"floor"`
             - `tile`: (HTML string) *(optional)* inserted into each space in the `mapview`, default none
+- **Examples:**
+    ```html
+    <<set _mapareas = {
+        BD: {name: 'Bedroom'},
+        GB: {name: 'Guest Bedroom'},
+        HW: {name: 'Hallway'},
+        LV: {name: 'Living Room'},
+        ST: {name: 'Stairs'},
+        DR: {name: 'Dining Room'},
+        KT: {name: 'Kitchen'},
+        PT: {name: 'Pantry'},
+    }>>
+    <<new_areamap 
+        mapname     'house'
+        columns     4
+        diagonals   false
+    >>
+        .   ST  LR  .
+        .   .   LR  .
+        .   GB  LR  .
+        BD  HW  HW  .
+        .   .   .   .
+        .   ST  .   .
+        .   DR  KT  .
+        .   PT  .   .
+    <<mapview columns 9>>
+        .   .   .   .   .   .   .   .   .
+        .   BD  BD  ST  ST  LR  LR  LR  .
+        .   BD  BD  GB  GB  LR  LR  LR  .
+        .   BD  BD  GB  GB  LR  LR  LR  .
+        .   BD  BD  GB  GB  LR  LR  LR  .
+        .   HW  HW  HW  HW  LR  LR  LR  .
+        .   .   .   .   .   .   .   .   .
+        .   DR  DR  ST  ST  KT  KT  KT  .
+        .   DR  DR  DR  DR  KT  KT  KT  .
+        .   DR  DR  DR  DR  KT  KT  KT  .
+        .   DR  DR  DR  DR  KT  KT  KT  .
+        .   DR  DR  DR  DR  KT  KT  KT  .
+        .   PT  PT  PT  PT  PT  .   .   .
+        .   PT  PT  PT  PT  PT  .   .   .
+        .   PT  PT  PT  PT  PT  .   .   .
+        .   .   .   .   .   .   .   .   .
+    <<mapareas setup.areas>>
+    <<mapvars
+        position    '$position'
+        hidden      '$hidden'
+        disabled    '$disabled'
+        blocked     '$blocked'
+        frozen      '$frozen'
+    >>
+    <</new_areamap>>
+    ```
 
 
 ### `<<place_arearose>>`
@@ -175,7 +236,7 @@ Manually triggers a `mapmove` attempt. Using this macro circumvents any checks t
  SECTION: methods
 -->
 
-## JavaScript Methods:
+## JavaScript Methods
 
 Javascript methods are stored on the `Areamap` window object. All methods take an `argObj` argument object.
 
@@ -184,6 +245,7 @@ Creates a new `areamap`. The `<<new_areamap>>` macro is a wrapper for this metho
 
 - **argObj Properties:**
     - `mapname`: (string) name of `areamap`
+    - `start`: (string) starting position on map, must be a valid `maparea` id
     - `columns`: (number) number of columns in the map grid
     - `maparray`: (array\<string\>) 1D array of `maparea` ids representing the map navigation logic, length must be divisible by `columns`
     - `diagonals`: (boolean) *(optional)* whether diagonal movement is allowed, default set in `options`
@@ -193,7 +255,7 @@ Creates a new `areamap`. The `<<new_areamap>>` macro is a wrapper for this metho
     - `mapareas`: (object) *(optional)* additional metadata for `mapareas`, partial objects will be filled with default values
         - `mapareas.name`: (string) *(optional)* used for links in `roses` & for the `show_names` option in `mapviews`, default is the `maparea` id
         - `mapareas.type`: ("floor"|"wall") *(optional)* `floors` can be occupied by a player, `walls` can't and block movement; default `"floor"`
-        - `mapareas.tile`: (HTML string) *(optional)* inserted into each space in the `mapview`
+        - `mapareas.tile`: (HTML string) *(optional)* inserted into each space in the `mapview`; default `undefined`
     - `mapvars`: (object) *(optional)* data defining links to `story variables`, `position` will update automatically when `mapmove` succeeds — these must all be `story variables` names starting with `$`
         - `mapvars.position`: (string) stores current `areamap` position, as a string
         - `mapvars.disabled`: (string) *(optional)* stores whether `rose` and `mapview` links to each `maparea` are shown but disabled, as an object of booleans
@@ -209,6 +271,7 @@ Creates a jQuery `rose` element. The `<<place_arearose>>` macro calls this metho
     - `mapname`: (string) name of the `areamap`
     - `autoupdate`: (boolean) *(optional)* whether the `rose` automatically updates, default set in `options`
     - `background`: (HTML string) *(optional)* inserted as a background element
+- **Returns:** (jQuery object) the created `$rose` element
 
 
 ### `update_rose`
@@ -227,6 +290,7 @@ Creates a jQuery `mapview` element. The `<<place_mapview>>` macro calls this met
     - `clickable`: (boolean) *(optional)* whether `mapareas` can be clicked to navigate, default set in `options`
     - `show_names`: (boolean) *(optional)* whether to display names for each `maparea`, default set in `options`
     - `background`: (HTML string) *(optional)* inserted as a background element
+- **Returns:** (jQuery object) the created `$mapview` element
 
 
 ### `update_mapview`
@@ -247,12 +311,12 @@ Assigns `TwineScript` logic to run during the `mapmove` process. The `<<set_area
 
 - **argObj Properties:**
     - `mapview`: (jQuery object) the specific `$mapview` element to refresh
-    - `scripts`: (array\<object\>)
-    - `type`: (`"onmapattempt"`|`"onmapstart"`|`"onmapend"`|`"onmapabort"`) the event trigger
-    - `contents`: (string) the `TwineScript` code to execute
-    - `areas`: (object)
-    - `areas.to`: (string|array\<string\>|"any") *(optional)* id(s) of the `maparea` the player is moving to
-    - `areas.from`: (string|array\<string\>|"any") *(optional)* id(s) of the `maparea` the player is moving from
+    - `scripts`: (array\<object\>) array of script objects, each object contains:
+        - `scripts[].type`: (`"onmapattempt"`|`"onmapstart"`|`"onmapend"`|`"onmapabort"`) the script trigger
+        - `scripts[].contents`: (string) the `TwineScript` code to execute
+        - `scripts[].areas`: (object)
+            - `scripts[].areas.to`: (string|array\<string\>|"any") *(optional)* id(s) of the `maparea` the player is moving to
+            - `scripts[].areas.from`: (string|array\<string\>|"any") *(optional)* id(s) of the `maparea` the player is moving from
 
 
 ### `begin_mapmove`
@@ -265,7 +329,7 @@ Begins the `mapmove` procedure and fires the `areamap:mapmove_began` event. The 
 
 
 ### `get_map`
-Retrieves a copy of a map object.
+Retrieves a copy of a map object. Manipulating the returned object *will not* affect or update the original map. Use `Areamap.edit_map` to edit `areamaps`.
 
 - **argObj Properties:**
     - `mapname`: (string) name of the `areamap` to retrieve
@@ -273,7 +337,7 @@ Retrieves a copy of a map object.
 
 
 ### `edit_map`
-Allows for dynamic modification of an existing `areamap`. This method will automatically update the `areamap`'s navigation logic and update any `roses` or `mapviews` set to autoupdate.
+Allows for dynamic modification of an existing `areamap`. This method will automatically update the `areamap`'s navigation logic (exits) and update any `roses` or `mapviews` set to autoupdate.
 
 - **argObj Properties:**
     - `mapname`: (string) name of the `areamap` to modify
@@ -307,7 +371,7 @@ Allows for dynamic modification of an existing `areamap`. This method will autom
  SECTION: events
 -->
 
-## Events:
+## Events
 
 `Areamap` fires several events that allow for manipulating player movement and tracking map changes. All `Areamap` events fire off `#passages` and resolve on `document`. Authors that intend to intercept `Areamap` events should place their listeners on `#story`.
 
@@ -355,7 +419,7 @@ Triggered after the `edit_map` method completes, useful if you need to perform a
  SECTION: options
 -->
 
-## Options:
+## Options
 
 - **Default values:** can be overridden by passing in argumnts to their respective macros
     - `setup['@areamap/options'].default.wall_id`: (string) default id used to represent walls in the map grid

@@ -3,93 +3,41 @@ Walach Home - areamap demo
 
 
 :: StoryInit [nobr]
- <<set 
-    setup.areas = {
-        GB  :   {name: 'Guest Bedroom'},
-        UH  :   {name: 'Hallway'},
-        LR  :   {name: 'Living Room'},
-        KT  :   {name: 'Kitchen'},
-        FY  :   {name: 'Foyer'},
-        CY  :   {name: 'Courtyard'},
-        LH  :   {name: 'Hallway'},
-        WR  :   {name: 'Waiting Room'},
-        PR  :   {name: 'Parlor'},
-        MB  :   {name: 'Master Bedroom'},
-        LB  :   {name: 'Laboratory'},
-        "#" :   {name: '', type: 'wall'}
-    };
->>
-
-
+<<set _mapareas = {
+    MB: {name: 'Master Bedroom'},
+    GB: {name: 'Guest Bedroom'},
+    HW: {name: 'Hallway'},
+    LR: {name: 'Living Room'},
+    ST: {name: 'Stairs'},
+    DR: {name: 'Dining Room'},
+    KT: {name: 'Kitchen'},
+    PT: {name: 'Pantry'},
+}>>
 <<new_areamap 
-    mapname     'demo'
-    columns     21
+    mapname     'small_house'
+    columns     7
     diagonals   false
+    start       'KT'
 >>
-    .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
-    .   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   .
-    .   #   GB  GB  GB  GB  #   UH  UH  UH  UH  UH  UH  UH  UH  UH  UH  UH  UH  #   .
-    .   #   GB  GB  GB  GB  GB  UH  #   #   #   #   #   #   #   UH  UH  #   #   #   .
-    .   #   GB  GB  GB  GB  GB  UH  #   #   #   #   #   #   #   UH  UH  #   FY  #   .
-    .   #   GB  GB  GB  GB  #   UH  #   KT  KT  KT  KT  KT  #   UH  UH  #   FY  #   .
-    .   #   #   #   #   #   #   UH  #   KT  KT  KT  KT  KT  FY  FY  FY  FY  FY  #   .
-    .   #   LR  LR  LR  LR  LR  LR  #   KT  KT  KT  KT  KT  FY  FY  FY  FY  FY  #   .
-    .   #   LR  LR  LR  LR  LR  LR  #   KT  KT  KT  KT  #   #   FY  FY  #   #   #   #
-    .   #   LR  LR  LR  LR  LR  LR  #   KT  KT  KT  KT  #   CY  CY  CY  CY  CY  .   .
-    .   #   LR  LR  LR  LR  LR  LR  #   KT  KT  KT  KT  #   CY  CY  CY  CY  CY  .   .
-    .   #   LR  LR  LR  LR  LR  LR  #   KT  KT  KT  KT  #   CY  CY  CY  CY  CY  #   #
-    .   #   LR  LR  LR  LR  LR  LR  #   KT  KT  KT  KT  #   CY  CY  CY  CY  CY  #   .
-    .   #   LR  LR  LR  LR  LR  LR  #   KT  KT  KT  KT  #   CY  CY  CY  CY  CY  #   .
-    .   #   #   #   #   #   #   #   #   #   #   #   #   #   CY  CY  CY  CY  CY  #   #
-    .   .   .   .   .   .   .   .   .   .   .   .   .   .   CY  CY  CY  CY  CY  .   .
-    .   .   .   .   .   .   .   .   .   .   .   .   .   .   CY  CY  CY  CY  CY  .   .
-    .   #   #   #   #   #   #   #   #   #   #   #   #   #   CY  CY  CY  CY  CY  #   #
-    .   #   PR  PR  PR  PR  LH  LH  LH  LH  LH  LH  LH  #   CY  CY  CY  CY  CY  #   .
-    .   #   PR  PR  PR  PR  #   #   #   #   #   LH  LH  #   CY  CY  CY  CY  CY  #   .
-    .   #   PR  PR  PR  PR  #   #   #   #   #   LH  LH  #   CY  CY  CY  CY  CY  #   .
-    .   #   PR  PR  PR  PR  #   WR  WR  WR  #   LH  LH  #   CY  CY  CY  CY  CY  #   .
-    .   #   PR  PR  PR  PR  #   WR  WR  WR  WR  WR  WR  #   #   WR  WR  #   #   #   .
-    .   #   PR  PR  PR  PR  #   WR  WR  WR  WR  WR  WR  WR  WR  WR  WR  WR  WR  #   .
-    .   #   PR  PR  PR  PR  #   #   #   WR  #   #   #   #   #   #   #   WR  #   #   .
-    .   #   #   MB  MB  #   #   #   #   LB  #   #   #   #   #   #   #   LB  #   #   .
-    .   #   MB  MB  MB  MB  #   LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  #   .
-    .   #   MB  MB  MB  MB  #   LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  #   .
-    .   #   MB  MB  MB  MB  #   LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  #   .
-    .   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   .
-    .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
-<<mapview columns 21>>
-    .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
-    .   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   .
-    .   #   GB  GB  GB  GB  #   UH  UH  UH  UH  UH  UH  UH  UH  UH  UH  UH  UH  #   .
-    .   #   GB  GB  GB  GB  #   UH  #   #   #   #   #   #   #   UH  UH  #   #   #   .
-    .   #   GB  GB  GB  GB  #   UH  #   #   #   #   #   #   #   UH  UH  #   FY  #   .
-    .   #   GB  GB  GB  GB  #   UH  #   KT  KT  KT  KT  KT  #   UH  UH  #   FY  #   .
-    .   #   #   #   #   #   #   UH  #   KT  KT  KT  KT  KT  FY  FY  FY  FY  FY  #   .
-    .   #   LR  LR  LR  LR  LR  LR  #   KT  KT  KT  KT  KT  FY  FY  FY  FY  FY  #   .
-    .   #   LR  LR  LR  LR  LR  LR  #   KT  KT  KT  KT  #   #   FY  FY  #   #   #   #
-    .   #   LR  LR  LR  LR  LR  LR  #   KT  KT  KT  KT  #   CY  CY  CY  CY  CY  .   .
-    .   #   LR  LR  LR  LR  LR  LR  #   KT  KT  KT  KT  #   CY  CY  CY  CY  CY  .   .
-    .   #   LR  LR  LR  LR  LR  LR  #   KT  KT  KT  KT  #   CY  CY  CY  CY  CY  #   #
-    .   #   LR  LR  LR  LR  LR  LR  #   KT  KT  KT  KT  #   CY  CY  CY  CY  CY  #   .
-    .   #   LR  LR  LR  LR  LR  LR  #   KT  KT  KT  KT  #   CY  CY  CY  CY  CY  #   .
-    .   #   #   #   #   #   #   #   #   #   #   #   #   #   CY  CY  CY  CY  CY  #   #
-    .   .   .   .   .   .   .   .   .   .   .   .   .   .   CY  CY  CY  CY  CY  .   .
-    .   .   .   .   .   .   .   .   .   .   .   .   .   .   CY  CY  CY  CY  CY  .   .
-    .   #   #   #   #   #   #   #   #   #   #   #   #   #   CY  CY  CY  CY  CY  #   #
-    .   #   PR  PR  PR  PR  LH  LH  LH  LH  LH  LH  LH  #   CY  CY  CY  CY  CY  #   .
-    .   #   PR  PR  PR  PR  #   #   #   #   #   LH  LH  #   CY  CY  CY  CY  CY  #   .
-    .   #   PR  PR  PR  PR  #   #   #   #   #   LH  LH  #   CY  CY  CY  CY  CY  #   .
-    .   #   PR  PR  PR  PR  #   WR  WR  WR  #   LH  LH  #   CY  CY  CY  CY  CY  #   .
-    .   #   PR  PR  PR  PR  #   WR  WR  WR  WR  WR  WR  #   #   WR  WR  #   #   #   .
-    .   #   PR  PR  PR  PR  #   WR  WR  WR  WR  WR  WR  WR  WR  WR  WR  WR  WR  #   .
-    .   #   PR  PR  PR  PR  #   #   #   WR  #   #   #   #   #   #   #   WR  #   #   .
-    .   #   #   MB  MB  #   #   #   #   LB  #   #   #   #   #   #   #   LB  #   #   .
-    .   #   MB  MB  MB  MB  #   LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  #   .
-    .   #   MB  MB  MB  MB  #   LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  #   .
-    .   #   MB  MB  MB  MB  #   LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  LB  #   .
-    .   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   #   .
-    .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
-<<mapareas setup.areas>>
+    .   .   .   .   LR  LR  LR
+    .   KT  .   .   LR  .   ST
+    PT  DR  ST  .   HW  .   .
+    .   .   .   .   HW  .   .
+    .   .   .   .   HW  GB  .
+    .   .   .   .   MB  .   .
+<<mapview 
+    columns     16
+>>
+    .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
+    .   .   .   .   KT  KT  KT  KT  KT  .   LR  LR  LR  LR  LR  .
+    .   .   .   .   KT  KT  KT  KT  KT  .   LR  LR  LR  LR  LR  .
+    .   PT  PT  PT  KT  KT  KT  KT  KT  .   LR  LR  LR  LR  LR  .
+    .   PT  PT  PT  DR  DR  DR  DR  ST  .   HW  GB  GB  GB  ST  .
+    .   PT  PT  PT  DR  DR  DR  DR  ST  .   HW  GB  GB  GB  ST  .
+    .   PT  PT  PT  DR  DR  DR  DR  DR  .   HW  MB  MB  MB  MB  .
+    .   PT  PT  PT  DR  DR  DR  DR  DR  .   HW  MB  MB  MB  MB  .
+    .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
+<<mapareas _mapareas>>
 <<mapvars
     position    '$position'
     hidden      '$hidden'
@@ -98,34 +46,19 @@ Walach Home - areamap demo
     frozen      '$frozen'
 >>
 <</new_areamap>>
-<<set $position to 'CY'>>
-<<set_areascripts mapname 'demo'>>
-    <<onmapattempt to `['G', 'W']`>>
-        <<run console.log('to G or W!')>>
-    <<onmapstart to 'H'>>
-        <<run console.log('to H!')>>
-    <<onmapstart from 'D'>>
-        <<run console.log('from D!')>>
-    <<onmapend from any>>
-        <<run console.log('from any!')>>
-    <<onmapabort>>
-        <<run console.log('aborted!')>>
-<</set_areascripts>>
+/* <<set $position = 'KT'>> */
 
 :: Start
-<<place_arearose 
-    mapname 'demo'
-    background '<img src="./assets/rose.png">'
-    autoupdate false
+<<place_areamapview
+    mapname     'small_house'
+    background  '<img src="./assets/small_house.png">'
+    autoupdate  true
 >>
-<<place_arearose 
-    mapname 'demo'
-    background '<img src="./assets/rose.png">'
-    autoupdate true
+<<place_arearose
+    mapname     'small_house'
+    background  '<img src="./assets/rose.png">'
+    autoupdate  true
 >>
-<<place_areamapview 
-    mapname 'demo' 
-    background '<img src="./assets/house.png">'
-    show_names false
-    autoupdate true
->>
+<<link 'update rose'>>
+    <<update_arearose rose '.macro-areamap-rose'>>
+<</link>>

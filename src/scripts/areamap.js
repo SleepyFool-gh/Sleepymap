@@ -15,7 +15,7 @@ const options = {
         autoupdate_rose         : true,
         autoupdate_mapview      : true,
         clickable_mapview       : true,
-        show_names_on_mapview   : true,
+        show_names_on_mapview   : false,
     }
 }
 setup['@areamap/options'] = options;
@@ -53,9 +53,15 @@ Macro.add(['newareamap', 'new_areamap'], {
         // parse args to argsObj
         const template_main = {
             mapname: {
+                required: true,
+                type: 'string',
+            },
+            start: {
+                required: true,
                 type: 'string',
             },
             columns: {
+                required: true,
                 type: 'number',
             },
             diagonals: {
@@ -143,7 +149,7 @@ function new_map(argObj) {
 //      SECTION: init the areamap
 //      creates map object on the new_areamap macro
 
-    const { mapname, columns, maparray } = argObj;
+    const { mapname, start, columns, maparray } = argObj;
     const diagonals = argObj.diagonals ?? options.default.diagonals;    // default value
     const name = argObj.name ?? 'Areamap.new_map';
 
@@ -166,6 +172,10 @@ function new_map(argObj) {
     // ERROR: maparray not rectangular
     else if (maparray.length % columns !== 0) {
         throw new Error(`${name} — areamap "${mapname}" — maparray must be rectangular (whole number multiple of columns)!`);
+    }
+    // ERROR: invalid start
+    else if (! maparray.includes(start)) {
+        throw new Error(`${name} — areamap "${mapname}" — start position "${start}" not found in maparray!`);
     }
 
     // create map object
@@ -276,7 +286,7 @@ function new_map(argObj) {
     const MAPVAR_DEFAULTS = {
         position: {
             sv_name : argObj?.mapvars?.position ?? options.default.position_story_variable,
-            val     : '',
+            val     : argObj?.start,
         },
         frozen: {
             sv_name : argObj?.mapvars?.frozen,
@@ -750,12 +760,12 @@ function create_mapview(argObj) {
 // █   █ █   █   █   █    █ █   █ █     █   █ █   █   █   █
 // █   █  ███    █    ████   ███  █     ████  █   █   █   █████
 // SECTION: rose & mapview autoupdate handler
-$(document).on(['areamap:mapmove_resolved', 'areamap:map_edited'], function(ev, data) {
+$(document).on('areamap:mapmove_resolved areamap:map_edited', function(ev, data) {
     const $roses = $('.macro-areamap-rose[data-autoupdate="true"]');
     $roses.each( function() {
         const $rose = $(this);
         const argObj = $rose.data('argObj');
-        if (argObj.mapname == data.mapname) {
+        if (argObj.mapname === data.mapname) {
             $rose.replaceWith(create_rose(argObj));
         }
     });
@@ -763,7 +773,7 @@ $(document).on(['areamap:mapmove_resolved', 'areamap:map_edited'], function(ev, 
     $mapviews.each( function() {
         const $mapview = $(this);
         const argObj = $mapview.data('argObj');
-        if (argObj.mapname == data.mapname) {
+        if (argObj.mapname === data.mapname) {
             $mapview.replaceWith(create_mapview(argObj));
         }
     });
@@ -1119,7 +1129,7 @@ function edit_map(argObj) {
             throw new Error(`${name} — areamap "${mapname}" — mapview.array must be an array!`);
         }
         // ERROR: mapview.array not rectangular
-        else if (mapview.array.length % mapview.columns !== 0) {
+        else if ((mapview.array.length ?? this_map.mapview?.array?.length) % (mapview.columns ?? this_map.mapview?.columns) !== 0) {
             throw new Error(`${name} — areamap "${mapname}" — mapview.array must be rectangular (whole number multiple of mapview.columns)!`);
         }
         // WARNING: empty mapview.array
