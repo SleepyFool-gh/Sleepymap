@@ -13,10 +13,15 @@
         gap: 20px;
     }
     #toc {
+        height: 100svh;
         overflow: auto;
+        border-right: 1px solid gainsboro;
+        padding-right: 1rem;
     }
     #md {
+        height: 100svh;
         overflow: auto;
+        padding-right: 1rem;
     }
 </style>
 <div id='mc-wrapper'>
