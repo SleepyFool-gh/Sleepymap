@@ -11,7 +11,7 @@ const options = {
     default: {
         wall_id                 : ".",
         diagonals               : false,
-        position_story_variable : "@areamap/pos",
+        position_story_variable : "$@areamap/position",
         autoupdate_rose         : true,
         autoupdate_mapview      : true,
         clickable_mapview       : true,
@@ -286,7 +286,7 @@ function new_map(argObj) {
     const MAPVAR_DEFAULTS = {
         position: {
             sv_name : argObj?.mapvars?.position ?? options.default.position_story_variable,
-            val     : argObj?.start,
+            val     : start,
         },
         frozen: {
             sv_name : argObj?.mapvars?.frozen,
@@ -314,20 +314,23 @@ function new_map(argObj) {
 
         // ERROR: mapvar value is not a string
         if (typeof sv_name !== 'string') {
-            throw new Error(`${name} — areamap "${mapname}" — mapvar only accepts strings!`);
+            throw new Error(`${name} — areamap "${mapname}" — mapvar only accepts strings, "${sv_name}" wasn't a string!`);
         }
         // ERROR: mapvar value is not a story variable
         else if (sv_name.first() !== '$') {
-            throw new Error(`${name} — areamap "${mapname}" — mapvar must be a story variable starting with "$"!`);
+            throw new Error(`${name} — areamap "${mapname}" — mapvar "${sv_name}" isn't a story variable starting with "$"!`);
         }
         // WARNING: clobbering something
-        if (State.getVar(sv_name) !== undefined) {
+        if (State.variables[sv_name.slice(1)] !== undefined) {
             console.warn(`${name} — areamap "${mapname}" — something was clobbered while setting mapvar "${key}" at "${sv_name}"!`);
         }
 
         // set default value
+        // can't use State.setVar with weird characters
         mapvars[key] = sv_name;
-        State.setVar(sv_name, MAPVAR_DEFAULTS[key].val);
+        console.log(key, sv_name, sv_name.slice(1), MAPVAR_DEFAULTS[key].val);
+        State.variables[sv_name.slice(1)] = MAPVAR_DEFAULTS[key].val;
+        console.log(State.variables);
     }
     
 
@@ -513,15 +516,15 @@ function create_rose(argObj) {
 
     const { mapareas, mapvars, exits } = this_map;
 
-    const position  = State.getVar(mapvars.position);
+    const position  = State.variables[mapvars.position.slice(1)];
     const frozen    = mapvars.frozen !== undefined      
-                        ? State.getVar(mapvars.frozen) 
+                        ? State.variables[mapvars.frozen.slice(1)] 
                         : false;
     const disabled  = mapvars.disabled !== undefined    
-                        ? State.getVar(mapvars.disabled) 
+                        ? State.variables[mapvars.disabled.slice(1)] 
                         : null;
     const hidden    = mapvars.hidden   !== undefined    
-                        ? State.getVar(mapvars.hidden)   
+                        ? State.variables[mapvars.hidden.slice(1)]   
                         : null;
 
     // ERROR: invalid position, either not set or non-existing or a wall
@@ -667,15 +670,15 @@ function create_mapview(argObj) {
     }
 
     const mapvars   = this_map.mapvars;
-    const position  = State.getVar(this_map.mapvars.position);
+    const position  = State.variables[mapvars.position.slice(1)];
     const frozen    = mapvars.frozen !== undefined      
-                        ? State.getVar(mapvars.frozen) 
+                        ? State.variables[mapvars.frozen.slice(1)] 
                         : false;
     const disabled  = mapvars.disabled !== undefined    
-                        ? State.getVar(mapvars.disabled) 
+                        ? State.variables[mapvars.disabled.slice(1)] 
                         : null;
     const hidden    = mapvars.hidden   !== undefined    
-                        ? State.getVar(mapvars.hidden)   
+                        ? State.variables[mapvars.hidden.slice(1)]   
                         : null;
     
     // create map object
@@ -949,7 +952,7 @@ function begin_mapmove(argObj) {
         throw new Error(`${name} — areamap "${mapname}" not found!`);
     }
 
-    const id_origin = State.getVar(this_map.mapvars.position);
+    const id_origin = State.variables[this_map.mapvars.position.slice(1)];
 
     // fire began event
     $('#passages').trigger('areamap:mapmove_began', { mapname, id_origin, id_target, force_abort });
@@ -977,11 +980,11 @@ function resolve_mapmove(argObj) {
     const { mapname, id_target, force_abort } = argObj;
     const name = argObj.name ?? 'Areamap.resolve_mapmove';
     const this_map = areamaps[mapname];
-    const id_origin = State.getVar(this_map.mapvars.position);
+    const id_origin = State.variables[this_map.mapvars.position.slice(1)];
     const succeeded = force_abort 
                         ? false 
                         : this_map.mapvars?.blocked !== undefined
-                            ? ! State.getVar(this_map.mapvars.blocked)[id_target]
+                            ? ! State.variables[this_map.mapvars.blocked.slice(1)][id_target]
                             : true;
 
     if (succeeded) {
@@ -998,7 +1001,7 @@ function resolve_mapmove(argObj) {
         }
 
         // enter new location
-        State.setVar(this_map.mapvars.position, id_target);
+        State.variables[this_map.mapvars.position.slice(1)] = id_target;
 
         // check for any onmapend scripts
         const scripts_end = this_map.scripts.filter(script => script.type === 'onmapend');

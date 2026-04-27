@@ -2,6 +2,11 @@
 Areamap demo -  small house
 
 :: StoryInit [nobr]
+<<run
+    addEventListener("beforeunload",() => {
+        State.reset();
+    });
+>>
 <<set _mapareas = {
     MB: {name: 'Master Bedroom'},
     GB: {name: 'Guest Bedroom'},

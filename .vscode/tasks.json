@@ -1,7 +1,0 @@
-{
-    "label": "Run Build",
-    "command": "build.bat",
-    "presentation": {
-        "close": true,
-    }
-}
