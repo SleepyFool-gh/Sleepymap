@@ -17,40 +17,9 @@
     <h1>Sleepy Macros</h1>
 </a>
 <aside id='toc' markdown='1'>
-## Table of Contents
-
-- [Macros](#macros)
-    - Initialization
-        - [`<<new_areamap>>`](#new_areamap)
-    - Interface Items
-        - [`<<place_arearose>>`](#place_arearose)
-        - [`<<update_arearose>>`](#update_arearose)
-        - [`<<place_mapview>>`](#place_mapview)
-        - [`<<update_mapview>>`](#update_mapview)
-    - Scripts
-        - [`<<set_areascripts>>`](#set_areascripts)
-    - Movement
-        - [`<<areamapmove>>`](#areamapmove)
-- [JavaScript Methods](#javascript-methods)
-    - Initialization
-        - [`new_areamap`](#new_areamap-1)
-    - Interface Items
-        - [`create_rose`](#create_rose)
-        - [`update_rose`](#update_rose)
-        - [`create_mapview`](#create_mapview)
-        - [`update_mapview`](#update_mapview-1)
-    - Scripts
-        - [`set_areascripts`](#set_areascripts-1)
-    - Movement
-        - [`begin_mapmove`](#begin_mapmove)
-    - Utilities
-        - [`get_map`](#get_map)
-        - [`edit_map`](#edit_map)
-- [Events](#events)
-    - [`areamap:mapmove_began`](#areamapmapmove_began)
-    - [`areamap:mapmove_resolved`](#areamapmapmove_resolved)
-    - [`areamap:map_edited`](#areamapmap_edited)
-- [Options](#options)
+    ## Table of Contents
+    * TOC
+    {:toc}
 </aside>
 </div>
 
