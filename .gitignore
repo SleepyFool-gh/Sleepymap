@@ -60,3 +60,8 @@ typings/
 # next.js build output
 .next
 
+.vscode/
+_archive/
+src/etc/
+src/CURRENT_PROGRESS.md
+src/scripts/CTRL+R_RESETS_STATE.js
