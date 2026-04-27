@@ -1,6 +1,6 @@
 <style>
     .container-lg.px-3.my-5.markdown-body {
-        margin-top: 0 auto !important;
+        margin: 0 auto !important;
         height: 100svh;
     }
     .container-lg.px-3.my-5.markdown-body > h1 {
@@ -9,19 +9,21 @@
     #mc-wrapper {
         display: grid;
         grid-template-columns: auto 1fr;
-        grid-template-rows: 4rem auto;
+        grid-template-rows: 4rem calc(100svh - 4rem);
         align-items: flex-start;
         gap: 20px;
         height: 100svh;
     }
-    #toc {
+    #toc,
+    #md {
+        height: 100%;
         overflow: auto;
-        border-right: 1px solid gainsboro;
         padding-right: 1rem;
     }
+    #toc {
+        border-right: 1px solid gainsboro;
+    }
     #md {
-        overflow: auto;
-        padding-right: 1rem;
         grid-row: 1 / span 2;
         grid-column: 2;
     }
