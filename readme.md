@@ -17,9 +17,41 @@
     <h1>Sleepy Macros</h1>
 </a>
 <aside id='toc' markdown='1'>
-    ## Table of Contents
-    * TOC
-    {:toc}
+## Table of Contents
+
+- [Macros](#macros)
+    - Initialization
+        - [`<<new_areamap>>`](#macro-new_areamap)
+    - Interface Items
+        - [`<<place_arearose>>`](#macro-place_arearose)
+        - [`<<update_arearose>>`](#macro-update_arearose)
+        - [`<<place_mapview>>`](#macro-place_mapview)
+        - [`<<update_mapview>>`](#macro-update_mapview)
+    - Scripts
+        - [`<<set_areascripts>>`](#macro-set_areascripts)
+    - Movement
+        - [`<<areamapmove>>`](#macro-areamapmove)
+- [JavaScript Methods](#javascript)
+    - Initialization
+        - [`new_areamap`](#js-new_areamap)
+    - Interface Items
+        - [`create_rose`](#js-create_rose)
+        - [`update_rose`](#js-update_rose)
+        - [`create_mapview`](#js-create_mapview)
+        - [`update_mapview`](#js-update_mapview)
+    - Scripts
+        - [`set_areascripts`](#js-set_areascripts)
+    - Movement
+        - [`begin_mapmove`](#js-begin_mapmove)
+    - Utilities
+        - [`get_map`](#js-get_map)
+        - [`edit_map`](#js-edit_map)
+- [Events](#events)
+    - [`areamap:mapmove_began`](#events-mapmove_began)
+    - [`areamap:mapmove_resolved`](#events-mapmove_resolved)
+    - [`areamap:map_edited`](#events-map_edited)
+- [Options](#options)
+
 </aside>
 </div>
 
@@ -33,7 +65,7 @@
  SECTION: intro
 -->
 
-# `Areamap` Library
+# `Areamap` Library {: #intro}
 
 `Areamap` is a map library for SugarCube designed for room-to-room movement like **Darkest Dungeon** or node-to-node movement like **Faster Than Light** — NOT for grid movement like **Zelda** or **Final Fantasy Tactics**.
 
@@ -72,7 +104,7 @@
  SECTION: macros
 -->
 
-## Macros
+## Macros {: #macros}
 
 ### `<<new_areamap>>`
 Defines a new `areamap`. This macro **must** be called in `StoryInit`. It accepts a 2D grid layout via its contents and supports optional child tags for advanced configuration.
@@ -141,7 +173,7 @@ Defines a new `areamap`. This macro **must** be called in `StoryInit`. It accept
     ```
 
 
-### `<<place_arearose>>`
+### `<<place_arearose>>` {: #macro-place_arearose}
 Generates a 3x3 grid of directional links for navigation.
 
 - **Arguments:** 
@@ -157,7 +189,7 @@ Generates a 3x3 grid of directional links for navigation.
     ```
 
 
-### `<<update_arearose>>`
+### `<<update_arearose>>` {: #macro-update_arearose}
 Manually updates a `rose` element.
 
 - **Arguments:** 
@@ -168,7 +200,7 @@ Manually updates a `rose` element.
     ```
 
 
-### `<<place_mapview>>`
+### `<<place_mapview>>` {: #macro-place_mapview}
 Renders a visual representation of the `areamap` with the tiles configured in the `<<mapareas>>` child tag of `<<new_areamap>>`, using the 2D grid defined in the `<<mapview>>` child tag of `<<new_areamap>>`. If no `<<mapview>>` was used, the 2D logic map is used. Can optionally be made clickable for navigation or to display maparea names.
 
 - **Arguments:** 
@@ -186,7 +218,7 @@ Renders a visual representation of the `areamap` with the tiles configured in th
     ```
 
 
-### `<<update_mapview>>`
+### `<<update_mapview>>` {: #macro-update_mapview}
 Manually updates a `mapview` element.
 
 - **Arguments:** 
@@ -197,7 +229,7 @@ Manually updates a `mapview` element.
     ```
 
 
-### `<<set_areascripts>>`
+### `<<set_areascripts>>` {: #macro-set_areascripts}
 Assigns TwineScript logic to run during the `mapmove` process. Arguments can be used to control which `mapareas` trigger the scripts. This macro **must** be called in `StoryInit`. Child tag order is preserved, but `<<onmapattempt>>` tags always run first, followed by:
     - when `mapmove` succeeds: `<<onmapstart>>` then `<<onmapend>>`
     - when `mapmove` fails: `<<onmapabort>>`
@@ -227,7 +259,7 @@ Assigns TwineScript logic to run during the `mapmove` process. Arguments can be 
     ```
 
 
-### `<<areamapmove>>`
+### `<<areamapmove>>` {: #macro-areamapmove}
 Manually triggers a `mapmove` attempt. Using this macro circumvents any checks that the target `maparea` is a neighboring `maparea`, allowing for more flexible navigation — but `blocked` will still apply and cause the `mapmove` to fail.
 
 - **Arguments:** 
@@ -255,7 +287,7 @@ Manually triggers a `mapmove` attempt. Using this macro circumvents any checks t
  SECTION: methods
 -->
 
-## JavaScript Methods
+## JavaScript Methods {: #javascript}
 
 Javascript methods are stored on the `Areamap` window object. All methods take an `argObj` argument object.
 
@@ -304,7 +336,7 @@ Creates a new `areamap`. The `<<new_areamap>>` macro is a wrapper for this metho
     ```
 
 
-### `create_rose`
+### `create_rose` {: #js-create_rose}
 Creates a jQuery `rose` element. The `<<place_arearose>>` macro calls this method and appends the result to the macro output.
 
 - **argObj Properties:**
@@ -322,7 +354,7 @@ Creates a jQuery `rose` element. The `<<place_arearose>>` macro calls this metho
     ```
 
 
-### `update_rose`
+### `update_rose` {: #js-update_rose}
 Manually updates `rose` elements in the DOM. If the jQuery object passed to this method references multiple `roses`, all of them will update. Non-`rose` elements will be ignored. The `<<update_arearose>>` macro is a wrapper for this method. 
 
 - **argObj Properties:**
@@ -335,7 +367,7 @@ Manually updates `rose` elements in the DOM. If the jQuery object passed to this
     ```
 
 
-### `create_mapview`
+### `create_mapview` {: #js-create_mapview}
 Creates a jQuery `mapview` element. The `<<place_mapview>>` macro calls this method and appends the result to the macro output.
 
 - **argObj Properties:**
@@ -355,7 +387,7 @@ Creates a jQuery `mapview` element. The `<<place_mapview>>` macro calls this met
     ```
 
 
-### `update_mapview`
+### `update_mapview` {: #js-update_mapview}
 Manually updates `mapview` elements in the DOM. If the jQuery object passed to this method references multiple `mapviews`, all of them will update. Non-`mapview` elements will be ignored. The `<<update_mapview>>` macro is a wrapper for this method.
 
 - **argObj Properties:**
@@ -368,7 +400,7 @@ Manually updates `mapview` elements in the DOM. If the jQuery object passed to t
     ```
 
 
-### `set_areascripts`
+### `set_areascripts` {: #js-set_areascripts}
 Assigns `TwineScript` logic to run during the `mapmove` process. The `<<set_areascripts>>` macro is a wrapper for this method.
 
 - **Script Types:**
@@ -412,7 +444,7 @@ Assigns `TwineScript` logic to run during the `mapmove` process. The `<<set_area
     ```
 
 
-### `begin_mapmove`
+### `begin_mapmove` {: #js-begin_mapmove}
 Begins the `mapmove` procedure and fires the `areamap:mapmove_began` event. The `<<areamapmove>>` macro is a wrapper for this method.
 
 - **argObj Properties:**
@@ -429,7 +461,7 @@ Begins the `mapmove` procedure and fires the `areamap:mapmove_began` event. The 
     ```
 
 
-### `get_map`
+### `get_map` {: #js-get_map}
 Retrieves a copy of a map object. Manipulating the returned object *will not* affect or update the original map. Use `Areamap.edit_map` to edit `areamaps`.
 
 - **argObj Properties:**
@@ -443,7 +475,7 @@ Retrieves a copy of a map object. Manipulating the returned object *will not* af
     ```
 
 
-### `edit_map`
+### `edit_map` {: #js-edit_map}
 Allows for dynamic modification of an existing `areamap`. This method will automatically update the `areamap`'s navigation logic (exits) and update any `roses` or `mapviews` set to autoupdate.
 
 - **argObj Properties:**
@@ -487,11 +519,11 @@ Allows for dynamic modification of an existing `areamap`. This method will autom
  SECTION: events
 -->
 
-## Events
+## Events {: #events}
 
 `Areamap` fires several events that allow for manipulating player movement and tracking map changes. All `Areamap` events fire off `#passages` and resolve on `document`. Authors that intend to intercept `Areamap` events should place their listeners on `#story`.
 
-### `areamap:mapmove_began`
+### `areamap:mapmove_began` {: #events-mapmove_began}
 Triggered immediately when any `mapmove` attempt begins
 
   - **Event Data:**
@@ -501,7 +533,7 @@ Triggered immediately when any `mapmove` attempt begins
     - `force_abort`: (boolean) true forces the `mapmove` to fail
 
 
-### `areamap:mapmove_resolved`
+### `areamap:mapmove_resolved` {: #events-mapmove_resolved}
 Triggered after any `mapmove` resolves
 
 - **Event Data:**
@@ -511,7 +543,7 @@ Triggered after any `mapmove` resolves
     - `succeeded`: (boolean) whether the movement was successful
 
 
-### `areamap:map_edited`
+### `areamap:map_edited` {: #events-map_edited}
 Triggered after the `edit_map` method completes, useful if you need to perform additional UI updates not covered by the standard `autoupdate` functionality.
 
 - **Event Data:**
@@ -533,7 +565,7 @@ Triggered after the `edit_map` method completes, useful if you need to perform a
  SECTION: options
 -->
 
-## Options
+## Options {: #options}
 
 - **Default values:** can be overridden by passing in argumnts to their respective macros
     - `setup['@areamap/options'].default.wall_id`: (string) default id used to represent walls in the map grid
