@@ -13,10 +13,10 @@
     }
 </style>
 <div id='toc-wrapper'>
-    <a id='sf-link' href='https://sleepyfool-gh.github.io/Sleepy_macros/'>
-        <h1>Sleepy Macros</h1>
-    </a>
-    <aside id='toc' markdown='1'>
+<a id='sf-link' href='https://sleepyfool-gh.github.io/Sleepy_macros/'>
+    <h1>Sleepy Macros</h1>
+</a>
+<aside id='toc' markdown='1'>
 ## Table of Contents
 
 - [Macros](#macros)
@@ -51,7 +51,7 @@
     - [`areamap:mapmove_resolved`](#areamapmapmove_resolved)
     - [`areamap:map_edited`](#areamapmap_edited)
 - [Options](#options)
-    </aside>
+</aside>
 </div>
 
 <section markdown='1'>
