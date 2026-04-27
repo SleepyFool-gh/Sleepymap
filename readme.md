@@ -11,7 +11,7 @@
         grid-template-columns: auto 1fr;
         grid-template-rows: 4rem calc(100svh - 4rem);
         align-items: flex-start;
-        gap: 20px;
+        column-gap: 20px;
         height: 100svh;
     }
     #toc,
@@ -83,7 +83,7 @@
 
 `Areamap` takes a space-separated 2D text grid and converts it into a functional map for player navigation (`mapmove`). All grid spaces with the same `maparea` id will be treated as one big room, regardless of how many grid spaces it occupies or whether it is continuous.
 
-<video width="690" height="607" controls>
+<video width="635" height="558" controls>
   <source src="./demo/small_house.mp4" type="video/mp4">
   Your browser does not support the video tag.
 </video>
