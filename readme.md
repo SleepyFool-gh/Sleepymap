@@ -1,36 +1,22 @@
 <style>
+    /* remove default margins */
     .container-lg.px-3.my-5.markdown-body {
         margin: 0 auto !important;
-        height: 100svh;
     }
+    /* remove useless header */
     .container-lg.px-3.my-5.markdown-body > h1 {
         display: none;
     }
-    #mc-wrapper {
-        display: grid;
-        grid-template-columns: auto 1fr;
-        grid-template-rows: 4rem calc(100svh - 4rem);
-        align-items: flex-start;
-        column-gap: 20px;
-        height: 100svh;
-    }
-    #toc,
-    #md {
-        height: 100%;
-        overflow: auto;
-        padding-right: 1rem;
-    }
-    #toc {
-        border-right: 1px solid gainsboro;
-    }
-    #md {
-        grid-row: 1 / span 2;
-        grid-column: 2;
+    #toc-wrapper {
+        position: absolute;
+        left: 0;
     }
 </style>
-<div id='mc-wrapper'>
-<h1><a id='sf-h1' href='https://sleepyfool-gh.github.io/Sleepy_macros/'>Sleepy Macros</a></h1>
-<aside id='toc' markdown='1'>
+<div id='toc-wrapper'>
+    <a id='sf-link' href='https://sleepyfool-gh.github.io/Sleepy_macros/'>
+        <h1>Sleepy Macros</h1>
+    </a>
+    <aside id='toc' markdown='1'>
 ## Table of Contents
 
 - [Macros](#macros)
@@ -65,9 +51,10 @@
     - [`areamap:mapmove_resolved`](#areamapmapmove_resolved)
     - [`areamap:map_edited`](#areamapmap_edited)
 - [Options](#options)
-</aside>
+    </aside>
+</div>
 
-<section id='md' markdown='1'>
+<section markdown='1'>
 <!--
  ███ █    █ █████ ████   ████
   █  ██   █   █   █   █ █    █
@@ -599,4 +586,3 @@ Triggered after the `edit_map` method completes, useful if you need to perform a
         - value: `false`
         - used in: `<<place_mapview>>` and `Areamap.create_mapview`
 </section>
-</div>
