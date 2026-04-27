@@ -1,15 +1,31 @@
 <style>
-    /* remove default margins */
-    .container-lg.px-3.my-5.markdown-body {
-        margin: 0 auto !important;
-    }
     /* remove useless header */
-    .container-lg.px-3.my-5.markdown-body > h1 {
+    .container-lg > h1 {
         display: none;
     }
+    .container-lg {
+        display: flex;
+        align-items: flex-start;
+        max-width: 1200px;
+        margin: 0 auto !important;;
+        gap: 1rem;
+    }
+
+    /* 3. The Sticky Sidebar */
     #toc-wrapper {
-        position: absolute;
-        left: 0;
+        width: fit-content;
+        flex-shrink: 0;
+        position: sticky;
+        top: 0; 
+        height: calc(100vh - 40px); 
+        overflow-y: auto;
+        padding-right: 2rem;
+    }
+
+    /* 4. The main content area */
+    #main {
+        flex-grow: 1;
+        padding-left: 20px;
     }
 </style>
 <div id='toc-wrapper'>
@@ -19,6 +35,7 @@
 <aside id='toc' markdown='1'>
 ## Table of Contents
 
+- [Intro](#intro)
 - [Macros](#macros)
     - Initialization
         - [`<<new_areamap>>`](#macro-new_areamap)
@@ -54,7 +71,7 @@
 </aside>
 </div>
 
-<section markdown='1'>
+<section id='main' markdown='1'>
 <!--
  ███ █    █ █████ ████   ████
   █  ██   █   █   █   █ █    █
@@ -64,7 +81,7 @@
  SECTION: intro
 -->
 
-# `Areamap` Library {: #intro}
+<h1 id='intro'><code>Areamap</code> Library</h1>
 
 `Areamap` is a map library for SugarCube designed for room-to-room movement like **Darkest Dungeon** or node-to-node movement like **Faster Than Light** — NOT for grid movement like **Zelda** or **Final Fantasy Tactics**.
 
@@ -253,7 +270,7 @@ Assigns TwineScript logic to run during the `mapmove` process. Arguments can be 
         <<onmapstart from 'ST'>>
             <<run $energy-->>
         <<onmapend to ['KT', 'PT']>>
-            <<run $hunger++>>
+            <<run $hunger++>>   
     <</set_areascripts>>
     ```
 
