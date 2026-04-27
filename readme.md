@@ -51,7 +51,6 @@
     - [`areamap:mapmove_resolved`](#events-mapmove_resolved)
     - [`areamap:map_edited`](#events-map_edited)
 - [Options](#options)
-
 </aside>
 </div>
 
@@ -104,7 +103,7 @@
  SECTION: macros
 -->
 
-## Macros {: #macros}
+<h2 id="macros">Macros</h2>
 
 ### `<<new_areamap>>`
 Defines a new `areamap`. This macro **must** be called in `StoryInit`. It accepts a 2D grid layout via its contents and supports optional child tags for advanced configuration.
