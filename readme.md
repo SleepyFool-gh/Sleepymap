@@ -9,22 +9,21 @@
     #mc-wrapper {
         display: grid;
         grid-template-columns: auto 1fr;
+        grid-template-rows: 4rem auto;
         align-items: flex-start;
         gap: 20px;
-    }
-    #sf-h1 {
-        height: 3rem;
+        height: 100svh;
     }
     #toc {
-        height: calc(100svh - 3rem);
         overflow: auto;
         border-right: 1px solid gainsboro;
         padding-right: 1rem;
     }
     #md {
-        height: 100svh;
         overflow: auto;
         padding-right: 1rem;
+        grid-row: 1 / span 2;
+        grid-column: 2;
     }
 </style>
 <div id='mc-wrapper'>
