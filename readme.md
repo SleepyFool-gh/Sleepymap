@@ -1,62 +1,4 @@
-<!--
-  ████ █████ █   █ █     ███ █    █  ███
- █       █    █ █  █      █  ██   █ █
-  ███    █     █   █      █  █ █  █ █  ██
-     █   █     █   █      █  █  █ █ █   █
- ████    █     █   █████ ███ █   ██  ███
- SECTION: styling
--->
-<style>
-    /* remove useless header */
-    .container-lg > h1 {
-        display: none;
-    }
-    .container-lg {
-        display: flex;
-        align-items: flex-start;
-        max-width: 1200px;
-        margin: 0 auto !important;
-        gap: 1rem;
-    }
-    #toc-wrapper {
-        position: sticky;
-        width: fit-content;
-        height: calc(100vh - 1rem); /* buffer to prevent highlight text from hiding toc content */
-        padding-right: 2rem;
-        flex-shrink: 0;
-        top: 0; /* needed to specify sticky */
-        overflow-y: auto;
-    }
-    #main {
-        flex-grow: 1;
-        padding-left: 20px;
-    }
-
-    /* mobile mode */
-    @media (max-width: 1020px) {
-        /* switch to column */
-        .container-lg {
-            flex-direction: column;
-        }
-        /* remove sticky, make full width */
-        #toc-wrapper {
-            position: relative;
-            width: 100%;
-            height: auto;
-            padding-right: 0;
-            padding-bottom: 1rem;
-            margin-bottom: 2rem;
-            border-bottom: 1px solid gainsboro;
-        }
-        /* remove padding */
-        #main {
-            padding-left: 0;
-        }
-    }
-</style>
-
-
-
+<link rel='stylesheet' href='./style.css'>
 
 <!--
  █████  ████   ████
@@ -71,10 +13,10 @@
     <h1>Sleepy Macros</h1>
 </a>
 <aside id='toc' markdown='1'>
-## Table of Contents
+<h2>Table of Contents</h2>
 
-- [Intro](#intro)
-- [Macros](#macros)
+- **[Intro](#intro)**
+- **[Macros](#macros)**
     - Initialization
         - [`<<new_areamap>>`](#macro-new_areamap)
     - Interface Items
@@ -86,7 +28,7 @@
         - [`<<set_areascripts>>`](#macro-set_areascripts)
     - Movement
         - [`<<areamapmove>>`](#macro-areamapmove)
-- [JavaScript Methods](#javascript)
+- **[JavaScript Methods](#javascript)**
     - Initialization
         - [`new_areamap`](#javascript-new_areamap)
     - Interface Items
@@ -101,7 +43,7 @@
     - Utilities
         - [`get_map`](#javascript-get_map)
         - [`edit_map`](#javascript-edit_map)
-- [Events](#events)
+- **[Events](#events)**
     - [`areamap:mapmove_began`](#events-mapmove_began)
     - [`areamap:mapmove_resolved`](#events-mapmove_resolved)
     - [`areamap:map_edited`](#events-map_edited)

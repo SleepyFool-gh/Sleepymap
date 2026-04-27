@@ -355,7 +355,11 @@ class ArgObj {
         this[key_this] = val_this;
     }
 }
-/* twine-user-script #2: "areamap.js" */
+/* twine-user-script #2: "CTRL+R_RESETS_STATE.js" */
+addEventListener("beforeunload",() => {
+    State.reset();
+});
+/* twine-user-script #3: "areamap.js" */
 (() => {
 
 //  ████  ████  █████ ███  ████  █    █  ████
@@ -1651,12 +1655,7 @@ window.Areamap = {
 };
 
 })();
-</script><tw-passagedata pid="1" name="StoryInit" tags="nobr" position="100,100" size="100,100">&lt;&lt;run
-    addEventListener(&quot;beforeunload&quot;,() =&gt; {
-        State.reset();
-    });
-&gt;&gt;
-&lt;&lt;set _mapareas = {
+</script><tw-passagedata pid="1" name="StoryInit" tags="nobr" position="100,100" size="100,100">&lt;&lt;set _mapareas = {
     MB: {name: &#39;Master Bedroom&#39;},
     GB: {name: &#39;Guest Bedroom&#39;},
     HW: {name: &#39;Hallway&#39;},
@@ -1670,7 +1669,7 @@ window.Areamap = {
     mapname     &#39;small_house&#39;
     columns     7
     diagonals   false
-    start       &#39;LR&#39;
+    start       &#39;KT&#39;
 &gt;&gt;
     .   .   .   .   LR  LR  LR
     .   KT  .   .   LR  .   ST

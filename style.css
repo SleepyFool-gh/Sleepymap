@@ -1,0 +1,46 @@
+/* remove useless header */
+.container-lg > h1 {
+    display: none;
+}
+.container-lg {
+    display: flex;
+    align-items: flex-start;
+    max-width: 1200px;
+    margin: 0 auto !important;
+    gap: 1rem;
+}
+#toc-wrapper {
+    position: sticky;
+    width: fit-content;
+    height: calc(100vh - 1rem); /* buffer to prevent highlight text from hiding toc content */
+    padding-right: 2rem;
+    flex-shrink: 0;
+    top: 0; /* needed to specify sticky */
+    overflow-y: auto;
+}
+#main {
+    flex-grow: 1;
+    padding-left: 20px;
+}
+
+/* mobile mode */
+@media (max-width: 1020px) {
+    /* switch to column */
+    .container-lg {
+        flex-direction: column;
+    }
+    /* remove sticky, make full width */
+    #toc-wrapper {
+        position: relative;
+        width: 100%;
+        height: auto;
+        padding-right: 0;
+        padding-bottom: 1rem;
+        margin-bottom: 2rem;
+        border-bottom: 1px solid gainsboro;
+    }
+    /* remove padding */
+    #main {
+        padding-left: 0;
+    }
+}
