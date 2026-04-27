@@ -1,3 +1,11 @@
+<!--
+  ████ █████ █   █ █     ███ █    █  ███
+ █       █    █ █  █      █  ██   █ █
+  ███    █     █   █      █  █ █  █ █  ██
+     █   █     █   █      █  █  █ █ █   █
+ ████    █     █   █████ ███ █   ██  ███
+ SECTION: styling
+-->
 <style>
     /* remove useless header */
     .container-lg > h1 {
@@ -7,27 +15,57 @@
         display: flex;
         align-items: flex-start;
         max-width: 1200px;
-        margin: 0 auto !important;;
+        margin: 0 auto !important;
         gap: 1rem;
     }
-
-    /* 3. The Sticky Sidebar */
     #toc-wrapper {
-        width: fit-content;
-        flex-shrink: 0;
         position: sticky;
-        top: 0; 
-        height: calc(100vh - 40px); 
-        overflow-y: auto;
+        width: fit-content;
+        height: calc(100vh - 1rem); /* buffer to prevent highlight text from hiding toc content */
         padding-right: 2rem;
+        flex-shrink: 0;
+        top: 0; /* needed to specify sticky */
+        overflow-y: auto;
     }
-
-    /* 4. The main content area */
     #main {
         flex-grow: 1;
         padding-left: 20px;
     }
+
+    /* mobile mode */
+    @media (max-width: 1020px) {
+        /* switch to column */
+        .container-lg {
+            flex-direction: column;
+        }
+        /* remove sticky, make full width */
+        #toc-wrapper {
+            position: relative;
+            width: 100%;
+            height: auto;
+            padding-right: 0;
+            padding-bottom: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid gainsboro;
+        }
+        /* remove padding */
+        #main {
+            padding-left: 0;
+        }
+    }
 </style>
+
+
+
+
+<!--
+ █████  ████   ████
+   █   █    █ █
+   █   █    █ █
+   █   █    █ █
+   █    ████   ████
+ SECTION: toc / table of contents
+-->
 <div id='toc-wrapper'>
 <a id='sf-link' href='https://sleepyfool-gh.github.io/Sleepy_macros/'>
     <h1>Sleepy Macros</h1>
@@ -70,6 +108,9 @@
 - [Options](#options)
 </aside>
 </div>
+
+
+
 
 <section id='main' markdown='1'>
 <!--
