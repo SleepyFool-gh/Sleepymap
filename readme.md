@@ -105,7 +105,7 @@
 
 <h2 id="macros">Macros</h2>
 
-### `<<new_areamap>>`
+<h3 id="macro-new_areamap"><code>&lt;&lt;new_areamap&gt;&gt;</code></h3>
 Defines a new `areamap`. This macro **must** be called in `StoryInit`. It accepts a 2D grid layout via its contents and supports optional child tags for advanced configuration.
 
 - **Arguments:** 
@@ -172,7 +172,7 @@ Defines a new `areamap`. This macro **must** be called in `StoryInit`. It accept
     ```
 
 
-<h2 id='macro-place_arearose'><<place_arearose>></h2>
+<h3 id='macro-place_arearose'><code>&lt;&lt;place_arearose&gt;&gt;</code></h3>
 Generates a 3x3 grid of directional links for navigation.
 
 - **Arguments:** 
@@ -188,7 +188,7 @@ Generates a 3x3 grid of directional links for navigation.
     ```
 
 
-<h2 id='macro-update_arearose'><<update_arearose>></h2>
+<h3 id='macro-update_arearose'><code>&lt;&lt;update_arearose&gt;&gt;</code></h3>
 Manually updates a `rose` element.
 
 - **Arguments:** 
@@ -199,7 +199,7 @@ Manually updates a `rose` element.
     ```
 
 
-<h2 id='macro-place_mapview'><<place_mapview>></h2>
+<h3 id='macro-place_mapview'><code>&lt;&lt;place_mapview&gt;&gt;</code></h3>
 Renders a visual representation of the `areamap` with the tiles configured in the `<<mapareas>>` child tag of `<<new_areamap>>`, using the 2D grid defined in the `<<mapview>>` child tag of `<<new_areamap>>`. If no `<<mapview>>` was used, the 2D logic map is used. Can optionally be made clickable for navigation or to display maparea names.
 
 - **Arguments:** 
@@ -217,7 +217,7 @@ Renders a visual representation of the `areamap` with the tiles configured in th
     ```
 
 
-<h2 id='macro-update_mapview'><<update_mapview>></h2>
+<h3 id='macro-update_mapview'><code>&lt;&lt;update_mapview&gt;&gt;</code></h3>
 Manually updates a `mapview` element.
 
 - **Arguments:** 
@@ -228,7 +228,7 @@ Manually updates a `mapview` element.
     ```
 
 
-<h2 id='macro-set_areascripts'><<set_areascripts>></h2>
+<h3 id='macro-set_areascripts'><code>&lt;&lt;set_areascripts&gt;&gt;</code></h3>
 Assigns TwineScript logic to run during the `mapmove` process. Arguments can be used to control which `mapareas` trigger the scripts. This macro **must** be called in `StoryInit`. Child tag order is preserved, but `<<onmapattempt>>` tags always run first, followed by:
     - when `mapmove` succeeds: `<<onmapstart>>` then `<<onmapend>>`
     - when `mapmove` fails: `<<onmapabort>>`
@@ -258,7 +258,7 @@ Assigns TwineScript logic to run during the `mapmove` process. Arguments can be 
     ```
 
 
-<h2 id='macro-areamapmove'><<areamapmove>></h2>
+<h3 id='macro-areamapmove'><code>&lt;&lt;areamapmove&gt;&gt;</code></h3>
 Manually triggers a `mapmove` attempt. Using this macro circumvents any checks that the target `maparea` is a neighboring `maparea`, allowing for more flexible navigation — but `blocked` will still apply and cause the `mapmove` to fail.
 
 - **Arguments:** 
@@ -290,7 +290,7 @@ Manually triggers a `mapmove` attempt. Using this macro circumvents any checks t
 
 Javascript methods are stored on the `Areamap` window object. All methods take an `argObj` argument object.
 
-<h3 id='javascript-new_areamap'>`new_areamap`</h3>
+<h3 id='javascript-new_areamap'>new_areamap</h3>
 Creates a new `areamap`. The `<<new_areamap>>` macro is a wrapper for this method.
 
 - **argObj Properties:**
