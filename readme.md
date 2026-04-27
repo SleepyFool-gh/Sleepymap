@@ -1,6 +1,6 @@
 <style>
     .container-lg.px-3.my-5.markdown-body {
-        margin-top: 0 !important;
+        margin-top: 0 auto !important;
         height: 100svh;
     }
     .container-lg.px-3.my-5.markdown-body > h1 {
@@ -8,12 +8,15 @@
     }
     #mc-wrapper {
         display: grid;
-        grid-template-columns: 25% 75%;
+        grid-template-columns: auto 1fr;
         align-items: flex-start;
         gap: 20px;
     }
+    #sf-h1 {
+        height: 3rem;
+    }
     #toc {
-        height: 100svh;
+        height: calc(100svh - 3rem);
         overflow: auto;
         border-right: 1px solid gainsboro;
         padding-right: 1rem;
@@ -25,6 +28,7 @@
     }
 </style>
 <div id='mc-wrapper'>
+<h1><a id='sf-h1' href='https://sleepyfool-gh.github.io/Sleepy_macros/'>Sleepy Macros</a></h1>
 <aside id='toc' markdown='1'>
 ## Table of Contents
 
