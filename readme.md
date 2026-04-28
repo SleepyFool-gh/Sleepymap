@@ -4,6 +4,6 @@ A map library for SugarCube designed for room-to-room movement like **Darkest Du
 
 [Read the documentation here](https://sleepyfool-gh.github.io/areamap/)
 
-[areamap.js](./dist/areamap.js) — Main library definitions
-[areamap.css](./dist/areamap.css) — Library styling
-[ArgObj.js](./dist/ArgObj.js) — Required argument parsing dependency
+- [areamap.js](./dist/areamap.js) — Main library definitions
+- [areamap.css](./dist/areamap.css) — Library styling
+- [ArgObj.js](./dist/ArgObj.js) — Required argument parsing dependency
