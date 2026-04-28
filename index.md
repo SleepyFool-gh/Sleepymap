@@ -305,7 +305,7 @@ Manually triggers a `mapmove` attempt. Using this macro circumvents any checks t
 
 Javascript methods are stored on the `Areamap` window object. All methods take an `argObj` argument object.
 
-<h3 id='javascript-new_areamap'>new_areamap</h3>
+<h3 id='javascript-new_areamap'><code>new_areamap</code></h3>
 
 Creates a new `areamap`. The `<<new_areamap>>` macro is a wrapper for this method.
 
@@ -351,7 +351,7 @@ Creates a new `areamap`. The `<<new_areamap>>` macro is a wrapper for this metho
     ```
 
 
-<h3 id='javascript-create_rose'>create_rose</h3>
+<h3 id='javascript-create_rose'><code>create_rose</code></h3>
 
 Creates a jQuery `rose` element. The `<<place_arearose>>` macro calls this method and appends the result to the macro output.
 
@@ -370,7 +370,7 @@ Creates a jQuery `rose` element. The `<<place_arearose>>` macro calls this metho
     ```
 
 
-<h3 id='javascript-update_rose'>update_rose</h3>
+<h3 id='javascript-update_rose'><code>update_rose</code></h3>
 
 Manually updates `rose` elements in the DOM. If the jQuery object passed to this method references multiple `roses`, all of them will update. Non-`rose` elements will be ignored. The `<<update_arearose>>` macro is a wrapper for this method. 
 
@@ -384,7 +384,7 @@ Manually updates `rose` elements in the DOM. If the jQuery object passed to this
     ```
 
 
-<h3 id='javascript-create_mapview'>create_mapview</h3>
+<h3 id='javascript-create_mapview'><code>create_mapview</code></h3>
 
 Creates a jQuery `mapview` element. The `<<place_mapview>>` macro calls this method and appends the result to the macro output.
 
@@ -405,7 +405,7 @@ Creates a jQuery `mapview` element. The `<<place_mapview>>` macro calls this met
     ```
 
 
-<h3 id='javascript-update_mapview'>update_mapview</h3>
+<h3 id='javascript-update_mapview'><code>update_mapview</code></h3>
 
 Manually updates `mapview` elements in the DOM. If the jQuery object passed to this method references multiple `mapviews`, all of them will update. Non-`mapview` elements will be ignored. The `<<update_areamapview>>` macro is a wrapper for this method.
 
@@ -419,7 +419,7 @@ Manually updates `mapview` elements in the DOM. If the jQuery object passed to t
     ```
 
 
-<h3 id='javascript-set_areascripts'>set_areascripts</h3>
+<h3 id='javascript-set_areascripts'><code>set_areascripts</code></h3>
 
 Assigns `TwineScript` logic to run during the `mapmove` process. The `<<set_areascripts>>` macro is a wrapper for this method.
 
@@ -464,7 +464,7 @@ Assigns `TwineScript` logic to run during the `mapmove` process. The `<<set_area
     ```
 
 
-<h3 id='javascript-begin_mapmove'>begin_mapmove</h3>
+<h3 id='javascript-begin_mapmove'><code>begin_mapmove</code></h3>
 
 Begins the `mapmove` procedure and fires the `areamap:mapmove_began` event. The `<<areamapmove>>` macro is a wrapper for this method.
 
@@ -482,7 +482,7 @@ Begins the `mapmove` procedure and fires the `areamap:mapmove_began` event. The 
     ```
 
 
-<h3 id='javascript-get_map'>get_map</h3>
+<h3 id='javascript-get_map'><code>get_map</code></h3>
 
 Retrieves a copy of a map object. Manipulating the returned object *will not* affect or update the original map. Use `Areamap.edit_map` to edit `areamaps`.
 
@@ -497,7 +497,7 @@ Retrieves a copy of a map object. Manipulating the returned object *will not* af
     ```
 
 
-<h3 id='javascript-edit_map'>edit_map</h3>
+<h3 id='javascript-edit_map'><code>edit_map</code></h3>
 
 Allows for dynamic modification of an existing `areamap`. This method will automatically update the `areamap`'s navigation logic (exits) and update any `roses` or `mapviews` set to autoupdate.
 
@@ -546,7 +546,7 @@ Allows for dynamic modification of an existing `areamap`. This method will autom
 
 `Areamap` fires several events that allow for manipulating player movement and tracking map changes. All `Areamap` events fire off `#passages` and resolve on `document`. Authors that intend to intercept `Areamap` events should place their listeners on `#story`.
 
-<h3 id='events-mapmove_began'>areamap:mapmove_began</h3>
+<h3 id='events-mapmove_began'><code>areamap:mapmove_began</code></h3>
 
 Triggered immediately when any `mapmove` attempt begins
 
@@ -557,7 +557,7 @@ Triggered immediately when any `mapmove` attempt begins
     - `force_abort`: (boolean) true forces the `mapmove` to fail
 
 
-<h3 id='events-mapmove_resolved'>areamap:mapmove_resolved</h3>
+<h3 id='events-mapmove_resolved'><code>areamap:mapmove_resolved</code></h3>
 
 Triggered after any `mapmove` resolves
 
@@ -568,7 +568,7 @@ Triggered after any `mapmove` resolves
     - `succeeded`: (boolean) whether the movement was successful
 
 
-<h3 id='events-map_edited'>areamap:map_edited</h3>
+<h3 id='events-map_edited'><code>areamap:map_edited</code></h3>
 
 Triggered after the `edit_map` method completes, useful if you need to perform additional UI updates not covered by the standard `autoupdate` functionality.
 
