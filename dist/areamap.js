@@ -549,7 +549,7 @@ function create_rose(argObj) {
     if (background) {
         $(document.createElement('div'))
             .addClass('macro-areamap-rosebg')
-            .html(background)
+            .wiki(background)
             .appendTo($rose);
     }
 
@@ -700,7 +700,7 @@ function create_mapview(argObj) {
     if (background) {
         $(document.createElement('div'))
             .addClass('macro-areamap-mapviewbg')
-            .html(background)
+            .wiki(background)
             .appendTo($mapview);
     }
 
@@ -709,24 +709,29 @@ function create_mapview(argObj) {
     // create & append tiles
     for (const id of mapview.array) {
         const maparea = this_map.mapareas[id];
+        const traversable   = position === id
+                                ? null
+                                : maparea.type === 'wall'
+                                    ? false
+                                    : exit_arr.some( dir => dir.has(id) );
         // if clickable & valid travel destination --> clickable
         const link  = ! clickable
                         ? false
-                        : maparea.type === 'wall'
-                            ? false
-                            : exit_arr.some( dir => dir.has(id));
+                        : !! traversable;
         
         const $tile = $(document.createElement(link ? 'a' : 'div'));
         $tile
             .addClass('macro-areamap-tile')
             .addClass(link ? 'macro-areamap-link' : '')
-            .addClass(id === position ? 'macro-areamap-position' : '')
             .attr('data-id', id)
+            .attr('data-type', maparea.type)
+            // change traversable to 'current' for CSS targeting
+            .attr('data-traversable', traversable === null ? 'current' : traversable)
             .attr('disabled', disabled?.[id] || frozen)
             .css({
                 visibility: hidden?.[id] ? 'hidden' : '',
             })
-            .html(
+            .wiki(
                 ((maparea.tile !== undefined) ? maparea.tile : '') +
                 (show_names ? `<span>${maparea.name}</span>` : '')
             );
@@ -1281,13 +1286,13 @@ function update_mapview(argObj) {
 window.Areamap = {
     new_map,
     create_rose,
+    update_rose,
     create_mapview,
+    update_mapview,
     set_scripts,
     begin_mapmove,
     get_map,
     edit_map,
-    update_rose,
-    update_mapview,
 };
 
 })();

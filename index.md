@@ -243,7 +243,7 @@ Manually updates a `mapview` element.
 
 <h3 id='macro-set_areascripts'><code>&lt;&lt;set_areascripts&gt;&gt;</code></h3>
 
-Assigns TwineScript logic to run during the `mapmove` process. Arguments can be used to control which `mapareas` trigger the scripts. This macro **must** be called in `StoryInit`. Child tag order is preserved, but `<<onmapattempt>>` tags always run first, followed by:
+Assigns TwineScript logic to run during the `mapmove` process (`areascripts`). Arguments can be used to control which `mapareas` trigger the `areascripts`. This macro **must** be called in `StoryInit`. Child tag order is preserved, but `<<onmapattempt>>` tags always run first, followed by:
     - when `mapmove` succeeds: `<<onmapstart>>` then `<<onmapend>>`
     - when `mapmove` fails: `<<onmapabort>>`
 
@@ -630,13 +630,23 @@ Triggered after the `edit_map` method completes, useful if you need to perform a
 -->
 <h2 id='tips'>Usage Tips & Styling</h2>
 
-- **CSS:**
-    - **Mapviews**
-        - clickable links have the `.macro-areamap-link` class
-        - `[traversable='current']` for current position
-        - `[traversable='true']` for neighboring tiles available for travel
-        - `[traversable='false']` for tiles not available for travel
-    - **Roses**
-        - clickable links have the `.macro-areamap-link` class
-    
+- The algorithm that checks exits out of each area *will not* remove duplicates if `maparea-A` has two exits to `maparea-B` in two different directions. This is especially important when using the `diagonals` option. Authors will need to shape their navigation map accordingly.
+- Changing `disabled` state or `frozen` to `true` *will not* prevent a `mapmove` that has already started.
+- Changing `blocked` to `true` state inside an `areascript` *will* prevent a `mapmove` **only** if done inside `onmapattempt`.
+- Clickable links have the `.macro-areamap-link` class.
+- `hidden` areas still generate tiles and links, but with `visibility: hidden`.
+- `mapview` tiles have the `data-traversable` HTML attribute that indicates whether it is traversable, or the current position
+    - `true`: available for `mapmove` via clicking on the `mapview`
+    - `false`: not available for `mapmove`
+    - `current`: current map position
+- `mapview` tiles have the `data-type` HTML attribute that indicates their type
+    - `wall`: wall tile
+    - `floor`: floor tile
+- Each grid cell on `roses` has the `data-dir` HTML attribute which indicates its direction
+    - `N`, `E`, `S`, `W`: cardinal directions
+    - `NE`, `NW`, `SW`, `SE`: ordinal directions
+    - `C`: center
+- `rose` background, `mapview` background, and `mapview` tile arguments will accept TwineScript instead of raw HTML — but authors use this feature at their own discretion.
+- If an author chooses to intercept the `areamap:mapmove_began` event, `mapmove` will not resolve unless they allow the event to propagate to `document` or fire another `areamap:mapmove_began` event.
+
 </section>

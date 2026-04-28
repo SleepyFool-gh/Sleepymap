@@ -549,7 +549,7 @@ function create_rose(argObj) {
     if (background) {
         $(document.createElement('div'))
             .addClass('macro-areamap-rosebg')
-            .html(background)
+            .wiki(background)
             .appendTo($rose);
     }
 
@@ -700,7 +700,7 @@ function create_mapview(argObj) {
     if (background) {
         $(document.createElement('div'))
             .addClass('macro-areamap-mapviewbg')
-            .html(background)
+            .wiki(background)
             .appendTo($mapview);
     }
 
@@ -731,7 +731,7 @@ function create_mapview(argObj) {
             .css({
                 visibility: hidden?.[id] ? 'hidden' : '',
             })
-            .html(
+            .wiki(
                 ((maparea.tile !== undefined) ? maparea.tile : '') +
                 (show_names ? `<span>${maparea.name}</span>` : '')
             );
@@ -1286,13 +1286,13 @@ function update_mapview(argObj) {
 window.Areamap = {
     new_map,
     create_rose,
+    update_rose,
     create_mapview,
+    update_mapview,
     set_scripts,
     begin_mapmove,
     get_map,
     edit_map,
-    update_rose,
-    update_mapview,
 };
 
 })();

@@ -6,7 +6,7 @@ This is a demo of the Areamap library for SugarCube, part of the Sleepy Macros c
 
 :: StoryInit [nobr]
 <<set _mapareas = {
-    MB: {name: 'Master Bedroom'},
+    MB: {name: 'Master Bedroom', type: 'asdf'},
     GB: {name: 'Guest Bedroom'},
     HW: {name: 'Hallway'},
     LR: {name: 'Living Room'},

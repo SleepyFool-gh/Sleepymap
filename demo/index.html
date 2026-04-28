@@ -149,7 +149,7 @@ var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZa
         display: grid;
         place-content: center;
     }
-    .macro-areamap-position {
+    .macro-areamap-tile[data-traversable='current'] {
         font-weight: bold;
         backdrop-filter: brightness(1.25);
     }
@@ -259,18 +259,18 @@ class ArgObj {
             while (i < args_in.length) {
                 const arg_this = args_in[i];
                 const key_this = aliases[arg_this];
-                    // {object} input
-                    if (typeof arg_this === 'object') {
-                        i += this.#parse_obj(i);
-                    }
-                    // kvp input
-                    else if (key_this !== undefined) {
-                        i += this.#parse_kvp(i);
-                    }
-                    // ERROR: unknown input, author error
-                    else {
-                        throw new Error(`${id} - macro input parsing failed, unknown input "${arg_this}"; FAILED`);
-                    }
+                // {object} input
+                if (typeof arg_this === 'object') {
+                    i += this.#parse_obj(i);
+                }
+                // kvp input
+                else if (key_this !== undefined) {
+                    i += this.#parse_kvp(i);
+                }
+                // ERROR: unknown input, author error
+                else {
+                    throw new Error(`${id} - macro input parsing failed, unknown input "${arg_this}"; FAILED`);
+                }
             }
         }
         catch (error) {
@@ -911,7 +911,7 @@ function create_rose(argObj) {
     if (background) {
         $(document.createElement('div'))
             .addClass('macro-areamap-rosebg')
-            .html(background)
+            .wiki(background)
             .appendTo($rose);
     }
 
@@ -1062,7 +1062,7 @@ function create_mapview(argObj) {
     if (background) {
         $(document.createElement('div'))
             .addClass('macro-areamap-mapviewbg')
-            .html(background)
+            .wiki(background)
             .appendTo($mapview);
     }
 
@@ -1071,24 +1071,29 @@ function create_mapview(argObj) {
     // create & append tiles
     for (const id of mapview.array) {
         const maparea = this_map.mapareas[id];
+        const traversable   = position === id
+                                ? null
+                                : maparea.type === 'wall'
+                                    ? false
+                                    : exit_arr.some( dir => dir.has(id) );
         // if clickable & valid travel destination --> clickable
         const link  = ! clickable
                         ? false
-                        : maparea.type === 'wall'
-                            ? false
-                            : exit_arr.some( dir => dir.has(id));
+                        : !! traversable;
         
         const $tile = $(document.createElement(link ? 'a' : 'div'));
         $tile
             .addClass('macro-areamap-tile')
             .addClass(link ? 'macro-areamap-link' : '')
-            .addClass(id === position ? 'macro-areamap-position' : '')
             .attr('data-id', id)
+            .attr('data-type', maparea.type)
+            // change traversable to 'current' for CSS targeting
+            .attr('data-traversable', traversable === null ? 'current' : traversable)
             .attr('disabled', disabled?.[id] || frozen)
             .css({
                 visibility: hidden?.[id] ? 'hidden' : '',
             })
-            .html(
+            .wiki(
                 ((maparea.tile !== undefined) ? maparea.tile : '') +
                 (show_names ? `<span>${maparea.name}</span>` : '')
             );
@@ -1643,18 +1648,18 @@ function update_mapview(argObj) {
 window.Areamap = {
     new_map,
     create_rose,
+    update_rose,
     create_mapview,
+    update_mapview,
     set_scripts,
     begin_mapmove,
     get_map,
     edit_map,
-    update_rose,
-    update_mapview,
 };
 
 })();
 </script><tw-passagedata pid="1" name="StoryCaption" tags="" position="100,100" size="100,100">This is a demo of the Areamap library for SugarCube, part of the Sleepy Macros collection.</tw-passagedata><tw-passagedata pid="2" name="StoryInit" tags="nobr" position="225,100" size="100,100">&lt;&lt;set _mapareas = {
-    MB: {name: &#39;Master Bedroom&#39;},
+    MB: {name: &#39;Master Bedroom&#39;, type: &#39;asdf&#39;},
     GB: {name: &#39;Guest Bedroom&#39;},
     HW: {name: &#39;Hallway&#39;},
     LR: {name: &#39;Living Room&#39;},
