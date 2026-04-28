@@ -28,7 +28,7 @@ title: Sleepy Macros — Areamap library
         - [`<<place_arearose>>`](#macro-place_arearose)
         - [`<<update_arearose>>`](#macro-update_arearose)
         - [`<<place_mapview>>`](#macro-place_mapview)
-        - [`<<update_mapview>>`](#macro-update_mapview)
+        - [`<<update_areamapview>>`](#macro-update_areamapview)
     - *Scripts*
         - [`<<set_areascripts>>`](#macro-set_areascripts)
     - *Movement*
@@ -199,10 +199,10 @@ Generates a 3x3 grid of directional links for navigation.
 Manually updates a `rose` element.
 
 - **Arguments:** 
-    - `rose`: (selector string) jQuery selector for the `rose` element to update
+    - `selector`: (selector string) jQuery selector for the `rose` element to update
 - **Examples:**
     ```js
-    <<update_arearose rose '.macro-areamap-rose'>>
+    <<update_arearose selector '.macro-areamap-rose'>>
     ```
 
 
@@ -224,14 +224,14 @@ Renders a visual representation of the `areamap` with the tiles configured in th
     ```
 
 
-<h3 id='macro-update_mapview'><code>&lt;&lt;update_mapview&gt;&gt;</code></h3>
+<h3 id='macro-update_areamapview'><code>&lt;&lt;update_areamapview&gt;&gt;</code></h3>
 Manually updates a `mapview` element.
 
 - **Arguments:** 
-    - `mapview`: (selector string) jQuery selector for the `mapview` element to update
+    - `selector`: (selector string) jQuery selector for the `mapview` element to update
 - **Examples:**
     ```js
-    <<update_mapview mapview '.macro-areamap-mapview'>>
+    <<update_areamapview selector '.macro-areamap-mapview'>>
     ```
 
 
@@ -394,7 +394,7 @@ Creates a jQuery `mapview` element. The `<<place_mapview>>` macro calls this met
 
 
 <h3 id='javascript-update_mapview'>update_mapview</h3>
-Manually updates `mapview` elements in the DOM. If the jQuery object passed to this method references multiple `mapviews`, all of them will update. Non-`mapview` elements will be ignored. The `<<update_mapview>>` macro is a wrapper for this method.
+Manually updates `mapview` elements in the DOM. If the jQuery object passed to this method references multiple `mapviews`, all of them will update. Non-`mapview` elements will be ignored. The `<<update_areamapview>>` macro is a wrapper for this method.
 
 - **argObj Properties:**
     - `mapview`: (jQuery object) the specific `$mapview` element to refresh

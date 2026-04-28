@@ -1197,14 +1197,13 @@ Macro.add(['update_arearose', 'updatearearose'], {
     handler: function() {
         const name = this.name;
         const template = {
-            $rose: {
+            selector: {
                 required: true,
                 type: 'string',
-                aliases: ['rose', 'selector'],
             },
         };
         const argObj = new ArgObj(name, template, this.args);
-        update_rose({$rose: $(argObj.$rose)});
+        update_rose({$rose: $(argObj.selector)});
     }
 });
 function update_rose(argObj) {
@@ -1237,14 +1236,13 @@ Macro.add(['update_areamapview', 'updateareamapview'], {
     handler: function() {
         const name = this.name;
         const template = {
-            $mapview: {
+            selector: {
                 required: true,
                 type: 'string',
-                aliases: ['mapview', 'selector'],
             },
         };
         const argObj = new ArgObj(name, template, this.args);
-        update_mapview({$mapview: $(argObj.$mapview)});
+        update_mapview({$mapview: $(argObj.selector)});
     }
 });
 function update_mapview(argObj) {

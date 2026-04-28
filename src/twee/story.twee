@@ -1,6 +1,9 @@
 :: StoryTitle
 Areamap demo -  small house
 
+:: StoryCaption
+This is a demo of the Areamap library for SugarCube, part of the Sleepy Macros collection.
+
 :: StoryInit [nobr]
 <<set _mapareas = {
     MB: {name: 'Master Bedroom'},
@@ -38,18 +41,27 @@ Areamap demo -  small house
     .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 <<mapareas _mapareas>>
 <</new_areamap>>
-/* <<set $position = 'KT'>> */
 
 :: Start
 <<place_areamapview
     mapname     'small_house'
     background  '<img src="./assets/small_house.png">'
 >>
+This rose automatically updates.
 <<place_arearose
     mapname     'small_house'
     background  '<img src="./assets/rose.png">'
     autoupdate  true
 >>
+This rose doesn't auto-update.
+<<place_arearose
+    mapname     'small_house'
+    background  '<img src="./assets/rose.png">'
+    autoupdate  false
+>>
 <<link 'teleport to pantry'>>
     <<areamapmove mapname 'small_house' target 'PT'>>
+<</link>>
+<<link 'update rose'>>
+    <<update_arearose selector '.macro-areamap-rose'>>
 <</link>>
