@@ -709,19 +709,24 @@ function create_mapview(argObj) {
     // create & append tiles
     for (const id of mapview.array) {
         const maparea = this_map.mapareas[id];
+        const traversable   = position === id
+                                ? null
+                                : maparea.type === 'wall'
+                                    ? false
+                                    : exit_arr.some( dir => dir.has(id) );
         // if clickable & valid travel destination --> clickable
         const link  = ! clickable
                         ? false
-                        : maparea.type === 'wall'
-                            ? false
-                            : exit_arr.some( dir => dir.has(id));
+                        : !! traversable;
         
         const $tile = $(document.createElement(link ? 'a' : 'div'));
         $tile
             .addClass('macro-areamap-tile')
             .addClass(link ? 'macro-areamap-link' : '')
-            .addClass(id === position ? 'macro-areamap-position' : '')
             .attr('data-id', id)
+            .attr('data-type', maparea.type)
+            // change traversable to 'current' for CSS targeting
+            .attr('data-traversable', traversable === null ? 'current' : traversable)
             .attr('disabled', disabled?.[id] || frozen)
             .css({
                 visibility: hidden?.[id] ? 'hidden' : '',

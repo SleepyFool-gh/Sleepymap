@@ -101,18 +101,18 @@ class ArgObj {
             while (i < args_in.length) {
                 const arg_this = args_in[i];
                 const key_this = aliases[arg_this];
-                    // {object} input
-                    if (typeof arg_this === 'object') {
-                        i += this.#parse_obj(i);
-                    }
-                    // kvp input
-                    else if (key_this !== undefined) {
-                        i += this.#parse_kvp(i);
-                    }
-                    // ERROR: unknown input, author error
-                    else {
-                        throw new Error(`${id} - macro input parsing failed, unknown input "${arg_this}"; FAILED`);
-                    }
+                // {object} input
+                if (typeof arg_this === 'object') {
+                    i += this.#parse_obj(i);
+                }
+                // kvp input
+                else if (key_this !== undefined) {
+                    i += this.#parse_kvp(i);
+                }
+                // ERROR: unknown input, author error
+                else {
+                    throw new Error(`${id} - macro input parsing failed, unknown input "${arg_this}"; FAILED`);
+                }
             }
         }
         catch (error) {

@@ -53,6 +53,7 @@ title: Sleepy Macros — Areamap library
     - [`areamap:mapmove_resolved`](#events-mapmove_resolved)
     - [`areamap:map_edited`](#events-map_edited)
 - **[Options](#options)**
+- **[Usage Tips & Styling](#tips)**
 </aside>
 </div>
 
@@ -113,6 +114,7 @@ title: Sleepy Macros — Areamap library
 <h2 id="macros">Macros</h2>
 
 <h3 id="macro-new_areamap"><code>&lt;&lt;new_areamap&gt;&gt;</code></h3>
+
 Defines a new `areamap`. This macro **must** be called in `StoryInit`. It accepts a 2D grid layout via its contents and supports optional child tags for advanced configuration.
 
 - **Arguments:** 
@@ -123,17 +125,17 @@ Defines a new `areamap`. This macro **must** be called in `StoryInit`. It accept
 - **Contents:** 
     - 2D space-separated text grid representing map logic, must be rectangular.
 - **Child Tags:**
-    - `<<mapview>>`: Defines a different 2D grid to use for `mapview` instead of the map logic grid
+    - `<<mapview>>`: *(optional)* Defines a different 2D grid to use for `mapview` instead of the map logic grid
         - **Arguments:** `columns` (number) # of columns in the visual representation grid
         - **Contents:** 2D space-separated grid, must be rectangular.
-    - `<<mapvars>>`: Links map state to `story variables` for map behavior manipulation. `position` will update automatically when `mapmove` succeeds. These must all be `story variables` names starting with `$`.
+    - `<<mapvars>>`: *(optional)* Links map state to `story variables` for map behavior manipulation. `position` will update automatically when `mapmove` succeeds. These must all be `story variables` names starting with `$`.
         - **Arguments:** 
             - `position`: (string) stores current `areamap` position, as a string
             - `disabled`: (string) *(optional)* stores whether `rose` and `mapview` links to each `maparea` are shown but disabled, as an object of booleans
             - `hidden`: (string) *(optional)* stores whether `rose` and `mapview` links to each `mapareea` should be hidden, as an object of booleans
             - `blocked`: (string) *(optional)* stores whether `mapmove` to each `maparea` should fail, as an object of booleans
             - `frozen`: (string) *(optional)* stores whether ALL `rose` and `mapview` links for an `areamap` are `disabled`, as a boolean
-    - `<<mapareas>>`: Defines additional metadata for each `maparea`. Partial objects will be filled with default values.
+    - `<<mapareas>>`: *(optional)* Defines additional metadata for each `maparea`. Partial objects will be filled with default values.
         - **Arguments:**
             - `name`: (string) *(optional)* used for links in `roses` & for the `show_names` option in `mapviews`, default is the `maparea` id
             - `type`: ("floor"|"wall") *(optional)* `floors` can be occupied by a player, `walls` can't and block movement; default `"floor"`
@@ -180,6 +182,7 @@ Defines a new `areamap`. This macro **must** be called in `StoryInit`. It accept
 
 
 <h3 id='macro-place_arearose'><code>&lt;&lt;place_arearose&gt;&gt;</code></h3>
+
 Generates a 3x3 grid of directional links for navigation.
 
 - **Arguments:** 
@@ -196,6 +199,7 @@ Generates a 3x3 grid of directional links for navigation.
 
 
 <h3 id='macro-update_arearose'><code>&lt;&lt;update_arearose&gt;&gt;</code></h3>
+
 Manually updates a `rose` element.
 
 - **Arguments:** 
@@ -207,6 +211,7 @@ Manually updates a `rose` element.
 
 
 <h3 id='macro-place_mapview'><code>&lt;&lt;place_mapview&gt;&gt;</code></h3>
+
 Renders a visual representation of the `areamap` with the tiles configured in the `<<mapareas>>` child tag of `<<new_areamap>>`, using the 2D grid defined in the `<<mapview>>` child tag of `<<new_areamap>>`. If no `<<mapview>>` was used, the 2D logic map is used. Can optionally be made clickable for navigation or to display maparea names.
 
 - **Arguments:** 
@@ -225,6 +230,7 @@ Renders a visual representation of the `areamap` with the tiles configured in th
 
 
 <h3 id='macro-update_areamapview'><code>&lt;&lt;update_areamapview&gt;&gt;</code></h3>
+
 Manually updates a `mapview` element.
 
 - **Arguments:** 
@@ -236,6 +242,7 @@ Manually updates a `mapview` element.
 
 
 <h3 id='macro-set_areascripts'><code>&lt;&lt;set_areascripts&gt;&gt;</code></h3>
+
 Assigns TwineScript logic to run during the `mapmove` process. Arguments can be used to control which `mapareas` trigger the scripts. This macro **must** be called in `StoryInit`. Child tag order is preserved, but `<<onmapattempt>>` tags always run first, followed by:
     - when `mapmove` succeeds: `<<onmapstart>>` then `<<onmapend>>`
     - when `mapmove` fails: `<<onmapabort>>`
@@ -243,10 +250,10 @@ Assigns TwineScript logic to run during the `mapmove` process. Arguments can be 
 - **Arguments:**
     - `mapname`: (string) name of `areamap`
 - **Child Tags:**
-    - `<<onmapattempt>>`: Always runs, immediately when a mapmove is attempted
-    - `<<onmapstart>>`: Only runs when `mapmove` succeeds, before position is updated
-    - `<<onmapend>>`: Only runs when mapmove succeeds, after position is updated
-    - `<<onmapabort>>`: Only runs when mapmove fails
+    - `<<onmapattempt>>`: *(optional)* Always runs, immediately when a mapmove is attempted
+    - `<<onmapstart>>`: *(optional)* Only runs when `mapmove` succeeds, before position is updated
+    - `<<onmapend>>`: *(optional)* Only runs when mapmove succeeds, after position is updated
+    - `<<onmapabort>>`: *(optional)* Only runs when mapmove fails
     - **Arguments:** All these child tags take the same arguments
         - `to`: (string|array\<string\>|"any") *(optional)* id(s) of the `maparea` the player is moving to; either as a string, an array of strings, or "any"
         - `from`: (string|array\<string\>|"any") *(optional)* id(s) of the `maparea` the player is moving from; either as a string, an array of strings, or "any"
@@ -266,6 +273,7 @@ Assigns TwineScript logic to run during the `mapmove` process. Arguments can be 
 
 
 <h3 id='macro-areamapmove'><code>&lt;&lt;areamapmove&gt;&gt;</code></h3>
+
 Manually triggers a `mapmove` attempt. Using this macro circumvents any checks that the target `maparea` is a neighboring `maparea`, allowing for more flexible navigation — but `blocked` will still apply and cause the `mapmove` to fail.
 
 - **Arguments:** 
@@ -298,6 +306,7 @@ Manually triggers a `mapmove` attempt. Using this macro circumvents any checks t
 Javascript methods are stored on the `Areamap` window object. All methods take an `argObj` argument object.
 
 <h3 id='javascript-new_areamap'>new_areamap</h3>
+
 Creates a new `areamap`. The `<<new_areamap>>` macro is a wrapper for this method.
 
 - **argObj Properties:**
@@ -343,6 +352,7 @@ Creates a new `areamap`. The `<<new_areamap>>` macro is a wrapper for this metho
 
 
 <h3 id='javascript-create_rose'>create_rose</h3>
+
 Creates a jQuery `rose` element. The `<<place_arearose>>` macro calls this method and appends the result to the macro output.
 
 - **argObj Properties:**
@@ -361,6 +371,7 @@ Creates a jQuery `rose` element. The `<<place_arearose>>` macro calls this metho
 
 
 <h3 id='javascript-update_rose'>update_rose</h3>
+
 Manually updates `rose` elements in the DOM. If the jQuery object passed to this method references multiple `roses`, all of them will update. Non-`rose` elements will be ignored. The `<<update_arearose>>` macro is a wrapper for this method. 
 
 - **argObj Properties:**
@@ -374,6 +385,7 @@ Manually updates `rose` elements in the DOM. If the jQuery object passed to this
 
 
 <h3 id='javascript-create_mapview'>create_mapview</h3>
+
 Creates a jQuery `mapview` element. The `<<place_mapview>>` macro calls this method and appends the result to the macro output.
 
 - **argObj Properties:**
@@ -394,6 +406,7 @@ Creates a jQuery `mapview` element. The `<<place_mapview>>` macro calls this met
 
 
 <h3 id='javascript-update_mapview'>update_mapview</h3>
+
 Manually updates `mapview` elements in the DOM. If the jQuery object passed to this method references multiple `mapviews`, all of them will update. Non-`mapview` elements will be ignored. The `<<update_areamapview>>` macro is a wrapper for this method.
 
 - **argObj Properties:**
@@ -407,6 +420,7 @@ Manually updates `mapview` elements in the DOM. If the jQuery object passed to t
 
 
 <h3 id='javascript-set_areascripts'>set_areascripts</h3>
+
 Assigns `TwineScript` logic to run during the `mapmove` process. The `<<set_areascripts>>` macro is a wrapper for this method.
 
 - **Script Types:**
@@ -451,6 +465,7 @@ Assigns `TwineScript` logic to run during the `mapmove` process. The `<<set_area
 
 
 <h3 id='javascript-begin_mapmove'>begin_mapmove</h3>
+
 Begins the `mapmove` procedure and fires the `areamap:mapmove_began` event. The `<<areamapmove>>` macro is a wrapper for this method.
 
 - **argObj Properties:**
@@ -468,6 +483,7 @@ Begins the `mapmove` procedure and fires the `areamap:mapmove_began` event. The 
 
 
 <h3 id='javascript-get_map'>get_map</h3>
+
 Retrieves a copy of a map object. Manipulating the returned object *will not* affect or update the original map. Use `Areamap.edit_map` to edit `areamaps`.
 
 - **argObj Properties:**
@@ -482,6 +498,7 @@ Retrieves a copy of a map object. Manipulating the returned object *will not* af
 
 
 <h3 id='javascript-edit_map'>edit_map</h3>
+
 Allows for dynamic modification of an existing `areamap`. This method will automatically update the `areamap`'s navigation logic (exits) and update any `roses` or `mapviews` set to autoupdate.
 
 - **argObj Properties:**
@@ -530,9 +547,10 @@ Allows for dynamic modification of an existing `areamap`. This method will autom
 `Areamap` fires several events that allow for manipulating player movement and tracking map changes. All `Areamap` events fire off `#passages` and resolve on `document`. Authors that intend to intercept `Areamap` events should place their listeners on `#story`.
 
 <h3 id='events-mapmove_began'>areamap:mapmove_began</h3>
+
 Triggered immediately when any `mapmove` attempt begins
 
-  - **Event Data:**
+- **Event Data:**
     - `mapname`: (string) name of the `areamap` triggering the `mapmove`
     - `id_origin`: (string) id of `maparea` the player is moving from
     - `id_target`: (string) id of `maparea` the player is moving to
@@ -540,6 +558,7 @@ Triggered immediately when any `mapmove` attempt begins
 
 
 <h3 id='events-mapmove_resolved'>areamap:mapmove_resolved</h3>
+
 Triggered after any `mapmove` resolves
 
 - **Event Data:**
@@ -550,6 +569,7 @@ Triggered after any `mapmove` resolves
 
 
 <h3 id='events-map_edited'>areamap:map_edited</h3>
+
 Triggered after the `edit_map` method completes, useful if you need to perform additional UI updates not covered by the standard `autoupdate` functionality.
 
 - **Event Data:**
@@ -592,4 +612,31 @@ Triggered after the `edit_map` method completes, useful if you need to perform a
     - `setup['@areamap/options'].default.show_names_on_mapview`: (boolean) whether the `mapview` shows names for the `mapareas`
         - value: `false`
         - used in: `<<place_mapview>>` and `Areamap.create_mapview`
+
+<p align="center">
+    &bull; &bull; &bull;
+</p>
+
+
+
+
+<!--
+ █████ ███ ████   ████
+   █    █  █   █ █
+   █    █  ████   ███
+   █    █  █         █
+   █   ███ █     ████
+ SECTION: tips
+-->
+<h2 id='tips'>Usage Tips & Styling</h2>
+
+- **CSS:**
+    - **Mapviews**
+        - clickable links have the `.macro-areamap-link` class
+        - `[traversable='current']` for current position
+        - `[traversable='true']` for neighboring tiles available for travel
+        - `[traversable='false']` for tiles not available for travel
+    - **Roses**
+        - clickable links have the `.macro-areamap-link` class
+    
 </section>
