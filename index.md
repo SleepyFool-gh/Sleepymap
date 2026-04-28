@@ -2,7 +2,7 @@
 title: Sleepy Macros — Areamap library
 ---
 
-<!-- link styles -->
+<!-- stylesheet -->
 <link rel='stylesheet' href='./style.css'>
 
 <!--
