@@ -1,3 +1,8 @@
+---
+title: Sleepy Macros — Areamap library
+---
+
+<!-- link styles -->
 <link rel='stylesheet' href='./style.css'>
 
 <!--
@@ -17,37 +22,37 @@
 
 - **[Intro](#intro)**
 - **[Macros](#macros)**
-    - Initialization
+    - *Initialization*
         - [`<<new_areamap>>`](#macro-new_areamap)
-    - Interface Items
+    - *Interface Items*
         - [`<<place_arearose>>`](#macro-place_arearose)
         - [`<<update_arearose>>`](#macro-update_arearose)
         - [`<<place_mapview>>`](#macro-place_mapview)
         - [`<<update_mapview>>`](#macro-update_mapview)
-    - Scripts
+    - *Scripts*
         - [`<<set_areascripts>>`](#macro-set_areascripts)
-    - Movement
+    - *Movement*
         - [`<<areamapmove>>`](#macro-areamapmove)
 - **[JavaScript Methods](#javascript)**
-    - Initialization
+    - *Initialization*
         - [`new_areamap`](#javascript-new_areamap)
-    - Interface Items
+    - *Interface Items*
         - [`create_rose`](#javascript-create_rose)
         - [`update_rose`](#javascript-update_rose)
         - [`create_mapview`](#javascript-create_mapview)
         - [`update_mapview`](#javascript-update_mapview)
-    - Scripts
+    - *Scripts*
         - [`set_areascripts`](#javascript-set_areascripts)
-    - Movement
+    - *Movement*
         - [`begin_mapmove`](#javascript-begin_mapmove)
-    - Utilities
+    - *Utilities*
         - [`get_map`](#javascript-get_map)
         - [`edit_map`](#javascript-edit_map)
 - **[Events](#events)**
     - [`areamap:mapmove_began`](#events-mapmove_began)
     - [`areamap:mapmove_resolved`](#events-mapmove_resolved)
     - [`areamap:map_edited`](#events-map_edited)
-- [Options](#options)
+- **[Options](#options)**
 </aside>
 </div>
 
