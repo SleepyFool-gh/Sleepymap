@@ -75,6 +75,8 @@ title: Sleepy Macros — Areamap library
 
 `Areamap` takes a space-separated 2D text grid and converts it into a functional map for player navigation (`mapmove`). All grid spaces with the same `maparea` id will be treated as one big room, regardless of how many grid spaces it occupies or whether it is continuous.
 
+[Get the map library here](https://github.com/SleepyFool-gh/areamap)
+
 <video width="635" height="558" controls>
   <source src="./demo/small_house.mp4" type="video/mp4">
   Your browser does not support the video tag.

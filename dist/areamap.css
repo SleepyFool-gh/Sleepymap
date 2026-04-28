@@ -1,0 +1,52 @@
+.macro-areamap-rose {
+    width: 30rem;
+    height: 20rem;
+    display: inline-grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    position: relative;
+}
+    .macro-areamap-rosebg,
+    .macro-areamap-mapviewbg {
+        position: absolute;
+        height: 100%;
+        width: 100%;
+        z-index: -1;
+    }
+        .macro-areamap-rosebg > *,
+        .macro-areamap-mapviewbg > * {
+            height: 100%;
+            width: 100%;
+        }
+    .macro-areamap-dir {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        min-height: 3em;
+    }
+        .macro-areamap-dir[data-dir='C'] {
+            font-weight: bold;
+            grid-column: 2;
+            grid-row: 2;
+        }
+.macro-areamap-mapview {
+    width: 64rem;
+    height: 36rem;
+    display: inline-grid;
+    grid-template-columns: repeat(var(--columns), 1fr);
+    position: relative;
+}
+    .macro-areamap-tile {
+        height: 100%;
+        width: 100%;
+        display: grid;
+        place-content: center;
+    }
+    .macro-areamap-position {
+        font-weight: bold;
+        backdrop-filter: brightness(1.25);
+    }
+    .macro-areamap-tile:not(.macro-areamap-position):not(.macro-areamap-link) {
+        color: rgba(177, 177, 177, .6);
+    }
