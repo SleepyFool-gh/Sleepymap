@@ -26,6 +26,13 @@
             margin-top: 0;
             padding-top: 24px;
         }
+        /* add a little spacing to h3 elements */
+        #main h2 + h3 {
+            margin-top: initial;
+        }
+        #main h3 {
+            margin-top: 3rem;
+        }
 
 
 /* mobile mode */

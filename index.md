@@ -27,7 +27,7 @@ title: Sleepy Macros — Areamap library
     - *Interface Items*
         - [`<<place_arearose>>`](#macro-place_arearose)
         - [`<<update_arearose>>`](#macro-update_arearose)
-        - [`<<place_mapview>>`](#macro-place_mapview)
+        - [`<<place_areamapview>>`](#macro-place_areamapview)
         - [`<<update_areamapview>>`](#macro-update_areamapview)
     - *Scripts*
         - [`<<set_areascripts>>`](#macro-set_areascripts)
@@ -74,7 +74,7 @@ title: Sleepy Macros — Areamap library
 
 `Areamap` is a map library for SugarCube designed for room-to-room movement like **Darkest Dungeon** or node-to-node movement like **Faster Than Light** — NOT for grid movement like **Zelda** or **Final Fantasy Tactics**.
 
-`Areamap` takes a space-separated 2D text grid and converts it into a functional map for player navigation (`mapmove`). All grid spaces with the same `maparea` id will be treated as one big room, regardless of how many grid spaces it occupies or whether it is continuous.
+`Areamap` takes a space-separated 2D text grid and converts it into a functional map for player movement (`mapmove`). All grid spaces with the same id will be treated as one big room (`maparea`) — regardless of how many grid spaces it occupies or whether it is continuous or not. Adjacent `mapareas` will be connected by `exits` that allow navigation between them.
 
 [Get the map library here](https://github.com/SleepyFool-gh/areamap)
 
@@ -210,7 +210,7 @@ Manually updates a `rose` element.
     ```
 
 
-<h3 id='macro-place_mapview'><code>&lt;&lt;place_mapview&gt;&gt;</code></h3>
+<h3 id='macro-place_areamapview'><code>&lt;&lt;place_areamapview&gt;&gt;</code></h3>
 
 Renders a visual representation of the `areamap` with the tiles configured in the `<<mapareas>>` child tag of `<<new_areamap>>`, using the 2D grid defined in the `<<mapview>>` child tag of `<<new_areamap>>`. If no `<<mapview>>` was used, the 2D logic map is used. Can optionally be made clickable for navigation or to display maparea names.
 
@@ -222,7 +222,7 @@ Renders a visual representation of the `areamap` with the tiles configured in th
     - `background`: (HTML string) *(optional)* inserted as a background element for the `mapview`
 - **Examples:**
     ```js
-    <<place_mapview
+    <<place_areamapview
         mapname     'small_house'
         background  '<img src="./assets/small_house.png">'
     >>
@@ -274,7 +274,7 @@ Assigns TwineScript logic to run during the `mapmove` process (`areascripts`). A
 
 <h3 id='macro-areamapmove'><code>&lt;&lt;areamapmove&gt;&gt;</code></h3>
 
-Manually triggers a `mapmove` attempt. Using this macro circumvents any checks that the target `maparea` is a neighboring `maparea`, allowing for more flexible navigation — but `blocked` will still apply and cause the `mapmove` to fail.
+Manually triggers a `mapmove` attempt. This macro *does not* check `exits` — allowing for more flexible navigation — but `blocked` will still apply and cause the `mapmove` to fail.
 
 - **Arguments:** 
     - `mapname`: (string) name of `areamap`
@@ -386,7 +386,7 @@ Manually updates `rose` elements in the DOM. If the jQuery object passed to this
 
 <h3 id='javascript-create_mapview'><code>create_mapview</code></h3>
 
-Creates a jQuery `mapview` element. The `<<place_mapview>>` macro calls this method and appends the result to the macro output.
+Creates a jQuery `mapview` element. The `<<place_areamapview>>` macro calls this method and appends the result to the macro output.
 
 - **argObj Properties:**
     - `mapname`: (string) name of the `areamap`
@@ -466,7 +466,7 @@ Assigns `TwineScript` logic to run during the `mapmove` process. The `<<set_area
 
 <h3 id='javascript-begin_mapmove'><code>begin_mapmove</code></h3>
 
-Begins the `mapmove` procedure and fires the `areamap:mapmove_began` event. The `<<areamapmove>>` macro is a wrapper for this method.
+Begins the `mapmove` procedure and fires the `areamap:mapmove_began` event. This method *does not* check `exits`. The `<<areamapmove>>` macro is a wrapper for this method.
 
 - **argObj Properties:**
     - `mapname`: (string) name of the `areamap`
@@ -499,7 +499,7 @@ Retrieves a copy of a map object. Manipulating the returned object *will not* af
 
 <h3 id='javascript-edit_map'><code>edit_map</code></h3>
 
-Allows for dynamic modification of an existing `areamap`. This method will automatically update the `areamap`'s navigation logic (exits) and update any `roses` or `mapviews` set to autoupdate.
+Allows for dynamic modification of an existing `areamap`. This method will automatically update the `areamap`'s `exits` and update any `roses` or `mapviews` set to autoupdate.
 
 - **argObj Properties:**
     - `mapname`: (string) name of the `areamap` to modify
@@ -605,13 +605,13 @@ Triggered after the `edit_map` method completes, useful if you need to perform a
         - used in: `<<place_arearose>>` and `Areamap.create_rose`
     - `setup['@areamap/options'].default.autoupdate_mapview`: (boolean) whether the `mapview` automatically updates
         - value: `true`
-        - used in: `<<place_mapview>>` and `Areamap.create_mapview`
+        - used in: `<<place_areamapview>>` and `Areamap.create_mapview`
     - `setup['@areamap/options'].default.clickable_mapview`: (boolean) whether the `mapview` is clickable
         - value: `true`
-        - used in: `<<place_mapview>>` and `Areamap.create_mapview`
+        - used in: `<<place_areamapview>>` and `Areamap.create_mapview`
     - `setup['@areamap/options'].default.show_names_on_mapview`: (boolean) whether the `mapview` shows names for the `mapareas`
         - value: `false`
-        - used in: `<<place_mapview>>` and `Areamap.create_mapview`
+        - used in: `<<place_areamapview>>` and `Areamap.create_mapview`
 
 <p align="center">
     &bull; &bull; &bull;
@@ -630,11 +630,12 @@ Triggered after the `edit_map` method completes, useful if you need to perform a
 -->
 <h2 id='tips'>Usage Tips & Styling</h2>
 
-- The algorithm that checks exits out of each area *will not* remove duplicates if `maparea-A` has two exits to `maparea-B` in two different directions. This is especially important when using the `diagonals` option. Authors will need to shape their navigation map accordingly.
-- Changing `disabled` state or `frozen` to `true` *will not* prevent a `mapmove` that has already started.
-- Changing `blocked` to `true` state inside an `areascript` *will* prevent a `mapmove` **only** if done inside `onmapattempt`.
+- The algorithm that checks `exits` out of each `maparea` *will not* remove duplicates say if `maparea-A` has two `exits` to `maparea-B` in two different directions. This is especially important when using the `diagonals` option. Authors will need to shape their navigation map accordingly.
+- Changing `disabled` or `frozen` values to `true` *will not* prevent a `mapmove` — it only disables the link generated in `roses` and `mapviews`.
+- Changing `blocked` values to `true` inside an `areascript` *will* prevent a `mapmove` **only** if done inside `onmapattempt`.
+- `<<areamapmove>>` and `Areamap.begin_mapmove` don't check against valid `exits` — this is useful for moving the player to areas normally inaccessible to their current location or to disconnected parts of the map (eg. if an author chooses to implement stairs manually).
 - Clickable links have the `.macro-areamap-link` class.
-- `hidden` areas still generate tiles and links, but with `visibility: hidden`.
+- `hidden` `mapareas` still generate tiles and links, but with `visibility: hidden`.
 - `mapview` tiles have the `data-traversable` HTML attribute that indicates whether it is traversable, or the current position
     - `true`: available for `mapmove` via clicking on the `mapview`
     - `false`: not available for `mapmove`
@@ -646,7 +647,10 @@ Triggered after the `edit_map` method completes, useful if you need to perform a
     - `N`, `E`, `S`, `W`: cardinal directions
     - `NE`, `NW`, `SW`, `SE`: ordinal directions
     - `C`: center
-- `rose` background, `mapview` background, and `mapview` tile arguments will accept TwineScript instead of raw HTML — but authors use this feature at their own discretion.
+- Several HTML string arguments accept TwineScript instead of raw HTML — but authors use this feature at their own discretion. These include:
+    - `background` argument in `<<place_arearose>>` and `Areamap.create_rose`
+    - `background` argument in `<<place_areamapview>>` and `Areamap.create_mapview`
+    - `tile` argument in `<<place_areamapview>>` and `Areamap.create_mapview`
 - If an author chooses to intercept the `areamap:mapmove_began` event, `mapmove` will not resolve unless they allow the event to propagate to `document` or fire another `areamap:mapmove_began` event.
 
 </section>
