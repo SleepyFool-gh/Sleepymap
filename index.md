@@ -86,8 +86,8 @@ title: Sleepy Macros — Areamap library
 #### Features:
 
 - **Built-in navigation options:**
-    1) compass rose with directional buttons (`rose`)
-    2) visual map with optionally clickable `mapareas` (`mapview`)
+    1. compass rose with directional buttons (`rose`)
+    2. visual map with optionally clickable `mapareas` (`mapview`)
 - **TwineScripts payloads:** Scripts can be assigned to run at various stages of the `mapmove` process.
 - **Separation of map logic & map view:** The 2D grid used to generate the `mapview` can be configured independently from the 2D grid useed for map logic.
 - **Linked `story variables`:** Map state can be linked to `story variables` for map behavior manipulation.
@@ -138,7 +138,7 @@ Defines a new `areamap`. This macro **must** be called in `StoryInit`. It accept
     - `<<mapareas>>`: *(optional)* Defines additional metadata for each `maparea`. Partial objects will be filled with default values.
         - **Arguments:**
             - `name`: (string) *(optional)* used for links in `roses` & for the `show_names` option in `mapviews`, default is the `maparea` id
-            - `type`: ("floor"|"wall") *(optional)* `floors` can be occupied by a player, `walls` can't and block movement; default `"floor"`
+            - `type`: ("floor"\|"wall") *(optional)* `floors` can be occupied by a player, `walls` can't and block movement; default `"floor"`
             - `tile`: (HTML string) *(optional)* inserted into each space in the `mapview`, default none
 - **Examples:**
     ```js
@@ -255,8 +255,8 @@ Assigns TwineScript logic to run during the `mapmove` process (`areascripts`). A
     - `<<onmapend>>`: *(optional)* Only runs when mapmove succeeds, after position is updated
     - `<<onmapabort>>`: *(optional)* Only runs when mapmove fails
     - **Arguments:** All these child tags take the same arguments
-        - `to`: (string|array\<string\>|"any") *(optional)* id(s) of the `maparea` the player is moving to; either as a string, an array of strings, or "any"
-        - `from`: (string|array\<string\>|"any") *(optional)* id(s) of the `maparea` the player is moving from; either as a string, an array of strings, or "any"
+        - `to`: (string\|array\<string\>\|"any") *(optional)* id(s) of the `maparea` the player is moving to; either as a string, an array of strings, or "any"
+        - `from`: (string\|array\<string\>\|"any") *(optional)* id(s) of the `maparea` the player is moving from; either as a string, an array of strings, or "any"
     - **Contents:**
         - TwineScript to run when the tag is triggered
 - **Examples:**
@@ -320,7 +320,7 @@ Creates a new `areamap`. The `<<new_areamap>>` macro is a wrapper for this metho
         - `mapview.array`: (array\<string\>) 1D array of `maparea` ids representing the mapview navigation logic, length must be divisible by `mapview.columns`
     - `mapareas`: (object) *(optional)* additional metadata for `mapareas`, partial objects will be filled with default values
         - `mapareas.name`: (string) *(optional)* used for links in `roses` & for the `show_names` option in `mapviews`, default is the `maparea` id
-        - `mapareas.type`: ("floor"|"wall") *(optional)* `floors` can be occupied by a player, `walls` can't and block movement; default `"floor"`
+        - `mapareas.type`: ("floor"\|"wall") *(optional)* `floors` can be occupied by a player, `walls` can't and block movement; default `"floor"`
         - `mapareas.tile`: (HTML string) *(optional)* inserted into each space in the `mapview`; default `undefined`
     - `mapvars`: (object) *(optional)* data defining links to `story variables`, `position` will update automatically when `mapmove` succeeds — these must all be `story variables` names starting with `$`
         - `mapvars.position`: (string) stores current `areamap` position, as a string
@@ -431,11 +431,11 @@ Assigns `TwineScript` logic to run during the `mapmove` process. The `<<set_area
 - **argObj Properties:**
     - `mapview`: (jQuery object) the specific `$mapview` element to refresh
     - `scripts`: (array\<object\>) array of script objects, each object contains:
-        - `scripts[].type`: (`"onmapattempt"`|`"onmapstart"`|`"onmapend"`|`"onmapabort"`) the script trigger
+        - `scripts[].type`: (`"onmapattempt"`\|`"onmapstart"`\|`"onmapend"`\|`"onmapabort"`) the script trigger
         - `scripts[].contents`: (string) the `TwineScript` code to execute
         - `scripts[].areas`: (object)
-            - `scripts[].areas.to`: (string|array\<string\>|"any") *(optional)* id(s) of the `maparea` the player is moving to
-            - `scripts[].areas.from`: (string|array\<string\>|"any") *(optional)* id(s) of the `maparea` the player is moving from
+            - `scripts[].areas.to`: (string\|array\<string\>\|"any") *(optional)* id(s) of the `maparea` the player is moving to
+            - `scripts[].areas.from`: (string\|array\<string\>\|"any") *(optional)* id(s) of the `maparea` the player is moving from
 - **Examples:**
     ```js
     Areamap.set_areascripts({
@@ -512,7 +512,7 @@ Allows for dynamic modification of an existing `areamap`. This method will autom
     - `mapareas`: (object) *(optional)* update metadata for one or more `mapareas`, incomplete objects will retain existing values for missing data
         - `mapareas.[id]`: (object)
             - `mapareas.[id].name`: (string) *(optional)* new name
-            - `mapareas.[id].type`: ("floor"|"wall") *(optional)* new maparea type
+            - `mapareas.[id].type`: ("floor"\|"wall") *(optional)* new maparea type
             - `mapareas.[id].tile`: (HTML string) *(optional)* new HTML string to display in `maparea`
 - **Examples:**
     ```js
