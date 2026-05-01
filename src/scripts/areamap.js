@@ -56,9 +56,18 @@ Macro.add(['newareamap', 'new_areamap'], {
                 required: true,
                 type: 'string',
             },
+            grid_movement: {
+                type: 'boolean',
+                aliases: 'grid_mode',
+            },
             start: {
-                required: true,
                 type: 'string',
+            },
+            start_x: {
+                type: 'number',
+            },
+            start_y: {
+                type: 'number',
             },
             columns: {
                 required: true,
@@ -149,7 +158,7 @@ function new_map(argObj) {
 //      SECTION: init the areamap
 //      creates map object on the new_areamap macro
 
-    const { mapname, start, columns, maparray } = argObj;
+    const { mapname, grid_movement, start, start_x, start_y, columns, maparray } = argObj;
     const diagonals = argObj.diagonals ?? options.default.diagonals;    // default value
     const name = argObj.name ?? 'Areamap.new_map';
 
@@ -173,9 +182,21 @@ function new_map(argObj) {
     else if (maparray.length % columns !== 0) {
         throw new Error(`${name} — areamap "${mapname}" — maparray must be rectangular (whole number multiple of columns)!`);
     }
-    // ERROR: invalid start
-    else if (! maparray.includes(start)) {
-        throw new Error(`${name} — areamap "${mapname}" — start position "${start}" not found in maparray!`);
+    // ERROR: areamap mode, invalid start
+    else if ((! grid_movement) && (! maparray.includes(start))) {
+        throw new Error(`${name} — areamap "${mapname}" — start maparea "${start}" not found in maparray!`);
+    }
+    // ERROR: start_x and start_y required for gridmap mode
+    else if (grid_movement && (start_x === undefined || start_y === undefined)) {
+        throw new Error(`${name} — areamap "${mapname}" — start_x and start_y required for gridmap mode!`);
+    }
+    // ERROR: start_x out of bounds
+    else if (grid_movement && (start_x < 0 || start_x >= columns)) {
+        throw new Error(`${name} — areamap "${mapname}" — start_x out of bounds!`);
+    }
+    // ERROR: start_y out of bounds
+    else if (grid_movement && (start_y < 0 || start_y >= maparray.length / columns)) {
+        throw new Error(`${name} — areamap "${mapname}" — start_y out of bounds!`);
     }
 
     // create map object
@@ -184,10 +205,14 @@ function new_map(argObj) {
         columns,
         maparray,
         diagonals,
+        grid_movement,
         mapview     : undefined,    // populated here, later
         mapareas    : {},           // populated here, later
         mapvars     : {},           // populated here, later
-        exits       : {},           // populated here, later
+        exits       : {             // populated here, later
+            area    : {},
+            grid    : [],
+        },
         scripts     : [],           // populated in set_scripts, if called
     };
     areamaps[mapname] = this_map;
@@ -283,10 +308,11 @@ function new_map(argObj) {
     const mapvars = this_map.mapvars;
 
     // SYNC REMINDER: changing anything here also requires changing <<mapvars>> template
+    const xy = { x: start_x, y: start_y };
     const MAPVAR_DEFAULTS = {
         position: {
             sv_name : argObj?.mapvars?.position ?? options.default.position_story_variable,
-            val     : start,
+            val     : grid_movement ? xy2i({ xy, columns }) : start,
         },
         frozen: {
             sv_name : argObj?.mapvars?.frozen,
@@ -328,9 +354,7 @@ function new_map(argObj) {
         // set default value
         // can't use State.setVar with weird characters
         mapvars[key] = sv_name;
-        console.log(key, sv_name, sv_name.slice(1), MAPVAR_DEFAULTS[key].val);
         State.variables[sv_name.slice(1)] = MAPVAR_DEFAULTS[key].val;
-        console.log(State.variables);
     }
     
 
@@ -368,23 +392,26 @@ function update_exits(argObj) {
 
     const { maparray, mapareas, columns, diagonals, exits } = this_map;
 
-    // create empty exits object
-    Object.keys(mapareas).forEach( function(id) {
-        exits[id] = {
-            N   : new Set(),
-            E   : new Set(),
-            W   : new Set(),
-            S   : new Set(),
-            // won't be used if diagonals are disabled
-            NW  : new Set(),
-            NE  : new Set(),
-            SE  : new Set(),
-            SW  : new Set(),
-        };
-    });
+    // get offsets
+    const offsets = get_offsets({ columns });
 
+    // init exits
+    exits.area = Object.fromEntries(Object.keys(mapareas).map(id => [id, {}]));
+    exits.grid = [];
     // populate exits object
     for (let i = 0; i < maparray.length; i++) {
+
+        // define checks for each direction
+        const checks = {
+            N   : i >= columns,
+            E   : (i+1) % columns !== 0,
+            S   : i < (maparray.length - columns),
+            W   : i % columns !== 0,
+            NE  : (i >= columns) && ((i+1) % columns !== 0),
+            NW  : (i >= columns) && (i % columns !== 0),
+            SE  : (i < (maparray.length - columns)) && ((i+1) % columns !== 0),
+            SW  : (i < (maparray.length - columns)) && (i % columns !== 0),
+        };
 
         const maparea = mapareas[maparray[i]];
 
@@ -392,68 +419,31 @@ function update_exits(argObj) {
         if (maparea.type === 'wall') {
             continue;
         }
-
-        // define checks for each direction
-        const checks = {
-            N: {
-                needed      : i >= columns,
-                diagonal    : false,
-                offset      : -columns,
-            },
-            E: {
-                needed      : (i+1) % columns !== 0,
-                diagonal    : false,
-                offset      : 1,
-            },
-            S: {
-                needed      : i < (maparray.length - columns),
-                diagonal    : false,
-                offset      : columns,
-            },
-            W: {
-                needed      : i % columns !== 0,
-                diagonal    : false,
-                offset      : -1,
-            },
-            NE: {
-                needed      : i >= columns && (i+1) % columns !== 0,
-                diagonal    : true, 
-                offset      : -columns + 1,
-            },
-            NW: {
-                needed      : i >= columns && i % columns !== 0,
-                diagonal    : true,
-                offset      : -columns - 1,
-            },
-            SE: {
-                needed      : i < (maparray.length - columns) && (i+1) % columns !== 0,
-                diagonal    : true,
-                offset      : columns + 1,
-            },
-            SW: {
-                needed      : i < (maparray.length - columns) && i % columns !== 0,
-                diagonal    : true,
-                offset      : columns - 1,
-            },
-        };
         for (const [dir, check] of Object.entries(checks)) {
             // if check not needed, continue
-            if (! check.needed) {
+            if (! check) {
                 continue;
             }
             // if dir is a diagonal and diagonals not enabled, continue
-            else if (check.diagonal && (! diagonals)) {
+            else if (is_diagonal[dir] && (! diagonals)) {
                 continue;
             }
+
             // get neighbor
-            // if neighbor is not this area and not a wall, add to exits
-            const neighbor = mapareas[maparray[i + check.offset]];
-            if (
-                (neighbor.id !== maparea.id)   && 
-                (neighbor.type !== 'wall')
-            ) {
-                exits[maparea.id][dir].add(neighbor.id);
+            // if wall, continue
+            const neighbor = mapareas[maparray[i + offsets[dir]]];
+            if (neighbor.type === 'wall') {
+                continue;
             }
+
+            // area exits
+            if (neighbor.id !== maparea.id) {
+                exits.area[maparea.id][dir] ??= new Set();
+                exits.area[maparea.id][dir].add(neighbor.id);
+            }
+            // grid exits
+            exits.grid[i] ??= new Set();
+            exits.grid[i].add(i + offsets[dir]);
         }
     }
 }
@@ -514,34 +504,30 @@ function create_rose(argObj) {
         throw new Error(`${name} — couldn't find map with name "${mapname}"!`);
     }
 
-    const { mapareas, mapvars, exits } = this_map;
+    const { grid_movement, columns, maparray, mapareas, mapvars, exits } = this_map;
 
-    const position  = State.variables[mapvars.position.slice(1)];
-    const frozen    = mapvars.frozen !== undefined      
-                        ? State.variables[mapvars.frozen.slice(1)] 
-                        : false;
-    const disabled  = mapvars.disabled !== undefined    
-                        ? State.variables[mapvars.disabled.slice(1)] 
-                        : null;
-    const hidden    = mapvars.hidden   !== undefined    
-                        ? State.variables[mapvars.hidden.slice(1)]   
-                        : null;
+    const position      = State.variables[mapvars.position.slice(1)];
+    const frozen        = mapvars.frozen !== undefined      
+                            ? State.variables[mapvars.frozen.slice(1)] 
+                            : false;
+    const disabled      = mapvars.disabled !== undefined    
+                            ? State.variables[mapvars.disabled.slice(1)] 
+                            : null;
+    const hidden        = mapvars.hidden   !== undefined    
+                            ? State.variables[mapvars.hidden.slice(1)]   
+                            : null;
 
-    // ERROR: invalid position, either not set or non-existing or a wall
-    if (
-        (position === null) ||
-        (mapareas[position] === undefined) ||
-        (mapareas[position].type === 'wall')
-    ) {
-        throw new Error(`${name} — map "${mapname}" — position currently invalid!`);
-    }
+    const maparea = grid_movement ? mapareas[maparray[xy2i({ ...position, columns })]] : mapareas[position];
 
     // create rose
     const $rose = $(document.createElement('div'));
     $rose
         .addClass('macro-areamap-rose')
         .attr('data-mapname', mapname)
-        .attr('data-position', position)
+        .attr('data-position', grid_movement ? `x:${position?.x}, y:${position?.y}` : position)
+        .attr('data-x', grid_movement ? position?.x : '')
+        .attr('data-y', grid_movement ? position?.y : '')
+        .attr('data-i', grid_movement ? xy2i({ ...position, columns }) : '')
         .attr('data-autoupdate', autoupdate)
         .data('argObj', argObj);
 
@@ -556,11 +542,14 @@ function create_rose(argObj) {
     // create center
     $(document.createElement('div'))
         .addClass('macro-areamap-dir')
-        .attr('data-id', position)
+        .attr('data-maparea-id', maparea.id)
+        .attr('data-maparea', maparea.name)
         .attr('data-dir', 'C')
-        .html(mapareas[position].name)
+        .html(maparea.name)
         .appendTo($rose);
 
+    const offsets = get_offsets({ columns });
+    
     // create each dir
     // ordered this way so that grid auto-fills in the correct sequence
     for (const dir of ['NW', 'N', 'NE', 'W', 'E', 'SW', 'S', 'SE']) {
@@ -573,20 +562,42 @@ function create_rose(argObj) {
 
         // add links to rose
         // diagonals will be empty if not enabled
-        for (const id of exits[position][dir]) {
-            const maparea = mapareas[id];
-            const $link = $(document.createElement('a'));
-            $link
+        // grid travel
+        if (
+            grid_movement &&
+            exits.grid[xy2i({ ...position, columns })].has(dir)
+        ) {
+            // TODO: add easier way to fetch id to send to begin_mapmove?
+            const maparea = mapareas[maparray[xy2i({ ...position, columns}) + offsets[dir]]];
+            $(document.createElement('a'))
                 .addClass('macro-areamap-link')
-                .attr('data-id', id)
-                .attr('data-dir', dir)
+                .attr('data-maparea-id', maparea.id)
                 .attr('data-maparea', maparea.name)
-                .attr('disabled', disabled?.[id] || frozen)
+                .attr('data-dir', dir)
+                .attr('disabled', disabled?.[maparea.id] || frozen)
                 .css({
-                    visibility: hidden?.[id] ? 'hidden' : '',
+                    visibility: hidden?.[maparea.id] ? 'hidden' : '',
                 })
-                .html(maparea.name)
+                .html(dir)
                 .appendTo($dir);
+        }
+        // node travel
+        else {
+            for (const id of exits.area[position][dir]) {
+                const maparea = mapareas[id];
+                const $link = $(document.createElement('a'));
+                $link
+                    .addClass('macro-areamap-link')
+                    .attr('data-maparea-id', id)
+                    .attr('data-maparea', maparea.name)
+                    .attr('data-dir', dir)
+                    .attr('disabled', disabled?.[id] || frozen)
+                    .css({
+                        visibility: hidden?.[id] ? 'hidden' : '',
+                    })
+                    .html(maparea.name)
+                    .appendTo($dir);
+            }
         }
     }
 
@@ -599,7 +610,7 @@ function create_rose(argObj) {
             return;
         }
         // attempt move to target
-        const id_target = $(this).attr('data-id');
+        const id_target = $(this).attr('data-maparea-id');
         begin_mapmove({
             mapname,
             id_target,
@@ -607,6 +618,45 @@ function create_rose(argObj) {
     });
 
     return $rose;
+}
+
+// manual update $rose function
+// macro wrapper
+Macro.add(['update_arearose', 'updatearearose'], {
+    handler: function() {
+        const name = this.name;
+        const template = {
+            selector: {
+                required: true,
+                type: 'string',
+            },
+        };
+        const argObj = new ArgObj(name, template, this.args);
+        update_rose({$rose: $(argObj.selector)});
+    }
+});
+function update_rose(argObj) {
+    const { $rose } = argObj;
+    const name = 'Areamap.update_rose';
+
+    // ERROR: $rose isn't a jQuery obj
+    if (! ($rose instanceof jQuery)) {
+        throw new Error(`${name} — $rose must be a jQuery instance!`);
+    }
+    // ERROR: empty jQuery instance
+    else if ($rose.length === 0) {
+        throw new Error(`${name} — $rose is empty!`);
+    }
+    
+    // update rose using argObj stored on rose
+    $rose.each( function() {
+        if (! $(this).hasClass('macro-areamap-rose')) {
+            console.warn(`${name} — provided jQuery object is not an areamap rose!`);
+            console.warn($(this));
+            return
+        }
+        $(this).replaceWith(create_rose($(this).data('argObj')));
+    });
 }
 
 
@@ -723,7 +773,7 @@ function create_mapview(argObj) {
         $tile
             .addClass('macro-areamap-tile')
             .addClass(link ? 'macro-areamap-link' : '')
-            .attr('data-id', id)
+            .attr('data-maparea-id', id)
             .attr('data-type', maparea.type)
             // change traversable to 'current' for CSS targeting
             .attr('data-traversable', traversable === null ? 'current' : traversable)
@@ -748,7 +798,7 @@ function create_mapview(argObj) {
                 return;
             }
             // attempt mapmove
-            const id_target = $(this).attr('data-id');
+            const id_target = $(this).attr('data-maparea-id');
             begin_mapmove({
                 mapname,
                 id_target,
@@ -757,6 +807,45 @@ function create_mapview(argObj) {
     }
 
     return $mapview;
+}
+
+// manual update mapview function
+// macro wrapper
+Macro.add(['update_areamapview', 'updateareamapview'], {
+    handler: function() {
+        const name = this.name;
+        const template = {
+            selector: {
+                required: true,
+                type: 'string',
+            },
+        };
+        const argObj = new ArgObj(name, template, this.args);
+        update_mapview({$mapview: $(argObj.selector)});
+    }
+});
+function update_mapview(argObj) {
+    const { $mapview } = argObj;
+    const name = 'Areamap.update_mapview';
+
+    // ERROR: $mapview isn't a jQuery obj
+    if (! ($mapview instanceof jQuery)) {
+        throw new Error(`${name} — $mapview must be a jQuery instance!`);
+    }
+    // ERROR: empty jQuery instance
+    else if ($mapview.length === 0) {
+        throw new Error(`${name} — $mapview is empty!`);
+    }
+
+    // update mapview using argObj stored on mapview
+    $mapview.each( function() {
+        if (! $(this).hasClass('macro-areamap-mapview')) {
+            console.warn(`${name} — provided jQuery object is not an areamap mapview!`);
+            console.warn($(this));
+            return
+        }
+        $(this).replaceWith(create_mapview($(this).data('argObj')));
+    });
 }
 
 
@@ -1053,6 +1142,38 @@ function resolve_mapmove(argObj) {
 // █   █  ███  █   █
 // SECTION: auxiliary functions for JS things
 
+function xy2i(argObj) {
+    const { xy, columns } = argObj;
+    return xy.y * columns + xy.x;
+}
+function i2xy(argObj) {
+    const { i, columns } = argObj;
+    return { x: i % columns, y: Math.floor(i / columns) };
+}
+function get_offsets(argObj) {
+    const { columns } = argObj;
+    return {
+        N   : -columns,
+        E   : 1,
+        S   : columns,
+        W   : -1,
+        NE  : -columns + 1,
+        NW  : -columns - 1,
+        SE  : columns + 1,
+        SW  : columns - 1,
+    };
+}
+const is_diagonal = {
+    N   : false,
+    E   : false,
+    S   : false,
+    W   : false,
+    NE  : true,
+    NW  : true,
+    SE  : true,
+    SW  : true,
+};
+
 function get_map(argObj) {
     const mapname = argObj.mapname;
     const name = 'Areamap.get_map';
@@ -1196,83 +1317,6 @@ function edit_map(argObj) {
     $('#passages').trigger('areamap:map_edited', { mapname });
 }
 
-// manual update $rose function
-// macro wrapper
-Macro.add(['update_arearose', 'updatearearose'], {
-    handler: function() {
-        const name = this.name;
-        const template = {
-            selector: {
-                required: true,
-                type: 'string',
-            },
-        };
-        const argObj = new ArgObj(name, template, this.args);
-        update_rose({$rose: $(argObj.selector)});
-    }
-});
-function update_rose(argObj) {
-    const { $rose } = argObj;
-    const name = 'Areamap.update_rose';
-
-    // ERROR: $rose isn't a jQuery obj
-    if (! ($rose instanceof jQuery)) {
-        throw new Error(`${name} — $rose must be a jQuery instance!`);
-    }
-    // ERROR: empty jQuery instance
-    else if ($rose.length === 0) {
-        throw new Error(`${name} — $rose is empty!`);
-    }
-    
-    // update rose using argObj stored on rose
-    $rose.each( function() {
-        if (! $(this).hasClass('macro-areamap-rose')) {
-            console.warn(`${name} — provided jQuery object is not an areamap rose!`);
-            console.warn($(this));
-            return
-        }
-        $(this).replaceWith(create_rose($(this).data('argObj')));
-    });
-}
-
-// manual update mapview function
-// macro wrapper
-Macro.add(['update_areamapview', 'updateareamapview'], {
-    handler: function() {
-        const name = this.name;
-        const template = {
-            selector: {
-                required: true,
-                type: 'string',
-            },
-        };
-        const argObj = new ArgObj(name, template, this.args);
-        update_mapview({$mapview: $(argObj.selector)});
-    }
-});
-function update_mapview(argObj) {
-    const { $mapview } = argObj;
-    const name = 'Areamap.update_mapview';
-
-    // ERROR: $mapview isn't a jQuery obj
-    if (! ($mapview instanceof jQuery)) {
-        throw new Error(`${name} — $mapview must be a jQuery instance!`);
-    }
-    // ERROR: empty jQuery instance
-    else if ($mapview.length === 0) {
-        throw new Error(`${name} — $mapview is empty!`);
-    }
-
-    // update mapview using argObj stored on mapview
-    $mapview.each( function() {
-        if (! $(this).hasClass('macro-areamap-mapview')) {
-            console.warn(`${name} — provided jQuery object is not an areamap mapview!`);
-            console.warn($(this));
-            return
-        }
-        $(this).replaceWith(create_mapview($(this).data('argObj')));
-    });
-}
 
 
 

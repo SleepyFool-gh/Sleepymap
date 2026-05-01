@@ -6,7 +6,7 @@ This is a demo of the Areamap library for SugarCube, part of the Sleepy Macros c
 
 :: StoryInit [nobr]
 <<set _mapareas = {
-    MB: {name: 'Master Bedroom', type: 'asdf'},
+    MB: {name: 'Master Bedroom'},
     GB: {name: 'Guest Bedroom'},
     HW: {name: 'Hallway'},
     LR: {name: 'Living Room'},
@@ -20,6 +20,7 @@ This is a demo of the Areamap library for SugarCube, part of the Sleepy Macros c
     columns     7
     diagonals   false
     start       'KT'
+    grid_mode   true
 >>
     .   .   .   .   LR  LR  LR
     .   KT  .   .   LR  .   ST

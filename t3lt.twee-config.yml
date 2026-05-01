@@ -1,46 +1,19 @@
 sugarcube-2:
   macros:
-    regionmap:
-      name: regionmap
+    new_areamap:
+      name: new_areamap
       container: true
-    regionnames:
-      name: regionnames
-    regionrose:
-      name: regionrose
+      children: ['mapview', 'mapareas']
+    place_arearose:
+      name: place_arearose
+    update_arearose:
+      name: update_arearose
+    place_areamapview:
+      name: place_areamapview
+    update_areamapview:
+      name: update_areamapview
+    set_areascripts:
+      name: set_areascripts
       container: true
-    onattempt:
-      name: onattempt
-    abort:
-      name: abort
-    disable:
-      name: disable
-    onabort:
-      name: onabort
-    onenter:
-      name: onenter
-    rosedisable:
-      name: rosedisable
-    roseenable:
-      name: roseenable
-    areamap:
-      name: areamap
-      container: true
-    variables:
-      name: variables
-    areavars:
-      name: areavars
-    mapvars:
-      name: mapvars
-    createmap:
-      name: createmap
-      container: true
-    newrose:
-      name: newrose
-      container: true
-    newmap:
-      name: newmap
-      container: true
-    showrose:
-      name: showrose
-    maptiles:
-      name: maptiles
+    areamapmove:
+      name: areamapmove

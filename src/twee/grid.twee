@@ -1,0 +1,68 @@
+:: StoryTitle
+Areamap demo -  small house
+
+:: StoryCaption
+This is a demo of the Areamap library for SugarCube, part of the Sleepy Macros collection.
+
+:: StoryInit [nobr]
+<<set _mapareas = {
+    MB: {name: 'Master Bedroom'},
+    GB: {name: 'Guest Bedroom'},
+    HW: {name: 'Hallway'},
+    LR: {name: 'Living Room'},
+    ST: {name: 'Stairs'},
+    DR: {name: 'Dining Room'},
+    KT: {name: 'Kitchen'},
+    PT: {name: 'Pantry'},
+}>>
+<<new_areamap 
+    mapname     'small_house'
+    columns     7
+    diagonals   false
+    start       'KT'
+    grid_mode   true
+>>
+    .   .   .   .   LR  LR  LR
+    .   KT  .   .   LR  .   ST
+    PT  DR  ST  .   HW  .   .
+    .   .   .   .   HW  .   .
+    .   .   .   .   HW  GB  .
+    .   .   .   .   MB  .   .
+<<mapview 
+    columns     16
+>>
+    .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
+    .   .   .   .   KT  KT  KT  KT  KT  .   LR  LR  LR  LR  LR  .
+    .   .   .   .   KT  KT  KT  KT  KT  .   LR  LR  LR  LR  LR  .
+    .   PT  PT  PT  KT  KT  KT  KT  KT  .   LR  LR  LR  LR  LR  .
+    .   PT  PT  PT  DR  DR  DR  DR  ST  .   HW  GB  GB  GB  ST  .
+    .   PT  PT  PT  DR  DR  DR  DR  ST  .   HW  GB  GB  GB  ST  .
+    .   PT  PT  PT  DR  DR  DR  DR  DR  .   HW  MB  MB  MB  MB  .
+    .   PT  PT  PT  DR  DR  DR  DR  DR  .   HW  MB  MB  MB  MB  .
+    .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
+<<mapareas _mapareas>>
+<</new_areamap>>
+
+:: Start
+/* <<place_areamapview
+    mapname     'small_house'
+    background  '<img src="./assets/small_house.png">'
+>> */
+This rose automatically updates.
+<<place_arearose
+    mapname     'small_house'
+    background  '<img src="./assets/rose.png">'
+    autoupdate  true
+>>
+This rose doesn't auto-update.
+<<place_arearose
+    mapname     'small_house'
+    background  '<img src="./assets/rose.png">'
+    autoupdate  false
+>>
+<<link 'teleport to pantry'>>
+    <<areamapmove mapname 'small_house' target 'PT'>>
+<</link>>
+<<link 'update rose'>>
+    <<update_arearose selector '.macro-areamap-rose'>>
+<</link>>
