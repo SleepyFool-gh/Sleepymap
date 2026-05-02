@@ -517,17 +517,17 @@ function create_rose(argObj) {
                             ? State.variables[mapvars.hidden.slice(1)]   
                             : null;
 
-    const maparea = grid_movement ? mapareas[maparray[xy2i({ ...position, columns })]] : mapareas[position];
+    const maparea = grid_movement ? mapareas[maparray[position]] : mapareas[position];
 
+    const xy = i2xy({ i: position, columns });
     // create rose
     const $rose = $(document.createElement('div'));
     $rose
         .addClass('macro-areamap-rose')
         .attr('data-mapname', mapname)
-        .attr('data-position', grid_movement ? `x:${position?.x}, y:${position?.y}` : position)
-        .attr('data-x', grid_movement ? position?.x : '')
-        .attr('data-y', grid_movement ? position?.y : '')
-        .attr('data-i', grid_movement ? xy2i({ ...position, columns }) : '')
+        .attr('data-position', position)
+        .attr('data-x', grid_movement ? xy.x : '')
+        .attr('data-y', grid_movement ? xy.y : '')
         .attr('data-autoupdate', autoupdate)
         .data('argObj', argObj);
 
@@ -542,9 +542,11 @@ function create_rose(argObj) {
     // create center
     $(document.createElement('div'))
         .addClass('macro-areamap-dir')
-        .attr('data-maparea-id', maparea.id)
-        .attr('data-maparea', maparea.name)
         .attr('data-dir', 'C')
+        .attr('data-maparea', maparea.name)
+        .attr('data-maparea-id', maparea.id)
+        .attr('data-x', grid_movement ? xy.x : '')
+        .attr('data-y', grid_movement ? xy.y : '')
         .html(maparea.name)
         .appendTo($rose);
 
@@ -565,15 +567,18 @@ function create_rose(argObj) {
         // grid travel
         if (
             grid_movement &&
-            exits.grid[xy2i({ ...position, columns })].has(dir)
+            exits.grid[position]?.has(position + offsets[dir])
         ) {
             // TODO: add easier way to fetch id to send to begin_mapmove?
-            const maparea = mapareas[maparray[xy2i({ ...position, columns}) + offsets[dir]]];
+            const maparea = mapareas[maparray[position + offsets[dir]]];
+            const xy = i2xy({ i: position + offsets[dir], columns });
             $(document.createElement('a'))
                 .addClass('macro-areamap-link')
-                .attr('data-maparea-id', maparea.id)
-                .attr('data-maparea', maparea.name)
                 .attr('data-dir', dir)
+                .attr('data-maparea', maparea.name)
+                .attr('data-maparea-id', maparea.id)
+                .attr('data-x', xy.x)
+                .attr('data-y', xy.y)
                 .attr('disabled', disabled?.[maparea.id] || frozen)
                 .css({
                     visibility: hidden?.[maparea.id] ? 'hidden' : '',
@@ -588,9 +593,11 @@ function create_rose(argObj) {
                 const $link = $(document.createElement('a'));
                 $link
                     .addClass('macro-areamap-link')
-                    .attr('data-maparea-id', id)
-                    .attr('data-maparea', maparea.name)
                     .attr('data-dir', dir)
+                    .attr('data-maparea', maparea.name)
+                    .attr('data-maparea-id', id)
+                    .attr('data-x', '')
+                    .attr('data-y', '')
                     .attr('disabled', disabled?.[id] || frozen)
                     .css({
                         visibility: hidden?.[id] ? 'hidden' : '',
@@ -610,10 +617,14 @@ function create_rose(argObj) {
             return;
         }
         // attempt move to target
-        const id_target = $(this).attr('data-maparea-id');
+        const target_maparea_id = $(this).attr('data-maparea-id');
+        const target_x = $(this).attr('data-x');
+        const target_y = $(this).attr('data-y');
         begin_mapmove({
             mapname,
-            id_target,
+            target_maparea_id,
+            target_x,
+            target_y,
         });
     });
 
