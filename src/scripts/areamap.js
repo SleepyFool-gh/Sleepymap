@@ -954,12 +954,25 @@ Macro.add(['set_areascripts','setareascripts'], {
         const scripts = [];
         for(let i = 1; i < this.payload.length; i++) {
             const p = this.payload[i];
+            // SYNC REMINDER: changing here requires also changing the for loop in set_scripts
             const template = {
                 to: {
                     type: ['string', 'object'],
                 },
                 from: {
                     type: ['string', 'object'],
+                },
+                to_x: {
+                    type: ['number', 'object'],
+                },
+                to_y: {
+                    type: ['number', 'object'],
+                },
+                from_x: {
+                    type: ['number', 'object'],
+                },
+                from_y: {
+                    type: ['number', 'object'],
                 },
             };
             const argObj = new ArgObj(p.name, template, p.args);
@@ -997,7 +1010,8 @@ function set_scripts(argObj) {
 
     // error checking & object shaping
     for (const script of scripts) {
-        for (const arg of ['to', 'from']) {
+        // SYNC REMINDER: changing here also requires changing <<set_scripts>> args
+        for (const arg of ['to', 'from', 'to_x', 'to_y', 'from_x', 'from_y']) {
             // arg not defined, set to any, continue
             if (! (arg in script.areas)) {
                 script.areas[arg] = 'any';
@@ -1012,8 +1026,11 @@ function set_scripts(argObj) {
             // ERROR: make sure each array element is a string
             if (script.areas[arg] !== 'any') {
                 script.areas[arg].forEach( area => {
-                    if (typeof area !== 'string') {
+                    if (['to', 'from'].includes(arg) && typeof area !== 'string') {
                         throw new Error(`${name} — ${script.type} — map ${mapname}, "${arg}" must be a string, array of strings, or keyword "any"`);
+                    }
+                    else if (typeof area !== 'number') {
+                        throw new Error(`${name} — ${script.type} — map ${mapname}, "${arg}" must be a number, array of numbers, or keyword "any"`);
                     }
                 });
             }
