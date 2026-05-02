@@ -56,9 +56,18 @@ Macro.add(['newareamap', 'new_areamap'], {
                 required: true,
                 type: 'string',
             },
+            grid_movement: {
+                type: 'boolean',
+                aliases: 'grid_mode',
+            },
             start: {
-                required: true,
                 type: 'string',
+            },
+            start_x: {
+                type: 'number',
+            },
+            start_y: {
+                type: 'number',
             },
             columns: {
                 required: true,
@@ -149,7 +158,7 @@ function new_map(argObj) {
 //      SECTION: init the areamap
 //      creates map object on the new_areamap macro
 
-    const { mapname, start, columns, maparray } = argObj;
+    const { mapname, grid_movement, start, start_x, start_y, columns, maparray, mapview } = argObj;
     const diagonals = argObj.diagonals ?? options.default.diagonals;    // default value
     const name = argObj.name ?? 'Areamap.new_map';
 
@@ -173,9 +182,25 @@ function new_map(argObj) {
     else if (maparray.length % columns !== 0) {
         throw new Error(`${name} — areamap "${mapname}" — maparray must be rectangular (whole number multiple of columns)!`);
     }
-    // ERROR: invalid start
-    else if (! maparray.includes(start)) {
-        throw new Error(`${name} — areamap "${mapname}" — start position "${start}" not found in maparray!`);
+    // ERROR: areamap mode, invalid start
+    else if ((! grid_movement) && (! maparray.includes(start))) {
+        throw new Error(`${name} — areamap "${mapname}" — start maparea "${start}" not found in maparray!`);
+    }
+    // ERROR: start_x and start_y required for gridmap mode
+    else if (grid_movement && (start_x === undefined || start_y === undefined)) {
+        throw new Error(`${name} — areamap "${mapname}" — start_x and start_y required for gridmap mode!`);
+    }
+    // ERROR: start_x out of bounds
+    else if (grid_movement && (start_x < 0 || start_x >= columns)) {
+        throw new Error(`${name} — areamap "${mapname}" — start_x out of bounds!`);
+    }
+    // ERROR: start_y out of bounds
+    else if (grid_movement && (start_y < 0 || start_y >= maparray.length / columns)) {
+        throw new Error(`${name} — areamap "${mapname}" — start_y out of bounds!`);
+    }
+    // ERROR: grid movement is incompatible with separate mapview
+    else if (grid_movement && mapview) {
+        throw new Error(`${name} — areamap "${mapname}" — grid movement is incompatible with a separate mapview!`);
     }
 
     // create map object
@@ -184,10 +209,14 @@ function new_map(argObj) {
         columns,
         maparray,
         diagonals,
+        grid_movement,
         mapview     : undefined,    // populated here, later
         mapareas    : {},           // populated here, later
         mapvars     : {},           // populated here, later
-        exits       : {},           // populated here, later
+        exits       : {             // populated here, later
+            area    : {},
+            grid    : [],
+        },
         scripts     : [],           // populated in set_scripts, if called
     };
     areamaps[mapname] = this_map;
@@ -200,7 +229,6 @@ function new_map(argObj) {
 //     █    █ █   █ █       █   ███ █████  █   █
 //      SECTION: mapview object on areamaps
 
-    const mapview = argObj.mapview;
     if (mapview !== undefined) {
         // ERROR: mapview not an object
         if (typeof mapview !== 'object') {
@@ -283,10 +311,11 @@ function new_map(argObj) {
     const mapvars = this_map.mapvars;
 
     // SYNC REMINDER: changing anything here also requires changing <<mapvars>> template
+    const xy = { x: start_x, y: start_y };
     const MAPVAR_DEFAULTS = {
         position: {
             sv_name : argObj?.mapvars?.position ?? options.default.position_story_variable,
-            val     : start,
+            val     : grid_movement ? xy2i({ xy, columns }) : start,
         },
         frozen: {
             sv_name : argObj?.mapvars?.frozen,
@@ -328,9 +357,7 @@ function new_map(argObj) {
         // set default value
         // can't use State.setVar with weird characters
         mapvars[key] = sv_name;
-        console.log(key, sv_name, sv_name.slice(1), MAPVAR_DEFAULTS[key].val);
         State.variables[sv_name.slice(1)] = MAPVAR_DEFAULTS[key].val;
-        console.log(State.variables);
     }
     
 
@@ -368,23 +395,26 @@ function update_exits(argObj) {
 
     const { maparray, mapareas, columns, diagonals, exits } = this_map;
 
-    // create empty exits object
-    Object.keys(mapareas).forEach( function(id) {
-        exits[id] = {
-            N   : new Set(),
-            E   : new Set(),
-            W   : new Set(),
-            S   : new Set(),
-            // won't be used if diagonals are disabled
-            NW  : new Set(),
-            NE  : new Set(),
-            SE  : new Set(),
-            SW  : new Set(),
-        };
-    });
+    // get offsets
+    const offsets = get_offsets({ columns });
 
+    // init exits
+    exits.area = Object.fromEntries(Object.keys(mapareas).map(id => [id, {}]));
+    exits.grid = [];
     // populate exits object
     for (let i = 0; i < maparray.length; i++) {
+
+        // define checks for each direction
+        const checks = {
+            N   : i >= columns,
+            E   : (i+1) % columns !== 0,
+            S   : i < (maparray.length - columns),
+            W   : i % columns !== 0,
+            NE  : (i >= columns) && ((i+1) % columns !== 0),
+            NW  : (i >= columns) && (i % columns !== 0),
+            SE  : (i < (maparray.length - columns)) && ((i+1) % columns !== 0),
+            SW  : (i < (maparray.length - columns)) && (i % columns !== 0),
+        };
 
         const maparea = mapareas[maparray[i]];
 
@@ -392,68 +422,31 @@ function update_exits(argObj) {
         if (maparea.type === 'wall') {
             continue;
         }
-
-        // define checks for each direction
-        const checks = {
-            N: {
-                needed      : i >= columns,
-                diagonal    : false,
-                offset      : -columns,
-            },
-            E: {
-                needed      : (i+1) % columns !== 0,
-                diagonal    : false,
-                offset      : 1,
-            },
-            S: {
-                needed      : i < (maparray.length - columns),
-                diagonal    : false,
-                offset      : columns,
-            },
-            W: {
-                needed      : i % columns !== 0,
-                diagonal    : false,
-                offset      : -1,
-            },
-            NE: {
-                needed      : i >= columns && (i+1) % columns !== 0,
-                diagonal    : true, 
-                offset      : -columns + 1,
-            },
-            NW: {
-                needed      : i >= columns && i % columns !== 0,
-                diagonal    : true,
-                offset      : -columns - 1,
-            },
-            SE: {
-                needed      : i < (maparray.length - columns) && (i+1) % columns !== 0,
-                diagonal    : true,
-                offset      : columns + 1,
-            },
-            SW: {
-                needed      : i < (maparray.length - columns) && i % columns !== 0,
-                diagonal    : true,
-                offset      : columns - 1,
-            },
-        };
         for (const [dir, check] of Object.entries(checks)) {
             // if check not needed, continue
-            if (! check.needed) {
+            if (! check) {
                 continue;
             }
             // if dir is a diagonal and diagonals not enabled, continue
-            else if (check.diagonal && (! diagonals)) {
+            else if (is_diagonal[dir] && (! diagonals)) {
                 continue;
             }
+
             // get neighbor
-            // if neighbor is not this area and not a wall, add to exits
-            const neighbor = mapareas[maparray[i + check.offset]];
-            if (
-                (neighbor.id !== maparea.id)   && 
-                (neighbor.type !== 'wall')
-            ) {
-                exits[maparea.id][dir].add(neighbor.id);
+            // if wall, continue
+            const neighbor = mapareas[maparray[i + offsets[dir]]];
+            if (neighbor.type === 'wall') {
+                continue;
             }
+
+            // area exits
+            if (neighbor.id !== maparea.id) {
+                exits.area[maparea.id][dir] ??= new Set();
+                exits.area[maparea.id][dir].add(neighbor.id);
+            }
+            // grid exits
+            exits.grid[i] ??= new Set();
+            exits.grid[i].add(i + offsets[dir]);
         }
     }
 }
@@ -514,34 +507,30 @@ function create_rose(argObj) {
         throw new Error(`${name} — couldn't find map with name "${mapname}"!`);
     }
 
-    const { mapareas, mapvars, exits } = this_map;
+    const { grid_movement, columns, maparray, mapareas, mapvars, exits } = this_map;
 
-    const position  = State.variables[mapvars.position.slice(1)];
-    const frozen    = mapvars.frozen !== undefined      
-                        ? State.variables[mapvars.frozen.slice(1)] 
-                        : false;
-    const disabled  = mapvars.disabled !== undefined    
-                        ? State.variables[mapvars.disabled.slice(1)] 
-                        : null;
-    const hidden    = mapvars.hidden   !== undefined    
-                        ? State.variables[mapvars.hidden.slice(1)]   
-                        : null;
+    const position      = State.variables[mapvars.position.slice(1)];
+    const frozen        = mapvars.frozen !== undefined      
+                            ? State.variables[mapvars.frozen.slice(1)] 
+                            : false;
+    const disabled      = mapvars.disabled !== undefined    
+                            ? State.variables[mapvars.disabled.slice(1)] 
+                            : null;
+    const hidden        = mapvars.hidden   !== undefined    
+                            ? State.variables[mapvars.hidden.slice(1)]   
+                            : null;
 
-    // ERROR: invalid position, either not set or non-existing or a wall
-    if (
-        (position === null) ||
-        (mapareas[position] === undefined) ||
-        (mapareas[position].type === 'wall')
-    ) {
-        throw new Error(`${name} — map "${mapname}" — position currently invalid!`);
-    }
+    const maparea = grid_movement ? mapareas[maparray[position]] : mapareas[position];
 
+    const xy = i2xy({ i: position, columns });
     // create rose
     const $rose = $(document.createElement('div'));
     $rose
         .addClass('macro-areamap-rose')
         .attr('data-mapname', mapname)
         .attr('data-position', position)
+        .attr('data-x', grid_movement ? xy.x : 'undefined')
+        .attr('data-y', grid_movement ? xy.y : 'undefined')
         .attr('data-autoupdate', autoupdate)
         .data('argObj', argObj);
 
@@ -556,11 +545,16 @@ function create_rose(argObj) {
     // create center
     $(document.createElement('div'))
         .addClass('macro-areamap-dir')
-        .attr('data-id', position)
         .attr('data-dir', 'C')
-        .html(mapareas[position].name)
+        .attr('data-maparea', maparea.name)
+        .attr('data-maparea-id', maparea.id)
+        .attr('data-x', grid_movement ? xy.x : 'undefined')
+        .attr('data-y', grid_movement ? xy.y : 'undefined')
+        .html(maparea.name)
         .appendTo($rose);
 
+    const offsets = get_offsets({ columns });
+    
     // create each dir
     // ordered this way so that grid auto-fills in the correct sequence
     for (const dir of ['NW', 'N', 'NE', 'W', 'E', 'SW', 'S', 'SE']) {
@@ -573,20 +567,47 @@ function create_rose(argObj) {
 
         // add links to rose
         // diagonals will be empty if not enabled
-        for (const id of exits[position][dir]) {
-            const maparea = mapareas[id];
-            const $link = $(document.createElement('a'));
-            $link
+        // grid travel
+        if (grid_movement) {
+            // skip if no exit in this direction
+            if (! exits.grid[position]?.has(position + offsets[dir])) {
+                continue;
+            }
+            const maparea = mapareas[maparray[position + offsets[dir]]];
+            const xy = i2xy({ i: position + offsets[dir], columns });
+            $(document.createElement('a'))
                 .addClass('macro-areamap-link')
-                .attr('data-id', id)
                 .attr('data-dir', dir)
                 .attr('data-maparea', maparea.name)
-                .attr('disabled', disabled?.[id] || frozen)
+                .attr('data-maparea-id', maparea.id)
+                .attr('data-x', xy.x)
+                .attr('data-y', xy.y)
+                .attr('disabled', disabled?.[maparea.id] || frozen)
                 .css({
-                    visibility: hidden?.[id] ? 'hidden' : '',
+                    visibility: hidden?.[maparea.id] ? 'hidden' : '',
                 })
-                .html(maparea.name)
+                .html(dir)
                 .appendTo($dir);
+        }
+        // node travel
+        else {
+            for (const id of exits.area[position][dir]) {
+                const maparea = mapareas[id];
+                const $link = $(document.createElement('a'));
+                $link
+                    .addClass('macro-areamap-link')
+                    .attr('data-dir', dir)
+                    .attr('data-maparea', maparea.name)
+                    .attr('data-maparea-id', id)
+                    .attr('data-x', 'undefined')
+                    .attr('data-y', 'undefined')
+                    .attr('disabled', disabled?.[id] || frozen)
+                    .css({
+                        visibility: hidden?.[id] ? 'hidden' : '',
+                    })
+                    .html(maparea.name)
+                    .appendTo($dir);
+            }
         }
     }
 
@@ -599,14 +620,57 @@ function create_rose(argObj) {
             return;
         }
         // attempt move to target
-        const id_target = $(this).attr('data-id');
+        const target_maparea_id = $(this).attr('data-maparea-id');
+        const target_x = Number($(this).attr('data-x'));
+        const target_y = Number($(this).attr('data-y'));
         begin_mapmove({
             mapname,
-            id_target,
+            target_maparea_id,
+            target_x: Number.isFinite(target_x) ? target_x : undefined,
+            target_y: Number.isFinite(target_y) ? target_y : undefined,
         });
     });
 
     return $rose;
+}
+
+// manual update $rose function
+// macro wrapper
+Macro.add(['update_arearose', 'updatearearose'], {
+    handler: function() {
+        const name = this.name;
+        const template = {
+            selector: {
+                required: true,
+                type: 'string',
+            },
+        };
+        const argObj = new ArgObj(name, template, this.args);
+        update_rose({$rose: $(argObj.selector)});
+    }
+});
+function update_rose(argObj) {
+    const { $rose } = argObj;
+    const name = 'Areamap.update_rose';
+
+    // ERROR: $rose isn't a jQuery obj
+    if (! ($rose instanceof jQuery)) {
+        throw new Error(`${name} — $rose must be a jQuery instance!`);
+    }
+    // ERROR: empty jQuery instance
+    else if ($rose.length === 0) {
+        throw new Error(`${name} — $rose is empty!`);
+    }
+    
+    // update rose using argObj stored on rose
+    $rose.each( function() {
+        if (! $(this).hasClass('macro-areamap-rose')) {
+            console.warn(`${name} — provided jQuery object is not an areamap rose!`);
+            console.warn($(this));
+            return
+        }
+        $(this).replaceWith(create_rose($(this).data('argObj')));
+    });
 }
 
 
@@ -680,15 +744,20 @@ function create_mapview(argObj) {
     const hidden    = mapvars.hidden   !== undefined    
                         ? State.variables[mapvars.hidden.slice(1)]   
                         : null;
+
+    const { grid_movement, columns, maparray, mapareas, exits } = this_map;
     
+    const xy = i2xy({ i: position, columns });
     // create map object
     // use maparray & columns if no mapview object
-    const mapview = this_map.mapview ?? {columns: this_map.columns, array: this_map.maparray};
+    const mapview = this_map.mapview ?? {columns, array: maparray};
     const $mapview = $(document.createElement('div'));
     $mapview
         .addClass('macro-areamap-mapview')
         .attr('data-mapname', mapname)
         .attr('data-position', position)
+        .attr('data-x', xy.x)
+        .attr('data-y', xy.y)
         .attr('data-autoupdate', autoupdate)
         .data('argObj', argObj)
         .css({
@@ -704,33 +773,47 @@ function create_mapview(argObj) {
             .appendTo($mapview);
     }
 
-    // get exits as an array
-    const exit_arr = Object.values(this_map.exits[position]);
     // create & append tiles
-    for (const id of mapview.array) {
-        const maparea = this_map.mapareas[id];
-        const traversable   = position === id
-                                ? null
-                                : maparea.type === 'wall'
-                                    ? false
-                                    : exit_arr.some( dir => dir.has(id) );
+    for (let i = 0; i < mapview.array.length; i++) {
+        const id = mapview.array[i];
+        const maparea = mapareas[id];
+        console.log(i, id, maparea);
+
+        // define traversability
+        function is_traversable() {
+            if (maparea.type === 'wall') return false;
+            if (grid_movement) {
+                if (position === i) return null;
+                return exits.grid[position]?.has(i);
+            }
+            else {
+                if (position === id) return null;
+                return exits.area[id].some( dir => dir.has(id) );
+            }
+        }
         // if clickable & valid travel destination --> clickable
         const link  = ! clickable
                         ? false
-                        : !! traversable;
+                        : !! is_traversable();
+
+        const xy = i2xy({ i, columns: mapview.columns });
         
         const $tile = $(document.createElement(link ? 'a' : 'div'));
         $tile
             .addClass('macro-areamap-tile')
             .addClass(link ? 'macro-areamap-link' : '')
-            .attr('data-id', id)
-            .attr('data-type', maparea.type)
             // change traversable to 'current' for CSS targeting
-            .attr('data-traversable', traversable === null ? 'current' : traversable)
+            .attr('data-traversable', is_traversable() === null ? 'current' : is_traversable())
+            .attr('data-type', maparea.type)
+            .attr('data-maparea', maparea.name)
+            .attr('data-maparea-id', id)
+            .attr('data-x', xy.x)
+            .attr('data-y', xy.y)
             .attr('disabled', disabled?.[id] || frozen)
             .css({
                 visibility: hidden?.[id] ? 'hidden' : '',
             })
+            // defined tile content +? maparea name wrapped in a span
             .wiki(
                 ((maparea.tile !== undefined) ? maparea.tile : '') +
                 (show_names ? `<span>${maparea.name}</span>` : '')
@@ -748,15 +831,58 @@ function create_mapview(argObj) {
                 return;
             }
             // attempt mapmove
-            const id_target = $(this).attr('data-id');
+            const target_maparea_id = $(this).attr('data-maparea-id');
+            const target_x = Number($(this).attr('data-x'));
+            const target_y = Number($(this).attr('data-y'));
             begin_mapmove({
                 mapname,
-                id_target,
+                target_maparea_id,
+                target_x,
+                target_y,
             });
         });
     }
 
     return $mapview;
+}
+
+// manual update mapview function
+// macro wrapper
+Macro.add(['update_areamapview', 'updateareamapview'], {
+    handler: function() {
+        const name = this.name;
+        const template = {
+            selector: {
+                required: true,
+                type: 'string',
+            },
+        };
+        const argObj = new ArgObj(name, template, this.args);
+        update_mapview({$mapview: $(argObj.selector)});
+    }
+});
+function update_mapview(argObj) {
+    const { $mapview } = argObj;
+    const name = 'Areamap.update_mapview';
+
+    // ERROR: $mapview isn't a jQuery obj
+    if (! ($mapview instanceof jQuery)) {
+        throw new Error(`${name} — $mapview must be a jQuery instance!`);
+    }
+    // ERROR: empty jQuery instance
+    else if ($mapview.length === 0) {
+        throw new Error(`${name} — $mapview is empty!`);
+    }
+
+    // update mapview using argObj stored on mapview
+    $mapview.each( function() {
+        if (! $(this).hasClass('macro-areamap-mapview')) {
+            console.warn(`${name} — provided jQuery object is not an areamap mapview!`);
+            console.warn($(this));
+            return
+        }
+        $(this).replaceWith(create_mapview($(this).data('argObj')));
+    });
 }
 
 
@@ -773,7 +899,7 @@ $(document).on('areamap:mapmove_resolved areamap:map_edited', function(ev, data)
     $roses.each( function() {
         const $rose = $(this);
         const argObj = $rose.data('argObj');
-        if (argObj.mapname === data.mapname) {
+        if (argObj.mapname === data?.mapname) {
             $rose.replaceWith(create_rose(argObj));
         }
     });
@@ -781,7 +907,7 @@ $(document).on('areamap:mapmove_resolved areamap:map_edited', function(ev, data)
     $mapviews.each( function() {
         const $mapview = $(this);
         const argObj = $mapview.data('argObj');
-        if (argObj.mapname === data.mapname) {
+        if (argObj.mapname === data?.mapname) {
             $mapview.replaceWith(create_mapview(argObj));
         }
     });
@@ -829,12 +955,25 @@ Macro.add(['set_areascripts','setareascripts'], {
         const scripts = [];
         for(let i = 1; i < this.payload.length; i++) {
             const p = this.payload[i];
+            // SYNC REMINDER: changing here requires also changing the for loop in set_scripts
             const template = {
                 to: {
                     type: ['string', 'object'],
                 },
                 from: {
                     type: ['string', 'object'],
+                },
+                to_x: {
+                    type: ['number', 'object'],
+                },
+                to_y: {
+                    type: ['number', 'object'],
+                },
+                from_x: {
+                    type: ['number', 'object'],
+                },
+                from_y: {
+                    type: ['number', 'object'],
                 },
             };
             const argObj = new ArgObj(p.name, template, p.args);
@@ -872,7 +1011,8 @@ function set_scripts(argObj) {
 
     // error checking & object shaping
     for (const script of scripts) {
-        for (const arg of ['to', 'from']) {
+        // SYNC REMINDER: changing here also requires changing <<set_scripts>> args
+        for (const arg of ['to', 'from', 'to_x', 'to_y', 'from_x', 'from_y']) {
             // arg not defined, set to any, continue
             if (! (arg in script.areas)) {
                 script.areas[arg] = 'any';
@@ -887,8 +1027,11 @@ function set_scripts(argObj) {
             // ERROR: make sure each array element is a string
             if (script.areas[arg] !== 'any') {
                 script.areas[arg].forEach( area => {
-                    if (typeof area !== 'string') {
+                    if (['to', 'from'].includes(arg) && typeof area !== 'string') {
                         throw new Error(`${name} — ${script.type} — map ${mapname}, "${arg}" must be a string, array of strings, or keyword "any"`);
+                    }
+                    else if (typeof area !== 'number') {
+                        throw new Error(`${name} — ${script.type} — map ${mapname}, "${arg}" must be a number, array of numbers, or keyword "any"`);
                     }
                 });
             }
@@ -923,9 +1066,17 @@ Macro.add(['areamapmove', 'areamap_move'], {
                 required: true,
                 type: 'string',
             },
-            id_target: {
+            target_maparea_id: {
                 type: 'string',
-                aliases: ['target','id', 'area'],
+                aliases: ['id', 'area', 'maparea'],
+            },
+            target_x: {
+                type: 'number',
+                aliases: 'x',
+            },
+            target_y: {
+                type: 'number',
+                aliases: 'y',
             },
             force_abort: {
                 type: 'boolean',
@@ -942,33 +1093,62 @@ Macro.add(['areamapmove', 'areamap_move'], {
 // begins map movement procedure
 function begin_mapmove(argObj) {
 
-    const { mapname, id_target } = argObj;
-    const name = argObj.name ?? 'Areamap.begin_mapmove';
+    const { mapname, target_x, target_y } = argObj;
     const force_abort = argObj.force_abort ?? false;    // default value
+    const name = argObj.name ?? 'Areamap.begin_mapmove';
 
     const this_map = areamaps[mapname];
 
-    // ERROR: missing args
-    if ((mapname === undefined) || (id_target === undefined)) {
-        throw new Error(`${name} — missing required arguments!`);
+    // ERROR: missing mapname
+    if (mapname === undefined) {
+        throw new Error(`${name} — missing required args, "mapname"!`);
     }
     // ERROR: map not found
     else if (this_map === undefined) {
         throw new Error(`${name} — areamap "${mapname}" not found!`);
     }
 
-    const id_origin = State.variables[this_map.mapvars.position.slice(1)];
+    const { grid_movement, columns, maparray, mapvars } = this_map;
+
+    if (grid_movement && (target_x === undefined || target_y === undefined)) {
+        throw new Error(`${name} — areamap "${mapname}" — this map uses grid movement, please provide "target_x" and "target_y"!`);
+    }
+    else if ((! grid_movement) && (argObj.target_maparea_id === undefined)) {
+        throw new Error(`${name} — areamap "${mapname}" — this map uses area movement, please provide "target_maparea_id"!`);
+    }
+
+    // fetch target_maparea_id if not defined in grid movement mode
+    const target_maparea_id = argObj.target_maparea_id ?? maparray[xy2i({ xy: { x: target_x, y: target_y }, columns })];
+
+    const position = State.variables[mapvars.position.slice(1)];
+    const xy = grid_movement ? i2xy({ i: position, columns }) : {};
+    const origin_maparea_id = grid_movement ? maparray[position] : position;
+    const origin_x = xy.x;
+    const origin_y = xy.y;
 
     // fire began event
-    $('#passages').trigger('areamap:mapmove_began', { mapname, id_origin, id_target, force_abort });
+    $('#passages').trigger('areamap:mapmove_began', { 
+        mapname, 
+        origin_maparea_id, 
+        origin_x, 
+        origin_y, 
+        target_maparea_id, 
+        target_x, 
+        target_y, 
+        force_abort 
+    });
 
     // check for any scripts to fire when beginning an attempt
     const scripts_attempt = this_map.scripts.filter(script => script.type === 'onmapattempt');
     for (const script of scripts_attempt) {
         // check if script applies to this location, if yes run
         if (
-            ((script.areas.from === 'any') || script.areas.from.includes(id_origin))    &&
-            ((script.areas.to === 'any')   || script.areas.to.includes(id_target)) 
+            ((script.areas.from === 'any')   || script.areas.from.includes(origin_maparea_id)) &&
+            ((script.areas.to === 'any')     || script.areas.to.includes(target_maparea_id))   &&
+            ((script.areas.from_x === 'any') || script.areas.from_x.includes(origin_x))        &&
+            ((script.areas.from_y === 'any') || script.areas.from_y.includes(origin_y))        &&
+            ((script.areas.to_x === 'any')   || script.areas.to_x.includes(target_x))          &&
+            ((script.areas.to_y === 'any')   || script.areas.to_y.includes(target_y))
         ) {
             $.wiki(script.contents);
         }
@@ -982,14 +1162,14 @@ $(document).on('areamap:mapmove_began', (ev, argObj) => {
 
 // resolves map movement procedure
 function resolve_mapmove(argObj) {
-    const { mapname, id_target, force_abort } = argObj;
+    const { mapname, target_maparea_id, target_x, target_y, origin_maparea_id, origin_x, origin_y, force_abort } = argObj;
     const name = argObj.name ?? 'Areamap.resolve_mapmove';
     const this_map = areamaps[mapname];
-    const id_origin = State.variables[this_map.mapvars.position.slice(1)];
+    const { grid_movement, columns, mapvars } = this_map;
     const succeeded = force_abort 
                         ? false 
-                        : this_map.mapvars?.blocked !== undefined
-                            ? ! State.variables[this_map.mapvars.blocked.slice(1)][id_target]
+                        : mapvars?.blocked !== undefined
+                            ? ! State.variables[mapvars.blocked.slice(1)][target_maparea_id]
                             : true;
 
     if (succeeded) {
@@ -998,23 +1178,32 @@ function resolve_mapmove(argObj) {
         for (const script of scripts_leave) {
             // check if script applies to this location, if yes run
             if (
-                ((script.areas.from === 'any') || script.areas.from.includes(id_origin))    &&
-                ((script.areas.to === 'any')   || script.areas.to.includes(id_target)) 
+                ((script.areas.from === 'any')   || script.areas.from.includes(origin_maparea_id)) &&
+                ((script.areas.to === 'any')     || script.areas.to.includes(target_maparea_id))   &&
+                ((script.areas.from_x === 'any') || script.areas.from_x.includes(origin_x))        &&
+                ((script.areas.from_y === 'any') || script.areas.from_y.includes(origin_y))        &&
+                ((script.areas.to_x === 'any')   || script.areas.to_x.includes(target_x))          &&
+                ((script.areas.to_y === 'any')   || script.areas.to_y.includes(target_y))
             ) {
                 $.wiki(script.contents);
             }
         }
 
         // enter new location
-        State.variables[this_map.mapvars.position.slice(1)] = id_target;
+        const xy = { x: target_x, y: target_y };
+        State.variables[this_map.mapvars.position.slice(1)] = grid_movement ? xy2i({ xy, columns }) : target_maparea_id;
 
         // check for any onmapend scripts
         const scripts_end = this_map.scripts.filter(script => script.type === 'onmapend');
         for (const script of scripts_end) {
             // check if script applies to this location, if yes run
             if (
-                ((script.areas.from === 'any') || script.areas.from.includes(id_origin))    &&
-                ((script.areas.to === 'any')   || script.areas.to.includes(id_target)) 
+                ((script.areas.from === 'any')   || script.areas.from.includes(origin_maparea_id)) &&
+                ((script.areas.to === 'any')     || script.areas.to.includes(target_maparea_id))   &&
+                ((script.areas.from_x === 'any') || script.areas.from_x.includes(origin_x))        &&
+                ((script.areas.from_y === 'any') || script.areas.from_y.includes(origin_y))        &&
+                ((script.areas.to_x === 'any')   || script.areas.to_x.includes(target_x))          &&
+                ((script.areas.to_y === 'any')   || script.areas.to_y.includes(target_y))
             ) {
                 $.wiki(script.contents);
             }
@@ -1026,8 +1215,12 @@ function resolve_mapmove(argObj) {
         for (const script of scripts_abort) {
             // check if script applies to this location, if yes run
             if (
-                ((script.areas.from === 'any') || script.areas.from.includes(id_origin))    &&
-                ((script.areas.to === 'any')   || script.areas.to.includes(id_target))  
+                ((script.areas.from === 'any')   || script.areas.from.includes(origin_maparea_id)) &&
+                ((script.areas.to === 'any')     || script.areas.to.includes(target_maparea_id))   &&
+                ((script.areas.from_x === 'any') || script.areas.from_x.includes(origin_x))        &&
+                ((script.areas.from_y === 'any') || script.areas.from_y.includes(origin_y))        &&
+                ((script.areas.to_x === 'any')   || script.areas.to_x.includes(target_x))          &&
+                ((script.areas.to_y === 'any')   || script.areas.to_y.includes(target_y))
             ) {
                 $.wiki(script.contents);
             }
@@ -1037,8 +1230,12 @@ function resolve_mapmove(argObj) {
     // fire resolved event
     $('#passages').trigger('areamap:mapmove_resolved', { 
         mapname, 
-        id_origin, 
-        id_target, 
+        origin_maparea_id, 
+        origin_x, 
+        origin_y,
+        target_maparea_id,
+        target_x,
+        target_y,
         succeeded,
     });
 }
@@ -1052,6 +1249,38 @@ function resolve_mapmove(argObj) {
 // █   █ █   █  █ █
 // █   █  ███  █   █
 // SECTION: auxiliary functions for JS things
+
+function xy2i(argObj) {
+    const { xy, columns } = argObj;
+    return xy.y * columns + xy.x;
+}
+function i2xy(argObj) {
+    const { i, columns } = argObj;
+    return { x: i % columns, y: Math.floor(i / columns) };
+}
+function get_offsets(argObj) {
+    const { columns } = argObj;
+    return {
+        N   : -columns,
+        E   : 1,
+        S   : columns,
+        W   : -1,
+        NE  : -columns + 1,
+        NW  : -columns - 1,
+        SE  : columns + 1,
+        SW  : columns - 1,
+    };
+}
+const is_diagonal = {
+    N   : false,
+    E   : false,
+    S   : false,
+    W   : false,
+    NE  : true,
+    NW  : true,
+    SE  : true,
+    SW  : true,
+};
 
 function get_map(argObj) {
     const mapname = argObj.mapname;
@@ -1196,83 +1425,6 @@ function edit_map(argObj) {
     $('#passages').trigger('areamap:map_edited', { mapname });
 }
 
-// manual update $rose function
-// macro wrapper
-Macro.add(['update_arearose', 'updatearearose'], {
-    handler: function() {
-        const name = this.name;
-        const template = {
-            selector: {
-                required: true,
-                type: 'string',
-            },
-        };
-        const argObj = new ArgObj(name, template, this.args);
-        update_rose({$rose: $(argObj.selector)});
-    }
-});
-function update_rose(argObj) {
-    const { $rose } = argObj;
-    const name = 'Areamap.update_rose';
-
-    // ERROR: $rose isn't a jQuery obj
-    if (! ($rose instanceof jQuery)) {
-        throw new Error(`${name} — $rose must be a jQuery instance!`);
-    }
-    // ERROR: empty jQuery instance
-    else if ($rose.length === 0) {
-        throw new Error(`${name} — $rose is empty!`);
-    }
-    
-    // update rose using argObj stored on rose
-    $rose.each( function() {
-        if (! $(this).hasClass('macro-areamap-rose')) {
-            console.warn(`${name} — provided jQuery object is not an areamap rose!`);
-            console.warn($(this));
-            return
-        }
-        $(this).replaceWith(create_rose($(this).data('argObj')));
-    });
-}
-
-// manual update mapview function
-// macro wrapper
-Macro.add(['update_areamapview', 'updateareamapview'], {
-    handler: function() {
-        const name = this.name;
-        const template = {
-            selector: {
-                required: true,
-                type: 'string',
-            },
-        };
-        const argObj = new ArgObj(name, template, this.args);
-        update_mapview({$mapview: $(argObj.selector)});
-    }
-});
-function update_mapview(argObj) {
-    const { $mapview } = argObj;
-    const name = 'Areamap.update_mapview';
-
-    // ERROR: $mapview isn't a jQuery obj
-    if (! ($mapview instanceof jQuery)) {
-        throw new Error(`${name} — $mapview must be a jQuery instance!`);
-    }
-    // ERROR: empty jQuery instance
-    else if ($mapview.length === 0) {
-        throw new Error(`${name} — $mapview is empty!`);
-    }
-
-    // update mapview using argObj stored on mapview
-    $mapview.each( function() {
-        if (! $(this).hasClass('macro-areamap-mapview')) {
-            console.warn(`${name} — provided jQuery object is not an areamap mapview!`);
-            console.warn($(this));
-            return
-        }
-        $(this).replaceWith(create_mapview($(this).data('argObj')));
-    });
-}
 
 
 

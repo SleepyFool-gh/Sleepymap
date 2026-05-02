@@ -568,11 +568,11 @@ function create_rose(argObj) {
         // add links to rose
         // diagonals will be empty if not enabled
         // grid travel
-        if (
-            grid_movement &&
-            exits.grid[position]?.has(position + offsets[dir])
-        ) {
-            // TODO: add easier way to fetch id to send to begin_mapmove?
+        if (grid_movement) {
+            // skip if no exit in this direction
+            if (! exits.grid[position]?.has(position + offsets[dir])) {
+                continue;
+            }
             const maparea = mapareas[maparray[position + offsets[dir]]];
             const xy = i2xy({ i: position + offsets[dir], columns });
             $(document.createElement('a'))
@@ -776,7 +776,8 @@ function create_mapview(argObj) {
     // create & append tiles
     for (let i = 0; i < mapview.array.length; i++) {
         const id = mapview.array[i];
-        const maparea = grid_movement ? mapareas[maparray[id]] : mapareas[id];
+        const maparea = mapareas[id];
+        console.log(i, id, maparea);
 
         // define traversability
         function is_traversable() {
