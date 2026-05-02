@@ -158,7 +158,7 @@ function new_map(argObj) {
 //      SECTION: init the areamap
 //      creates map object on the new_areamap macro
 
-    const { mapname, grid_movement, start, start_x, start_y, columns, maparray } = argObj;
+    const { mapname, grid_movement, start, start_x, start_y, columns, maparray, mapview } = argObj;
     const diagonals = argObj.diagonals ?? options.default.diagonals;    // default value
     const name = argObj.name ?? 'Areamap.new_map';
 
@@ -198,6 +198,10 @@ function new_map(argObj) {
     else if (grid_movement && (start_y < 0 || start_y >= maparray.length / columns)) {
         throw new Error(`${name} — areamap "${mapname}" — start_y out of bounds!`);
     }
+    // ERROR: grid movement is incompatible with separate mapview
+    else if (grid_movement && mapview) {
+        throw new Error(`${name} — areamap "${mapname}" — grid movement is incompatible with a separate mapview!`);
+    }
 
     // create map object
     const this_map = {
@@ -225,7 +229,6 @@ function new_map(argObj) {
 //     █    █ █   █ █       █   ███ █████  █   █
 //      SECTION: mapview object on areamaps
 
-    const mapview = argObj.mapview;
     if (mapview !== undefined) {
         // ERROR: mapview not an object
         if (typeof mapview !== 'object') {
@@ -741,15 +744,20 @@ function create_mapview(argObj) {
     const hidden    = mapvars.hidden   !== undefined    
                         ? State.variables[mapvars.hidden.slice(1)]   
                         : null;
+
+    const { grid_movement, columns, maparray, mapareas, exits } = this_map;
     
+    const xy = i2xy({ i: position, columns });
     // create map object
     // use maparray & columns if no mapview object
-    const mapview = this_map.mapview ?? {columns: this_map.columns, array: this_map.maparray};
+    const mapview = this_map.mapview ?? {columns, array: maparray};
     const $mapview = $(document.createElement('div'));
     $mapview
         .addClass('macro-areamap-mapview')
         .attr('data-mapname', mapname)
         .attr('data-position', position)
+        .attr('data-x', xy.x)
+        .attr('data-y', xy.y)
         .attr('data-autoupdate', autoupdate)
         .data('argObj', argObj)
         .css({
@@ -765,33 +773,46 @@ function create_mapview(argObj) {
             .appendTo($mapview);
     }
 
-    // get exits as an array
-    const exit_arr = Object.values(this_map.exits[position]);
     // create & append tiles
-    for (const id of mapview.array) {
-        const maparea = this_map.mapareas[id];
-        const traversable   = position === id
-                                ? null
-                                : maparea.type === 'wall'
-                                    ? false
-                                    : exit_arr.some( dir => dir.has(id) );
+    for (let i = 0; i < mapview.array.length; i++) {
+        const id = mapview.array[i];
+        const maparea = grid_movement ? mapareas[maparray[id]] : mapareas[id];
+
+        // define traversability
+        function is_traversable() {
+            if (maparea.type === 'wall') return false;
+            if (grid_movement) {
+                if (position === i) return null;
+                return exits.grid[position]?.has(i);
+            }
+            else {
+                if (position === id) return null;
+                return exits.area[id].some( dir => dir.has(id) );
+            }
+        }
         // if clickable & valid travel destination --> clickable
         const link  = ! clickable
                         ? false
-                        : !! traversable;
+                        : !! is_traversable();
+
+        const xy = i2xy({ i, columns: mapview.columns });
         
         const $tile = $(document.createElement(link ? 'a' : 'div'));
         $tile
             .addClass('macro-areamap-tile')
             .addClass(link ? 'macro-areamap-link' : '')
-            .attr('data-maparea-id', id)
-            .attr('data-type', maparea.type)
             // change traversable to 'current' for CSS targeting
-            .attr('data-traversable', traversable === null ? 'current' : traversable)
+            .attr('data-traversable', is_traversable() === null ? 'current' : is_traversable())
+            .attr('data-type', maparea.type)
+            .attr('data-maparea', maparea.name)
+            .attr('data-maparea-id', id)
+            .attr('data-x', xy.x)
+            .attr('data-y', xy.y)
             .attr('disabled', disabled?.[id] || frozen)
             .css({
                 visibility: hidden?.[id] ? 'hidden' : '',
             })
+            // defined tile content +? maparea name wrapped in a span
             .wiki(
                 ((maparea.tile !== undefined) ? maparea.tile : '') +
                 (show_names ? `<span>${maparea.name}</span>` : '')
@@ -809,10 +830,14 @@ function create_mapview(argObj) {
                 return;
             }
             // attempt mapmove
-            const id_target = $(this).attr('data-maparea-id');
+            const target_maparea_id = $(this).attr('data-maparea-id');
+            const target_x = $(this).attr('data-x');
+            const target_y = $(this).attr('data-y');
             begin_mapmove({
                 mapname,
-                id_target,
+                target_maparea_id,
+                target_x,
+                target_y,
             });
         });
     }
@@ -873,7 +898,7 @@ $(document).on('areamap:mapmove_resolved areamap:map_edited', function(ev, data)
     $roses.each( function() {
         const $rose = $(this);
         const argObj = $rose.data('argObj');
-        if (argObj.mapname === data.mapname) {
+        if (argObj.mapname === data?.mapname) {
             $rose.replaceWith(create_rose(argObj));
         }
     });
@@ -881,7 +906,7 @@ $(document).on('areamap:mapmove_resolved areamap:map_edited', function(ev, data)
     $mapviews.each( function() {
         const $mapview = $(this);
         const argObj = $mapview.data('argObj');
-        if (argObj.mapname === data.mapname) {
+        if (argObj.mapname === data?.mapname) {
             $mapview.replaceWith(create_mapview(argObj));
         }
     });
