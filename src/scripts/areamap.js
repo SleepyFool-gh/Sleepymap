@@ -5,22 +5,57 @@
 // █    █ ████    █    █  █    █ █ █  █  ███
 // █    █ █       █    █  █    █ █  █ █     █
 //  ████  █       █   ███  ████  █   ██ ████
-// SECTION: options
+// SECTION: options & other global constants
 
 const options = {
     default: {
-        wall_id                 : ".",
+        wall_id                 : '.',
         diagonals               : false,
-        position_story_variable : "$@areamap/position",
+        position_story_variable : '$@areamap/position',
         autoupdate_rose         : true,
         autoupdate_mapview      : true,
         clickable_mapview       : true,
         show_names_on_mapview   : false,
+    },
+    // THIS IS REGEX MAGIC. MANIPULTE AT YOUR OWN RISK.
+    barriers: {
+        N       : /"/,
+        E       : /(?<=[a-zA-Z0-9][^\s]*)\|/,
+        S       : /_/,
+        W       : /\|(?=[^\s]*[a-zA-Z0-9])/,
+        NE      : /(?<=[a-zA-Z0-9][^\s]*)\\/,
+        NW      : /\/(?=[^\s]*[a-zA-Z0-9])/,
+        SE      : /(?<=[a-zA-Z0-9][^\s]*)\//,
+        SW      : /\\(?=[^\s]*[a-zA-Z0-9])/,
+        replace : /[\/\\|_"]/g,
     }
 }
 setup['@areamap/options'] = options;
 
-
+// maps container
+const areamaps = {};
+// used in update_exits
+const RECIPROCALS = {
+    N: 'S',
+    S: 'N',
+    E: 'W',
+    W: 'E',
+    NE: 'SW',
+    NW: 'SE',
+    SE: 'NW',
+    SW: 'NE',
+};
+// used in update_exits
+const is_diagonal = {
+    N   : false,
+    E   : false,
+    S   : false,
+    W   : false,
+    NE  : true,
+    NW  : true,
+    SE  : true,
+    SW  : true,
+};
 
 
 // █    █ █████ █     █     █    █  ███  ████
@@ -31,9 +66,6 @@ setup['@areamap/options'] = options;
 // SECTION: new_map function & macro wrapper
 // used to define a map so that a player can navigate through it using the regionrose macro
 // comes in both 4 and 8 wind variants
-
-// map container
-const areamaps = {};
 
 // macro wrapper for new_map
 Macro.add(['newareamap', 'new_areamap'], {
@@ -158,7 +190,7 @@ function new_map(argObj) {
 //      SECTION: init the areamap
 //      creates map object on the new_areamap macro
 
-    const { mapname, grid_movement, start, start_x, start_y, columns, maparray, mapview } = argObj;
+    const { mapname, grid_movement, start, start_x, start_y, columns, mapview } = argObj;
     const diagonals = argObj.diagonals ?? options.default.diagonals;    // default value
     const name = argObj.name ?? 'Areamap.new_map';
 
@@ -175,15 +207,15 @@ function new_map(argObj) {
         throw new Error(`${name} — areamap "${mapname}" — columns must be a number!`);
     }
     // ERROR: maparray not an array (or undefined)
-    else if (! Array.isArray(maparray)) {
+    else if (! Array.isArray(argObj.maparray)) {
         throw new Error(`${name} — areamap "${mapname}" — maparray must be an array!`);
     }
     // ERROR: maparray not rectangular
-    else if (maparray.length % columns !== 0) {
+    else if (argObj.maparray.length % columns !== 0) {
         throw new Error(`${name} — areamap "${mapname}" — maparray must be rectangular (whole number multiple of columns)!`);
     }
     // ERROR: areamap mode, invalid start
-    else if ((! grid_movement) && (! maparray.includes(start))) {
+    else if ((! grid_movement) && (! argObj.maparray.includes(start))) {
         throw new Error(`${name} — areamap "${mapname}" — start maparea "${start}" not found in maparray!`);
     }
     // ERROR: start_x and start_y required for gridmap mode
@@ -195,7 +227,7 @@ function new_map(argObj) {
         throw new Error(`${name} — areamap "${mapname}" — start_x out of bounds!`);
     }
     // ERROR: start_y out of bounds
-    else if (grid_movement && (start_y < 0 || start_y >= maparray.length / columns)) {
+    else if (grid_movement && (start_y < 0 || start_y >= argObj.maparray.length / columns)) {
         throw new Error(`${name} — areamap "${mapname}" — start_y out of bounds!`);
     }
     // ERROR: grid movement is incompatible with separate mapview
@@ -207,9 +239,10 @@ function new_map(argObj) {
     const this_map = {
         mapname,
         columns,
-        maparray,
         diagonals,
         grid_movement,
+        maparray    : [],           // populated here, later
+        barriers    : [],
         mapview     : undefined,    // populated here, later
         mapareas    : {},           // populated here, later
         mapvars     : {},           // populated here, later
@@ -220,6 +253,33 @@ function new_map(argObj) {
         scripts     : [],           // populated in set_scripts, if called
     };
     areamaps[mapname] = this_map;
+
+
+//     █    █  ███  ████   ███  ████  ████   ███  █   █
+//     ██  ██ █   █ █   █ █   █ █   █ █   █ █   █  █ █
+//     █ ██ █ █████ ████  █████ ████  ████  █████   █
+//     █    █ █   █ █     █   █ █   █ █   █ █   █   █
+//     █    █ █   █ █     █   █ █   █ █   █ █   █   █
+//      SECTION: maparray & barriers
+
+    const maparray = [];
+    const barriers = [];
+    for (const cell of argObj.maparray) {
+        const barrier = {
+            N   : options.barriers.N.test(cell),
+            E   : options.barriers.E.test(cell),
+            S   : options.barriers.S.test(cell),
+            W   : options.barriers.W.test(cell),
+            NE  : options.barriers.NE.test(cell),
+            NW  : options.barriers.NW.test(cell),
+            SE  : options.barriers.SE.test(cell),
+            SW  : options.barriers.SW.test(cell),
+        }
+        barriers.push(barrier);
+        maparray.push(cell.replace(options.barriers.replace, ''));
+    }
+    this_map.maparray = maparray;
+    this_map.barriers = barriers;
 
 
 //     █    █  ███  ████  █   █ ███ █████ █     █
@@ -393,7 +453,7 @@ function update_exits(argObj) {
         throw new Error(`${name} — map "${mapname}" does not exist!`);
     }
 
-    const { maparray, mapareas, columns, diagonals, exits } = this_map;
+    const { maparray, barriers, mapareas, columns, diagonals, exits } = this_map;
 
     // get offsets
     const offsets = get_offsets({ columns });
@@ -439,6 +499,11 @@ function update_exits(argObj) {
                 continue;
             }
 
+            // if barrier exists between this cell & neighbor, skip
+            if (barriers[i][dir] || barriers[i + offsets[dir]][RECIPROCALS[dir]]) {
+                continue;
+            }
+
             // area exits
             if (neighbor.id !== maparea.id) {
                 exits.area[maparea.id][dir] ??= new Set();
@@ -450,7 +515,6 @@ function update_exits(argObj) {
         }
     }
 }
-
 
 
 
@@ -1271,16 +1335,6 @@ function get_offsets(argObj) {
         SW  : columns - 1,
     };
 }
-const is_diagonal = {
-    N   : false,
-    E   : false,
-    S   : false,
-    W   : false,
-    NE  : true,
-    NW  : true,
-    SE  : true,
-    SW  : true,
-};
 
 function get_map(argObj) {
     const mapname = argObj.mapname;

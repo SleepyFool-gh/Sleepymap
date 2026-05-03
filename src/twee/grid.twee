@@ -6,14 +6,14 @@ This is a demo of the Areamap library for SugarCube, part of the Sleepy Macros c
 
 :: StoryInit [nobr]
 <<set _mapareas = {
-    MB: {name: 'Master Bedroom'},
-    GB: {name: 'Guest Bedroom'},
-    HW: {name: 'Hallway'},
-    LR: {name: 'Living Room'},
-    ST: {name: 'Stairs'},
-    DR: {name: 'Dining Room'},
-    KT: {name: 'Kitchen'},
-    PT: {name: 'Pantry'},
+    M: {name: 'Master Bedroom'},
+    G: {name: 'Guest Bedroom'},
+    H: {name: 'Hallway'},
+    L: {name: 'Living Room'},
+    S: {name: 'Stairs'},
+    D: {name: 'Dining Room'},
+    K: {name: 'Kitchen'},
+    P: {name: 'Pantry'},
 }>>
 <<new_areamap 
     mapname     'small_house'
@@ -23,50 +23,49 @@ This is a demo of the Areamap library for SugarCube, part of the Sleepy Macros c
     start_y     5
     grid_mode   true
 >>
-    .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
-    .   .   .   .   K   K   K   K   K   .   L   L   L   L   L   .
-    .   .   .   .   K   K   K   K   K   .   L   L   L   L   L   .
-    .   P   P   P   K   K   K   K   K   .   L   L   L   L   L   .
-    .   P   P   P   D   D   D   D   S   .   H   G   G   G   S   .
-    .   P   P   P   D   D   D   D   S   .   H   G   G   G   S   .
-    .   P   P   P   D   D   D   D   D   .   H   M   M   M   M   .
-    .   P   P   P   D   D   D   D   D   .   H   M   M   M   M   .
-    .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
-
-. . .   . . .   . . .   . . .   K K K
-. . .   . . .   . . .   . . .   K K K
-. . .   . . .   . . .   . . .   K K K
-
-. . .   . . .   . . .   . . .   K K K
-. . .   . P P   P P P   P P P   K K K
-. . .   . P P   P P P   P P P   K K K
-
-. . .   . P P   P P P   P P P   D D D
-. . .   . P P   P P P   P P P   D D D
-. . .   . P P   P P P   P P P   D D D
+    .   .   .   .   .   .   .   .     .   .   .   .   .   .    .   .
+    .   .   .   .  |K"  K"  K"  K"   "K|  .  |L"  L"  L"  L"  "L|  .
+    .   .   .   .  |K   K   K   K     K|  .  |L   L   L   L    L|  .
+    .  |P"  P" "P|  K_  K   K_  K_   _K|  .  |L   L_  L_  L_   L|  .
+    .  |P   P   P|  D   D   D   D    |S|  .  |H  |G   G   G   |S|  .
+    .  |P   P   P|  D   D   D   D    |S|  .  |H   G_  G_  G_ _|S|  .
+    .  |P   P   P   D   D   D   D     D|  .  |H  |M   M   M    M|  .
+    .  |P_  P_ _P|  D_  D_  D_  D_   _D|  .  |H_  M_  M_  M_  _M|  .
+    .   .   .   .   .   .   .   .     .   .   .   .   .   .    .   .
 <<mapareas _mapareas>>
 <</new_areamap>>
 
-:: Start
+:: Start [nobr]
 <<place_areamapview
     mapname     'small_house'
     background  '<img src="./assets/small_house.png">'
 >>
-This rose automatically updates.
-<<place_arearose
-    mapname     'small_house'
-    background  '<img src="./assets/rose.png">'
-    autoupdate  true
->>
-This rose doesn't auto-update.
-<<place_arearose
-    mapname     'small_house'
-    background  '<img src="./assets/rose.png">'
-    autoupdate  false
->>
-<<link 'teleport to pantry'>>
-    <<areamapmove mapname 'small_house' target_x 4 target_y 3>>
-<</link>>
-<<link 'update rose'>>
-    <<update_arearose selector '.macro-areamap-rose'>>
-<</link>>
+<div style='display:grid; grid-template-columns: auto auto; row-gap:1rem;'>
+    <div>
+        This rose automatically updates.
+        <<place_arearose
+            mapname     'small_house'
+            background  '<img src="./assets/rose.png">'
+            autoupdate  true
+        >>
+    </div>
+    <div style='display:flex; flex-direction:column;'>
+        <<link 'go upstairs'>>
+            <<areamapmove mapname 'small_house' target_x 14  target_y 5>>
+        <</link>>
+        <<link 'go downstairs'>>
+            <<areamapmove mapname 'small_house' target_x 8 target_y 4>>
+        <</link>>
+        <<link 'update rose'>>
+            <<update_arearose selector '.macro-areamap-rose'>>
+        <</link>>
+    </div>
+    <div>
+        This rose doesn't auto-update.
+        <<place_arearose
+            mapname     'small_house'
+            background  '<img src="./assets/rose.png">'
+            autoupdate  false
+        >>
+    </div>
+</div>
