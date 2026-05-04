@@ -656,6 +656,10 @@ function create_rose(argObj) {
         }
         // node travel
         else {
+            // if no exits in this direction for this mapnode, skip
+            if (exits.node[position.mapnode][dir] === undefined) continue;
+
+            // iterate through exits
             for (const id of exits.node[position.mapnode][dir]) {
                 const mapnode = mapnodes[id];
                 const $link = $(document.createElement('a'));

@@ -47,7 +47,7 @@ This is a demo of the Areamap library for SugarCube, part of the Sleepy Macros c
     mapname     'small_house'
     background  '<img src="./assets/small_house.png">'
 >>
-/* <div style='display:grid; grid-template-columns: auto auto; row-gap:1rem;'>
+<div style='display:grid; grid-template-columns: auto auto; row-gap:1rem;'>
     <div>
         This rose automatically updates.
         <<place_rose
@@ -75,4 +75,4 @@ This is a demo of the Areamap library for SugarCube, part of the Sleepy Macros c
             autoupdate  false
         >>
     </div>
-</div> */
+</div>

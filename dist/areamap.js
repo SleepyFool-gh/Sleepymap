@@ -656,6 +656,10 @@ function create_rose(argObj) {
         }
         // node travel
         else {
+            // if no exits in this direction for this mapnode, skip
+            if (exits.node[position.mapnode][dir] === undefined) continue;
+
+            // iterate through exits
             for (const id of exits.node[position.mapnode][dir]) {
                 const mapnode = mapnodes[id];
                 const $link = $(document.createElement('a'));
@@ -853,7 +857,6 @@ function create_mapview(argObj) {
             }
             else {
                 if (position.mapnode === id) return null;
-                console.log(id, exits.node[id], Object.values(exits.node[id]).some( dir => dir.has(id) ));
                 return Object.values(exits.node[position.mapnode]).some( dir => dir.has(id) );
             }
         }
