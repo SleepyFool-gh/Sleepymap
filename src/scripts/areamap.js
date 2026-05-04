@@ -372,10 +372,11 @@ function new_map(argObj) {
 
     // SYNC REMINDER: changing anything here also requires changing <<mapvars>> template
     const xy = { x: start_x, y: start_y };
+    const mapnode = grid_movement ? maparray[xy2i({ xy, columns })] : start;
     const MAPVAR_DEFAULTS = {
         position: {
             sv_name : argObj?.mapvars?.position ?? options.default.position_story_variable,
-            val     : grid_movement ? xy2i({ xy, columns }) : start,
+            val     : grid_movement ? { mapname, mapnode, x: start_x, y: start_y } : { mapname, mapnode },
         },
         frozen: {
             sv_name : argObj?.mapvars?.frozen,
@@ -383,15 +384,15 @@ function new_map(argObj) {
         },
         disabled: {
             sv_name : argObj?.mapvars?.disabled,
-            val     : Object.keys(mapnodes).reduce((obj, node) => { obj[node] = false; return obj; }, {}),
+            val     : Object.keys(mapnodes).reduce((obj, mapnode) => { obj[mapnode] = false; return obj; }, {}),
         },
         hidden: {
             sv_name : argObj?.mapvars?.hidden,
-            val     : Object.keys(mapnodes).reduce((obj, node) => { obj[node] = false; return obj; }, {}),
+            val     : Object.keys(mapnodes).reduce((obj, mapnode) => { obj[mapnode] = false; return obj; }, {}),
         },
         blocked: {
             sv_name : argObj?.mapvars?.blocked,
-            val     : Object.keys(mapnodes).reduce((obj, node) => { obj[node] = false; return obj; }, {}),
+            val     : Object.keys(mapnodes).reduce((obj, mapnode) => { obj[mapnode] = false; return obj; }, {}),
         },
     };
     for (const key of Object.keys(MAPVAR_DEFAULTS)) {
@@ -584,17 +585,16 @@ function create_rose(argObj) {
                             ? State.variables[mapvars.hidden.slice(1)]   
                             : null;
 
-    const mapnode = grid_movement ? mapnodes[maparray[position]] : mapnodes[position];
+    const mapnode = mapnodes[position.mapnode];
 
-    const xy = i2xy({ i: position, columns });
     // create rose
     const $rose = $(document.createElement('div'));
     $rose
         .addClass('macro-Sleepymap-rose')
         .attr('data-mapname', mapname)
-        .attr('data-position', position)
-        .attr('data-x', grid_movement ? xy.x : 'undefined')
-        .attr('data-y', grid_movement ? xy.y : 'undefined')
+        .attr('data-mapnode', position.mapnode)
+        .attr('data-x', position.x)
+        .attr('data-y', position.y)
         .attr('data-autoupdate', autoupdate)
         .data('argObj', argObj);
 
@@ -610,10 +610,10 @@ function create_rose(argObj) {
     $(document.createElement('div'))
         .addClass('macro-Sleepymap-dir')
         .attr('data-dir', 'C')
-        .attr('data-mapnode', mapnode.name)
-        .attr('data-mapnode-id', mapnode.id)
-        .attr('data-x', grid_movement ? xy.x : 'undefined')
-        .attr('data-y', grid_movement ? xy.y : 'undefined')
+        .attr('data-mapnode-name', mapnode.name)
+        .attr('data-mapnode', mapnode.id)
+        .attr('data-x', position.x)
+        .attr('data-y', position.y)
         .html(mapnode.name)
         .appendTo($rose);
 
@@ -633,17 +633,18 @@ function create_rose(argObj) {
         // diagonals will be empty if not enabled
         // grid travel
         if (grid_movement) {
+            const mapindex = xy2i({ xy: position, columns });
             // skip if no exit in this direction
-            if (! exits.grid[position]?.has(position + offsets[dir])) {
+            if (! exits.grid[mapindex]?.has(mapindex + offsets[dir])) {
                 continue;
             }
-            const mapnode = mapnodes[maparray[position + offsets[dir]]];
-            const xy = i2xy({ i: position + offsets[dir], columns });
+            const mapnode = mapnodes[maparray[mapindex + offsets[dir]]];
+            const xy = i2xy({ i: mapindex + offsets[dir], columns });
             $(document.createElement('a'))
                 .addClass('macro-Sleepymap-link')
                 .attr('data-dir', dir)
-                .attr('data-mapnode', mapnode.name)
-                .attr('data-mapnode-id', mapnode.id)
+                .attr('data-mapnode-name', mapnode.name)
+                .attr('data-mapnode', mapnode.id)
                 .attr('data-x', xy.x)
                 .attr('data-y', xy.y)
                 .attr('disabled', disabled?.[mapnode.id] || frozen)
@@ -655,14 +656,14 @@ function create_rose(argObj) {
         }
         // node travel
         else {
-            for (const id of exits.node[position][dir]) {
+            for (const id of exits.node[position.mapnode][dir]) {
                 const mapnode = mapnodes[id];
                 const $link = $(document.createElement('a'));
                 $link
                     .addClass('macro-Sleepymap-link')
                     .attr('data-dir', dir)
-                    .attr('data-mapnode', mapnode.name)
-                    .attr('data-mapnode-id', id)
+                    .attr('data-mapnode-name', mapnode.name)
+                    .attr('data-mapnode', id)
                     .attr('data-x', 'undefined')
                     .attr('data-y', 'undefined')
                     .attr('disabled', disabled?.[id] || frozen)
@@ -684,12 +685,12 @@ function create_rose(argObj) {
             return;
         }
         // attempt move to target
-        const target_mapnode_id = $(this).attr('data-mapnode-id');
+        const target_mapnode = $(this).attr('data-mapnode');
         const target_x = Number($(this).attr('data-x'));
         const target_y = Number($(this).attr('data-y'));
         begin_mapmove({
             mapname,
-            target_mapnode_id,
+            target_mapnode,
             target_x: Number.isFinite(target_x) ? target_x : undefined,
             target_y: Number.isFinite(target_y) ? target_y : undefined,
         });
@@ -811,17 +812,17 @@ function create_mapview(argObj) {
 
     const { grid_movement, columns, maparray, mapnodes, exits } = this_map;
     
-    const xy = i2xy({ i: position, columns });
     // create map object
     // use maparray & columns if no mapview object
     const mapview = this_map.mapview ?? {columns, array: maparray};
     const $mapview = $(document.createElement('div'));
     $mapview
         .addClass('macro-Sleepymap-mapview')
+        .attr('data-maptype', grid_movement ? 'grid' : 'node')
         .attr('data-mapname', mapname)
-        .attr('data-position', position)
-        .attr('data-x', xy.x)
-        .attr('data-y', xy.y)
+        .attr('data-mapnode', position.mapnode)
+        .attr('data-x', position.x)
+        .attr('data-y', position.y)
         .attr('data-autoupdate', autoupdate)
         .data('argObj', argObj)
         .css({
@@ -846,12 +847,13 @@ function create_mapview(argObj) {
         function is_traversable() {
             if (mapnode.type === 'wall') return false;
             if (grid_movement) {
-                if (position === i) return null;
-                return exits.grid[position]?.has(i);
+                const mapindex = xy2i({ xy: position, columns });
+                if (mapindex === i) return null;
+                return exits.grid[mapindex]?.has(i);
             }
             else {
-                if (position === id) return null;
-                return exits.node[id].some( dir => dir.has(id) );
+                if (position.mapnode === id) return null;
+                return Object.values(exits.node[position.mapnode]).some( dir => dir.has(id) );
             }
         }
         // if clickable & valid travel destination --> clickable
@@ -868,8 +870,8 @@ function create_mapview(argObj) {
             // change traversable to 'current' for CSS targeting
             .attr('data-traversable', is_traversable() === null ? 'current' : is_traversable())
             .attr('data-type', mapnode.type)
-            .attr('data-mapnode', mapnode.name)
-            .attr('data-mapnode-id', id)
+            .attr('data-mapnode-name', mapnode.name)
+            .attr('data-mapnode', id)
             .attr('data-x', xy.x)
             .attr('data-y', xy.y)
             .attr('disabled', disabled?.[id] || frozen)
@@ -894,12 +896,12 @@ function create_mapview(argObj) {
                 return;
             }
             // attempt mapmove
-            const target_mapnode_id = $(this).attr('data-mapnode-id');
+            const target_mapnode = $(this).attr('data-mapnode');
             const target_x = Number($(this).attr('data-x'));
             const target_y = Number($(this).attr('data-y'));
             begin_mapmove({
                 mapname,
-                target_mapnode_id,
+                target_mapnode,
                 target_x,
                 target_y,
             });
@@ -1089,11 +1091,11 @@ function set_scripts(argObj) {
                                     
             // ERROR: make sure each array element is a string
             if (script.triggers[arg] !== 'any') {
-                script.triggers[arg].forEach( node => {
-                    if (['to', 'from'].includes(arg) && typeof node !== 'string') {
+                script.triggers[arg].forEach( trigger => {
+                    if (['to', 'from'].includes(arg) && typeof trigger !== 'string') {
                         throw new Error(`${name} — ${script.type} — Sleepymap ${mapname}, "${arg}" must be a string, array of strings, or keyword "any"`);
                     }
-                    else if (typeof node !== 'number') {
+                    else if (typeof trigger !== 'number') {
                         throw new Error(`${name} — ${script.type} — Sleepymap ${mapname}, "${arg}" must be a number, array of numbers, or keyword "any"`);
                     }
                 });
@@ -1129,7 +1131,7 @@ Macro.add(['mapmove', 'map_move'], {
                 required: true,
                 type: 'string',
             },
-            target_mapnode_id: {
+            target_mapnode: {
                 type: 'string',
                 aliases: ['id', 'node', 'mapnode'],
             },
@@ -1180,26 +1182,25 @@ function begin_mapmove(argObj) {
     if (grid_movement && (target_x === undefined || target_y === undefined)) {
         throw new Error(`${name} — Sleepymap "${mapname}" — this map uses grid movement, please provide "target_x" and "target_y"!`);
     }
-    else if ((! grid_movement) && (argObj.target_mapnode_id === undefined)) {
-        throw new Error(`${name} — Sleepymap "${mapname}" — this map uses node movement, please provide "target_mapnode_id"!`);
+    else if ((! grid_movement) && (argObj.target_mapnode === undefined)) {
+        throw new Error(`${name} — Sleepymap "${mapname}" — this map uses node movement, please provide "target_mapnode"!`);
     }
 
-    // fetch target_mapnode_id if not defined in grid movement mode
-    const target_mapnode_id = argObj.target_mapnode_id ?? maparray[xy2i({ xy: { x: target_x, y: target_y }, columns })];
+    // fetch target_mapnode if not defined in grid movement mode
+    const target_mapnode = argObj.target_mapnode ?? maparray[xy2i({ xy: { x: target_x, y: target_y }, columns })];
 
     const position = State.variables[mapvars.position.slice(1)];
-    const xy = grid_movement ? i2xy({ i: position, columns }) : {};
-    const origin_mapnode_id = grid_movement ? maparray[position] : position;
-    const origin_x = xy.x;
-    const origin_y = xy.y;
+    const origin_mapnode = position.mapnode;
+    const origin_x = position.x;
+    const origin_y = position.y;
 
     // fire began event
     $('#passages').trigger('Sleepymap:mapmove_began', { 
         mapname, 
-        origin_mapnode_id, 
+        origin_mapnode, 
         origin_x, 
         origin_y, 
-        target_mapnode_id, 
+        target_mapnode, 
         target_x, 
         target_y, 
         force_abort,
@@ -1214,8 +1215,8 @@ function begin_mapmove(argObj) {
     for (const script of scripts_attempt) {
         // check if script applies to this location, if yes run
         if (
-            ((script.triggers.from === 'any')   || script.triggers.from.includes(origin_mapnode_id)) &&
-            ((script.triggers.to === 'any')     || script.triggers.to.includes(target_mapnode_id))   &&
+            ((script.triggers.from === 'any')   || script.triggers.from.includes(origin_mapnode)) &&
+            ((script.triggers.to === 'any')     || script.triggers.to.includes(target_mapnode))   &&
             ((script.triggers.from_x === 'any') || script.triggers.from_x.includes(origin_x))        &&
             ((script.triggers.from_y === 'any') || script.triggers.from_y.includes(origin_y))        &&
             ((script.triggers.to_x === 'any')   || script.triggers.to_x.includes(target_x))          &&
@@ -1233,14 +1234,14 @@ $(document).on('Sleepymap:mapmove_began', (ev, argObj) => {
 
 // resolves map movement procedure
 function resolve_mapmove(argObj) {
-    const { mapname, target_mapnode_id, target_x, target_y, origin_mapnode_id, origin_x, origin_y, force_abort, skip_scripts } = argObj;
+    const { mapname, target_mapnode, target_x, target_y, origin_mapnode, origin_x, origin_y, force_abort, skip_scripts } = argObj;
     const name = argObj.name ?? 'Sleepymap.resolve_mapmove';
     const this_map = maps[mapname];
-    const { grid_movement, columns, mapvars } = this_map;
+    const { grid_movement, columns, maparray, mapvars } = this_map;
     const succeeded = force_abort 
                         ? false 
                         : mapvars?.blocked !== undefined
-                            ? ! State.variables[mapvars.blocked.slice(1)][target_mapnode_id]
+                            ? ! State.variables[mapvars.blocked.slice(1)][target_mapnode]
                             : true;
                             
     // mapmove succeeded
@@ -1251,8 +1252,8 @@ function resolve_mapmove(argObj) {
             for (const script of scripts_start) {
                 // check if script applies to this location, if yes run
                 if (
-                    ((script.triggers.from === 'any')   || script.triggers.from.includes(origin_mapnode_id)) &&
-                    ((script.triggers.to === 'any')     || script.triggers.to.includes(target_mapnode_id))   &&
+                    ((script.triggers.from === 'any')   || script.triggers.from.includes(origin_mapnode)) &&
+                    ((script.triggers.to === 'any')     || script.triggers.to.includes(target_mapnode))   &&
                     ((script.triggers.from_x === 'any') || script.triggers.from_x.includes(origin_x))        &&
                     ((script.triggers.from_y === 'any') || script.triggers.from_y.includes(origin_y))        &&
                     ((script.triggers.to_x === 'any')   || script.triggers.to_x.includes(target_x))          &&
@@ -1263,9 +1264,20 @@ function resolve_mapmove(argObj) {
             }
         }
 
-        // enter new location
-        const xy = { x: target_x, y: target_y };
-        State.variables[this_map.mapvars.position.slice(1)] = grid_movement ? xy2i({ xy, columns }) : target_mapnode_id;
+        if (grid_movement) {
+            const xy = { x: target_x, y: target_y };
+            const mapindex = xy2i({ xy, columns });
+            const mapnode_id = maparray[mapindex];
+            
+            // WARNING: resolved mapnode doesn't match input mapnode, ignored
+            if (mapnode_id !== target_mapnode) {
+                console.warn(`${name} — Sleepymap "${mapname}" — resolved mapnode from xy doesn't match input mapnode, input mapnode ignored!`);
+            }
+            State.variables[mapvars.position.slice(1)] = { mapname, x: target_x, y: target_y, mapnode: mapnode_id };
+        }
+        else {
+            State.variables[mapvars.position.slice(1)] = { mapname, mapnode: target_mapnode };
+        }
 
         if (! skip_scripts) {
             // check for any onmapend scripts
@@ -1273,8 +1285,8 @@ function resolve_mapmove(argObj) {
             for (const script of scripts_end) {
                 // check if script applies to this location, if yes run
                 if (
-                    ((script.triggers.from === 'any')   || script.triggers.from.includes(origin_mapnode_id)) &&
-                    ((script.triggers.to === 'any')     || script.triggers.to.includes(target_mapnode_id))   &&
+                    ((script.triggers.from === 'any')   || script.triggers.from.includes(origin_mapnode)) &&
+                    ((script.triggers.to === 'any')     || script.triggers.to.includes(target_mapnode))   &&
                     ((script.triggers.from_x === 'any') || script.triggers.from_x.includes(origin_x))        &&
                     ((script.triggers.from_y === 'any') || script.triggers.from_y.includes(origin_y))        &&
                     ((script.triggers.to_x === 'any')   || script.triggers.to_x.includes(target_x))          &&
@@ -1292,8 +1304,8 @@ function resolve_mapmove(argObj) {
         for (const script of scripts_abort) {
             // check if script applies to this location, if yes run
             if (
-                ((script.triggers.from === 'any')   || script.triggers.from.includes(origin_mapnode_id)) &&
-                ((script.triggers.to === 'any')     || script.triggers.to.includes(target_mapnode_id))   &&
+                ((script.triggers.from === 'any')   || script.triggers.from.includes(origin_mapnode)) &&
+                ((script.triggers.to === 'any')     || script.triggers.to.includes(target_mapnode))   &&
                 ((script.triggers.from_x === 'any') || script.triggers.from_x.includes(origin_x))        &&
                 ((script.triggers.from_y === 'any') || script.triggers.from_y.includes(origin_y))        &&
                 ((script.triggers.to_x === 'any')   || script.triggers.to_x.includes(target_x))          &&
@@ -1307,10 +1319,10 @@ function resolve_mapmove(argObj) {
     // fire resolved event
     $('#passages').trigger('Sleepymap:mapmove_resolved', { 
         mapname, 
-        origin_mapnode_id, 
+        origin_mapnode, 
         origin_x, 
         origin_y,
-        target_mapnode_id,
+        target_mapnode,
         target_x,
         target_y,
         succeeded,

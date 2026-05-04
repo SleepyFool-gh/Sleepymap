@@ -19,9 +19,7 @@ This is a demo of the Areamap library for SugarCube, part of the Sleepy Macros c
     mapname     'small_house'
     columns     16
     diagonals   false
-    start_x     5
-    start_y     5
-    grid_mode   true
+    start       "D"
 >>
     .   .   .   .   .   .   .   .    .   .   .   .   .   .    .   .
     .   .   .   .   K   K   K   K    K   .   L   L   L   L    L   .
@@ -37,19 +35,19 @@ This is a demo of the Areamap library for SugarCube, part of the Sleepy Macros c
     position '$position'
 >>
 <</new_map>>
-<<set_scripts mapname 'small_house'>>
+/* <<set_scripts mapname 'small_house'>>
     <<onmapend to_x 8 to_y 4>>
         <<mapmove mapname 'small_house' target_x 14 target_y 5 skip_scripts true>>
     <<onmapend to_x 14 to_y 5>>
         <<mapmove mapname 'small_house' target_x 8 target_y 4 skip_scripts true>>
-<</set_scripts>>
+<</set_scripts>> */
 
 :: Start [nobr]
 <<place_mapview
     mapname     'small_house'
     background  '<img src="./assets/small_house.png">'
 >>
-<div style='display:grid; grid-template-columns: auto auto; row-gap:1rem;'>
+/* <div style='display:grid; grid-template-columns: auto auto; row-gap:1rem;'>
     <div>
         This rose automatically updates.
         <<place_rose
@@ -77,4 +75,4 @@ This is a demo of the Areamap library for SugarCube, part of the Sleepy Macros c
             autoupdate  false
         >>
     </div>
-</div>
+</div> */
