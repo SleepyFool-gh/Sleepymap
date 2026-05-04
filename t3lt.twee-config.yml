@@ -3,7 +3,7 @@ sugarcube-2:
     new_areamap:
       name: new_areamap
       container: true
-      children: ['mapview', 'mapareas']
+      children: ['mapview', 'mapareas', 'mapvars']
     place_arearose:
       name: place_arearose
     update_arearose:
@@ -15,5 +15,6 @@ sugarcube-2:
     set_areascripts:
       name: set_areascripts
       container: true
+      children: ['onmapattempt', 'onmapstart', 'onmapend', 'onmapabort']
     areamapmove:
       name: areamapmove

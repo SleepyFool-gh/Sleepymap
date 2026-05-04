@@ -841,7 +841,6 @@ function create_mapview(argObj) {
     for (let i = 0; i < mapview.array.length; i++) {
         const id = mapview.array[i];
         const maparea = mapareas[id];
-        console.log(i, id, maparea);
 
         // define traversability
         function is_traversable() {
@@ -1145,6 +1144,9 @@ Macro.add(['areamapmove', 'areamap_move'], {
             force_abort: {
                 type: 'boolean',
             },
+            skip_scripts: {
+                type: 'boolean',
+            },
         };
         const argObj = new ArgObj(name, template, this.args);
         begin_mapmove({
@@ -1159,6 +1161,7 @@ function begin_mapmove(argObj) {
 
     const { mapname, target_x, target_y } = argObj;
     const force_abort = argObj.force_abort ?? false;    // default value
+    const skip_scripts = argObj.skip_scripts ?? false;  // default value
     const name = argObj.name ?? 'Areamap.begin_mapmove';
 
     const this_map = areamaps[mapname];
@@ -1199,8 +1202,12 @@ function begin_mapmove(argObj) {
         target_maparea_id, 
         target_x, 
         target_y, 
-        force_abort 
+        force_abort,
+        skip_scripts,
     });
+
+    // if skipping scripts, done
+    if (skip_scripts) return;
 
     // check for any scripts to fire when beginning an attempt
     const scripts_attempt = this_map.scripts.filter(script => script.type === 'onmapattempt');
@@ -1226,7 +1233,7 @@ $(document).on('areamap:mapmove_began', (ev, argObj) => {
 
 // resolves map movement procedure
 function resolve_mapmove(argObj) {
-    const { mapname, target_maparea_id, target_x, target_y, origin_maparea_id, origin_x, origin_y, force_abort } = argObj;
+    const { mapname, target_maparea_id, target_x, target_y, origin_maparea_id, origin_x, origin_y, force_abort, skip_scripts } = argObj;
     const name = argObj.name ?? 'Areamap.resolve_mapmove';
     const this_map = areamaps[mapname];
     const { grid_movement, columns, mapvars } = this_map;
@@ -1235,21 +1242,24 @@ function resolve_mapmove(argObj) {
                         : mapvars?.blocked !== undefined
                             ? ! State.variables[mapvars.blocked.slice(1)][target_maparea_id]
                             : true;
-
+                            
+    // mapmove succeeded
     if (succeeded) {
-        // check for any onmapstart scripts
-        const scripts_leave = this_map.scripts.filter(script => script.type === 'onmapstart');
-        for (const script of scripts_leave) {
-            // check if script applies to this location, if yes run
-            if (
-                ((script.areas.from === 'any')   || script.areas.from.includes(origin_maparea_id)) &&
-                ((script.areas.to === 'any')     || script.areas.to.includes(target_maparea_id))   &&
-                ((script.areas.from_x === 'any') || script.areas.from_x.includes(origin_x))        &&
-                ((script.areas.from_y === 'any') || script.areas.from_y.includes(origin_y))        &&
-                ((script.areas.to_x === 'any')   || script.areas.to_x.includes(target_x))          &&
-                ((script.areas.to_y === 'any')   || script.areas.to_y.includes(target_y))
-            ) {
-                $.wiki(script.contents);
+        if (! skip_scripts) {
+            // check for any onmapstart scripts
+            const scripts_start = this_map.scripts.filter(script => script.type === 'onmapstart');
+            for (const script of scripts_start) {
+                // check if script applies to this location, if yes run
+                if (
+                    ((script.areas.from === 'any')   || script.areas.from.includes(origin_maparea_id)) &&
+                    ((script.areas.to === 'any')     || script.areas.to.includes(target_maparea_id))   &&
+                    ((script.areas.from_x === 'any') || script.areas.from_x.includes(origin_x))        &&
+                    ((script.areas.from_y === 'any') || script.areas.from_y.includes(origin_y))        &&
+                    ((script.areas.to_x === 'any')   || script.areas.to_x.includes(target_x))          &&
+                    ((script.areas.to_y === 'any')   || script.areas.to_y.includes(target_y))
+                ) {
+                    $.wiki(script.contents);
+                }
             }
         }
 
@@ -1257,23 +1267,26 @@ function resolve_mapmove(argObj) {
         const xy = { x: target_x, y: target_y };
         State.variables[this_map.mapvars.position.slice(1)] = grid_movement ? xy2i({ xy, columns }) : target_maparea_id;
 
-        // check for any onmapend scripts
-        const scripts_end = this_map.scripts.filter(script => script.type === 'onmapend');
-        for (const script of scripts_end) {
-            // check if script applies to this location, if yes run
-            if (
-                ((script.areas.from === 'any')   || script.areas.from.includes(origin_maparea_id)) &&
-                ((script.areas.to === 'any')     || script.areas.to.includes(target_maparea_id))   &&
-                ((script.areas.from_x === 'any') || script.areas.from_x.includes(origin_x))        &&
-                ((script.areas.from_y === 'any') || script.areas.from_y.includes(origin_y))        &&
-                ((script.areas.to_x === 'any')   || script.areas.to_x.includes(target_x))          &&
-                ((script.areas.to_y === 'any')   || script.areas.to_y.includes(target_y))
-            ) {
-                $.wiki(script.contents);
+        if (! skip_scripts) {
+            // check for any onmapend scripts
+            const scripts_end = this_map.scripts.filter(script => script.type === 'onmapend');
+            for (const script of scripts_end) {
+                // check if script applies to this location, if yes run
+                if (
+                    ((script.areas.from === 'any')   || script.areas.from.includes(origin_maparea_id)) &&
+                    ((script.areas.to === 'any')     || script.areas.to.includes(target_maparea_id))   &&
+                    ((script.areas.from_x === 'any') || script.areas.from_x.includes(origin_x))        &&
+                    ((script.areas.from_y === 'any') || script.areas.from_y.includes(origin_y))        &&
+                    ((script.areas.to_x === 'any')   || script.areas.to_x.includes(target_x))          &&
+                    ((script.areas.to_y === 'any')   || script.areas.to_y.includes(target_y))
+                ) {
+                    $.wiki(script.contents);
+                }
             }
         }
     }
-    else {
+    // aborting
+    else if (! skip_scripts) {
         // check for any onmapabort scripts
         const scripts_abort = this_map.scripts.filter(script => script.type === 'onmapabort');
         for (const script of scripts_abort) {

@@ -23,17 +23,26 @@ This is a demo of the Areamap library for SugarCube, part of the Sleepy Macros c
     start_y     5
     grid_mode   true
 >>
-    .   .   .   .   .   .   .   .     .   .   .   .   .   .    .   .
-    .   .   .   .  |K"  K"  K"  K"   "K|  .  |L"  L"  L"  L"  "L|  .
-    .   .   .   .  |K   K   K   K     K|  .  |L   L   L   L    L|  .
-    .  |P"  P" "P|  K_  K   K_  K_   _K|  .  |L   L_  L_  L_   L|  .
-    .  |P   P   P|  D   D   D   D    |S|  .  |H  |G   G   G   |S|  .
-    .  |P   P   P|  D   D   D   D    |S|  .  |H   G_  G_  G_ _|S|  .
-    .  |P   P   P   D   D   D   D     D|  .  |H  |M   M   M    M|  .
-    .  |P_  P_ _P|  D_  D_  D_  D_   _D|  .  |H_  M_  M_  M_  _M|  .
-    .   .   .   .   .   .   .   .     .   .   .   .   .   .    .   .
+    .   .   .   .   .   .   .   .    .   .   .   .   .   .    .   .
+    .   .   .   .   K   K   K   K    K   .   L   L   L   L    L   .
+    .   .   .   .   K   K   K   K    K   .   L   L   L   L    L   .
+    .   P   P   P|  K_  K   K_  K_  _K   .   L   L_  L_  L_   L   .
+    .   P   P   P|  D   D   D   D   |S   .   H  |G   G   G   |S   .
+    .   P   P   P|  D   D   D   D   |S   .   H   G_  G_  G_ _|S   .
+    .   P   P   P   D   D   D   D    D   .   H  |M   M   M    M   .
+    .   P   P   P|  D   D   D   D    D   .   H   M   M   M    M   .
+    .   .   .   .   .   .   .   .    .   .   .   .   .   .    .   .
 <<mapareas _mapareas>>
+<<mapvars
+    position '$position'
+>>
 <</new_areamap>>
+<<set_areascripts mapname 'small_house'>>
+    <<onmapend to_x 8 to_y 4>>
+        <<areamapmove mapname 'small_house' target_x 14 target_y 5 skip_scripts true>>
+    <<onmapend to_x 14 to_y 5>>
+        <<areamapmove mapname 'small_house' target_x 8 target_y 4 skip_scripts true>>
+<</set_areascripts>>
 
 :: Start [nobr]
 <<place_areamapview
