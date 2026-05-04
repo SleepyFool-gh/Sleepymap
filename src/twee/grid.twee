@@ -5,7 +5,7 @@ Areamap demo -  small house
 This is a demo of the Areamap library for SugarCube, part of the Sleepy Macros collection.
 
 :: StoryInit [nobr]
-<<set _mapareas = {
+<<set _mapnodes = {
     M: {name: 'Master Bedroom'},
     G: {name: 'Guest Bedroom'},
     H: {name: 'Hallway'},
@@ -15,7 +15,7 @@ This is a demo of the Areamap library for SugarCube, part of the Sleepy Macros c
     K: {name: 'Kitchen'},
     P: {name: 'Pantry'},
 }>>
-<<new_areamap 
+<<new_map 
     mapname     'small_house'
     columns     16
     diagonals   false
@@ -32,27 +32,27 @@ This is a demo of the Areamap library for SugarCube, part of the Sleepy Macros c
     .   P   P   P   D   D   D   D    D   .   H  |M   M   M    M   .
     .   P   P   P|  D   D   D   D    D   .   H   M   M   M    M   .
     .   .   .   .   .   .   .   .    .   .   .   .   .   .    .   .
-<<mapareas _mapareas>>
+<<mapnodes _mapnodes>>
 <<mapvars
     position '$position'
 >>
-<</new_areamap>>
-<<set_areascripts mapname 'small_house'>>
+<</new_map>>
+<<set_scripts mapname 'small_house'>>
     <<onmapend to_x 8 to_y 4>>
-        <<areamapmove mapname 'small_house' target_x 14 target_y 5 skip_scripts true>>
+        <<mapmove mapname 'small_house' target_x 14 target_y 5 skip_scripts true>>
     <<onmapend to_x 14 to_y 5>>
-        <<areamapmove mapname 'small_house' target_x 8 target_y 4 skip_scripts true>>
-<</set_areascripts>>
+        <<mapmove mapname 'small_house' target_x 8 target_y 4 skip_scripts true>>
+<</set_scripts>>
 
 :: Start [nobr]
-<<place_areamapview
+<<place_mapview
     mapname     'small_house'
     background  '<img src="./assets/small_house.png">'
 >>
 <div style='display:grid; grid-template-columns: auto auto; row-gap:1rem;'>
     <div>
         This rose automatically updates.
-        <<place_arearose
+        <<place_rose
             mapname     'small_house'
             background  '<img src="./assets/rose.png">'
             autoupdate  true
@@ -60,18 +60,18 @@ This is a demo of the Areamap library for SugarCube, part of the Sleepy Macros c
     </div>
     <div style='display:flex; flex-direction:column;'>
         <<link 'go upstairs'>>
-            <<areamapmove mapname 'small_house' target_x 14  target_y 5>>
+            <<mapmove mapname 'small_house' target_x 14  target_y 5>>
         <</link>>
         <<link 'go downstairs'>>
-            <<areamapmove mapname 'small_house' target_x 8 target_y 4>>
+            <<mapmove mapname 'small_house' target_x 8 target_y 4>>
         <</link>>
         <<link 'update rose'>>
-            <<update_arearose selector '.macro-areamap-rose'>>
+            <<update_rose selector '.macro-map-rose'>>
         <</link>>
     </div>
     <div>
         This rose doesn't auto-update.
-        <<place_arearose
+        <<place_rose
             mapname     'small_house'
             background  '<img src="./assets/rose.png">'
             autoupdate  false
