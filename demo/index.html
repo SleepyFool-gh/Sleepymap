@@ -387,15 +387,15 @@ const options = {
     },
     // THIS IS REGEX MAGIC. MANIPULTE AT YOUR OWN RISK.
     barriers: {
-        N       : /"/,
-        E       : /(?<=[a-zA-Z0-9][^\s]*)\|/,
-        S       : /_/,
-        W       : /\|(?=[^\s]*[a-zA-Z0-9])/,
-        NE      : /(?<=[a-zA-Z0-9][^\s]*)\\/,
-        NW      : /\/(?=[^\s]*[a-zA-Z0-9])/,
-        SE      : /(?<=[a-zA-Z0-9][^\s]*)\//,
-        SW      : /\\(?=[^\s]*[a-zA-Z0-9])/,
-        replace : /[\/\\|_"]/g,
+        N       : /"/,                                          // match " character somewhere
+        E       : /(?<=[a-zA-Z0-9][^\s]*)\|(?![a-zA-Z0-9])/,    // match | character on right side -->
+        S       : /_/,                                          // match _ character somewhere
+        W       : /(?<![a-zA-Z0-9])\|(?=[^\s]*[a-zA-Z0-9])/,    // match | character on <-- left side
+        NE      : /(?<=[a-zA-Z0-9][^\s]*)\\(?![a-zA-Z0-9])/,    // match \ character on right side -->
+        NW      : /(?<![a-zA-Z0-9])\/(?=[^\s]*[a-zA-Z0-9])/,    // match / character on <-- left side
+        SE      : /(?<=[a-zA-Z0-9][^\s]*)\/(?![a-zA-Z0-9])/,    // match / character on right side -->
+        SW      : /(?<![a-zA-Z0-9])\\(?=[^\s]*[a-zA-Z0-9])/,    // match \ character on <-- left side
+        replace : /[\/\\|_"]/g,                                 // remove " | _ \ / characters to get node id
     }
 }
 setup['@Sleepymap/options'] = options;
@@ -1457,7 +1457,7 @@ function set_scripts(argObj) {
             }
 
             // wrap in array if not "any"
-            script.triggers[arg]   = script.triggers[arg] === 'any'
+            script.triggers[arg] = script.triggers[arg] === 'any'
                                     ? 'any'
                                     : [script.triggers[arg]].flat();
                                     
@@ -1533,7 +1533,7 @@ Macro.add(['mapmove', 'map_move'], {
 // begins map movement procedure
 function begin_mapmove(argObj) {
 
-    const { mapname, target_x, target_y } = argObj;
+    const { mapname } = argObj;
     const force_abort = argObj.force_abort ?? false;    // default value
     const skip_scripts = argObj.skip_scripts ?? false;  // default value
     const name = argObj.name ?? 'Sleepymap.begin_mapmove';
@@ -1551,30 +1551,58 @@ function begin_mapmove(argObj) {
 
     const { grid_movement, columns, maparray, mapvars } = this_map;
 
-    if (grid_movement && (target_x === undefined || target_y === undefined)) {
+    // ERROR: no xy target provided
+    if (grid_movement && (argObj.target_x === undefined || argObj.target_y === undefined)) {
         throw new Error(`${name} — Sleepymap "${mapname}" — this map uses grid movement, please provide "target_x" and "target_y"!`);
     }
+    // ERROR: no mapnode target provided
     else if ((! grid_movement) && (argObj.target_mapnode === undefined)) {
         throw new Error(`${name} — Sleepymap "${mapname}" — this map uses node movement, please provide "target_mapnode"!`);
     }
 
-    // fetch target_mapnode if not defined in grid movement mode
-    const target_mapnode = argObj.target_mapnode ?? maparray[xy2i({ xy: { x: target_x, y: target_y }, columns })];
+    // WARNING: unused target mapnode provided
+    if (grid_movement && argObj.target_mapnode) {
+        console.warn(`${name} — Sleepymap "${mapname}" — this map uses grid movement, "target_mapnode" will be ignored!`);
+    }
+    else if ((! grid_movement) && (argObj.target_x || argObj.target_y)) {
+        console.warn(`${name} — Sleepymap "${mapname}" — this map uses node movement, "target_x" and "target_y" will be ignored!`);
+    }
 
-    const position = State.variables[mapvars.position.slice(1)];
-    const origin_mapnode = position.mapnode;
-    const origin_x = position.x;
-    const origin_y = position.y;
+    function get_xys(mapnode) {
+        const xys = [];
+        for (let i = 0; i < maparray.length; i++) {
+            if (maparray[i] === mapnode) {
+                const xy = i2xy({ i, columns });
+                xys.push(xy);
+            }
+        }
+        return xys;
+    }
+
+    const target_mapnode    = grid_movement 
+                                ? maparray[xy2i({ xy: { x:argObj.target_x, y:argObj.target_y }, columns })] 
+                                : argObj.target_mapnode;
+    const targets = {
+        mapnode : target_mapnode,
+        xys     : grid_movement 
+                    ? [{ x: argObj.target_x, y: argObj.target_y }]
+                    : get_xys(target_mapnode),
+    };
+
+    const position          = State.variables[mapvars.position.slice(1)];
+    const origin_mapnode    = position.mapnode;
+    const origins = {
+        mapnode : origin_mapnode,
+        xys     : grid_movement
+                    ? [{ x: position.x, y: position.y }]
+                    : get_xys(origin_mapnode),
+    };
 
     // fire began event
     $('#passages').trigger('Sleepymap:mapmove_began', { 
         mapname, 
-        origin_mapnode, 
-        origin_x, 
-        origin_y, 
-        target_mapnode, 
-        target_x, 
-        target_y, 
+        origins,
+        targets,
         force_abort,
         skip_scripts,
     });
@@ -1587,12 +1615,16 @@ function begin_mapmove(argObj) {
     for (const script of scripts_attempt) {
         // check if script applies to this location, if yes run
         if (
-            ((script.triggers.from === 'any')   || script.triggers.from.includes(origin_mapnode)) &&
-            ((script.triggers.to === 'any')     || script.triggers.to.includes(target_mapnode))   &&
-            ((script.triggers.from_x === 'any') || script.triggers.from_x.includes(origin_x))        &&
-            ((script.triggers.from_y === 'any') || script.triggers.from_y.includes(origin_y))        &&
-            ((script.triggers.to_x === 'any')   || script.triggers.to_x.includes(target_x))          &&
-            ((script.triggers.to_y === 'any')   || script.triggers.to_y.includes(target_y))
+            (script.triggers.from === 'any' || script.triggers.from.includes(origins.mapnode)) &&
+            (script.triggers.to === 'any'   || script.triggers.to.includes(targets.mapnode)) &&
+            origins.xys.some( xy =>
+                (script.triggers.from_x === 'any' || script.triggers.from_x.includes(xy.x)) &&
+                (script.triggers.from_y === 'any' || script.triggers.from_y.includes(xy.y))
+            ) &&
+            targets.xys.some( xy =>
+                (script.triggers.to_x === 'any' || script.triggers.to_x.includes(xy.x)) &&
+                (script.triggers.to_y === 'any' || script.triggers.to_y.includes(xy.y))
+            )
         ) {
             $.wiki(script.contents);
         }
@@ -1606,15 +1638,19 @@ $(document).on('Sleepymap:mapmove_began', (ev, argObj) => {
 
 // resolves map movement procedure
 function resolve_mapmove(argObj) {
-    const { mapname, target_mapnode, target_x, target_y, origin_mapnode, origin_x, origin_y, force_abort, skip_scripts } = argObj;
+    const { mapname, origins, targets, force_abort, skip_scripts } = argObj;
     const name = argObj.name ?? 'Sleepymap.resolve_mapmove';
     const this_map = maps[mapname];
-    const { grid_movement, columns, maparray, mapvars } = this_map;
+    const { grid_movement, mapnodes, mapvars } = this_map;
     const succeeded = force_abort 
-                        ? false 
-                        : mapvars?.blocked !== undefined
-                            ? ! State.variables[mapvars.blocked.slice(1)][target_mapnode]
-                            : true;
+                        ? false
+                    : mapnodes[targets.mapnode] === undefined
+                        ? false
+                    : mapnodes[targets.mapnode].type === 'wall'
+                        ? false
+                    : mapvars?.blocked !== undefined
+                        ? ! State.variables[mapvars.blocked.slice(1)][targets.mapnode]
+                    : true;
                             
     // mapmove succeeded
     if (succeeded) {
@@ -1624,31 +1660,30 @@ function resolve_mapmove(argObj) {
             for (const script of scripts_start) {
                 // check if script applies to this location, if yes run
                 if (
-                    ((script.triggers.from === 'any')   || script.triggers.from.includes(origin_mapnode)) &&
-                    ((script.triggers.to === 'any')     || script.triggers.to.includes(target_mapnode))   &&
-                    ((script.triggers.from_x === 'any') || script.triggers.from_x.includes(origin_x))        &&
-                    ((script.triggers.from_y === 'any') || script.triggers.from_y.includes(origin_y))        &&
-                    ((script.triggers.to_x === 'any')   || script.triggers.to_x.includes(target_x))          &&
-                    ((script.triggers.to_y === 'any')   || script.triggers.to_y.includes(target_y))
+                    (script.triggers.from === 'any' || script.triggers.from.includes(origins.mapnode)) &&
+                    (script.triggers.to === 'any'   || script.triggers.to.includes(targets.mapnode)) &&
+                    origins.xys.some( xy =>
+                        (script.triggers.from_x === 'any' || script.triggers.from_x.includes(xy.x)) &&
+                        (script.triggers.from_y === 'any' || script.triggers.from_y.includes(xy.y))
+                    ) &&
+                    targets.xys.some( xy =>
+                        (script.triggers.to_x === 'any' || script.triggers.to_x.includes(xy.x)) &&
+                        (script.triggers.to_y === 'any' || script.triggers.to_y.includes(xy.y))
+                    )
                 ) {
                     $.wiki(script.contents);
                 }
             }
         }
 
+        const mapnode = targets.mapnode;
         if (grid_movement) {
-            const xy = { x: target_x, y: target_y };
-            const mapindex = xy2i({ xy, columns });
-            const mapnode_id = maparray[mapindex];
-            
-            // WARNING: resolved mapnode doesn't match input mapnode, ignored
-            if (mapnode_id !== target_mapnode) {
-                console.warn(`${name} — Sleepymap "${mapname}" — resolved mapnode from xy doesn't match input mapnode, input mapnode ignored!`);
-            }
-            State.variables[mapvars.position.slice(1)] = { mapname, x: target_x, y: target_y, mapnode: mapnode_id };
+            const x = targets.xys[0].x;
+            const y = targets.xys[0].y;
+            State.variables[mapvars.position.slice(1)] = { mapname, mapnode, x, y };
         }
         else {
-            State.variables[mapvars.position.slice(1)] = { mapname, mapnode: target_mapnode };
+            State.variables[mapvars.position.slice(1)] = { mapname, mapnode };
         }
 
         if (! skip_scripts) {
@@ -1657,12 +1692,16 @@ function resolve_mapmove(argObj) {
             for (const script of scripts_end) {
                 // check if script applies to this location, if yes run
                 if (
-                    ((script.triggers.from === 'any')   || script.triggers.from.includes(origin_mapnode)) &&
-                    ((script.triggers.to === 'any')     || script.triggers.to.includes(target_mapnode))   &&
-                    ((script.triggers.from_x === 'any') || script.triggers.from_x.includes(origin_x))        &&
-                    ((script.triggers.from_y === 'any') || script.triggers.from_y.includes(origin_y))        &&
-                    ((script.triggers.to_x === 'any')   || script.triggers.to_x.includes(target_x))          &&
-                    ((script.triggers.to_y === 'any')   || script.triggers.to_y.includes(target_y))
+                    (script.triggers.from === 'any' || script.triggers.from.includes(origins.mapnode)) &&
+                    (script.triggers.to === 'any'   || script.triggers.to.includes(targets.mapnode)) &&
+                    origins.xys.some( xy =>
+                        (script.triggers.from_x === 'any' || script.triggers.from_x.includes(xy.x)) &&
+                        (script.triggers.from_y === 'any' || script.triggers.from_y.includes(xy.y))
+                    ) &&
+                    targets.xys.some( xy =>
+                        (script.triggers.to_x === 'any' || script.triggers.to_x.includes(xy.x)) &&
+                        (script.triggers.to_y === 'any' || script.triggers.to_y.includes(xy.y))
+                    )
                 ) {
                     $.wiki(script.contents);
                 }
@@ -1676,12 +1715,16 @@ function resolve_mapmove(argObj) {
         for (const script of scripts_abort) {
             // check if script applies to this location, if yes run
             if (
-                ((script.triggers.from === 'any')   || script.triggers.from.includes(origin_mapnode)) &&
-                ((script.triggers.to === 'any')     || script.triggers.to.includes(target_mapnode))   &&
-                ((script.triggers.from_x === 'any') || script.triggers.from_x.includes(origin_x))        &&
-                ((script.triggers.from_y === 'any') || script.triggers.from_y.includes(origin_y))        &&
-                ((script.triggers.to_x === 'any')   || script.triggers.to_x.includes(target_x))          &&
-                ((script.triggers.to_y === 'any')   || script.triggers.to_y.includes(target_y))
+                (script.triggers.from === 'any' || script.triggers.from.includes(origins.mapnode)) &&
+                (script.triggers.to === 'any'   || script.triggers.to.includes(targets.mapnode)) &&
+                origins.xys.some( xy =>
+                    (script.triggers.from_x === 'any' || script.triggers.from_x.includes(xy.x)) &&
+                    (script.triggers.from_y === 'any' || script.triggers.from_y.includes(xy.y))
+                ) &&
+                targets.xys.some( xy =>
+                    (script.triggers.to_x === 'any' || script.triggers.to_x.includes(xy.x)) &&
+                    (script.triggers.to_y === 'any' || script.triggers.to_y.includes(xy.y))
+                )
             ) {
                 $.wiki(script.contents);
             }
@@ -1691,12 +1734,8 @@ function resolve_mapmove(argObj) {
     // fire resolved event
     $('#passages').trigger('Sleepymap:mapmove_resolved', { 
         mapname, 
-        origin_mapnode, 
-        origin_x, 
-        origin_y,
-        target_mapnode,
-        target_x,
-        target_y,
+        origins, 
+        targets,
         succeeded,
     });
 }
@@ -1929,12 +1968,10 @@ window.Sleepymap = {
     position &#39;$position&#39;
 &gt;&gt;
 &lt;&lt;/new_map&gt;&gt;
-/* &lt;&lt;set_scripts mapname &#39;small_house&#39;&gt;&gt;
+&lt;&lt;set_scripts mapname &#39;small_house&#39;&gt;&gt;
     &lt;&lt;onmapend to_x 8 to_y 4&gt;&gt;
-        &lt;&lt;mapmove mapname &#39;small_house&#39; target_x 14 target_y 5 skip_scripts true&gt;&gt;
-    &lt;&lt;onmapend to_x 14 to_y 5&gt;&gt;
-        &lt;&lt;mapmove mapname &#39;small_house&#39; target_x 8 target_y 4 skip_scripts true&gt;&gt;
-&lt;&lt;/set_scripts&gt;&gt; */</tw-passagedata><tw-passagedata pid="3" name="Start" tags="nobr" position="350,100" size="100,100">&lt;&lt;place_mapview
+        &lt;&lt;run console.log(&quot;!!!&quot;)&gt;&gt;
+&lt;&lt;/set_scripts&gt;&gt;</tw-passagedata><tw-passagedata pid="3" name="Start" tags="nobr" position="350,100" size="100,100">&lt;&lt;place_mapview
     mapname     &#39;small_house&#39;
     background  &#39;&lt;img src=&quot;./assets/small_house.png&quot;&gt;&#39;
 &gt;&gt;

@@ -35,12 +35,10 @@ This is a demo of the Areamap library for SugarCube, part of the Sleepy Macros c
     position '$position'
 >>
 <</new_map>>
-/* <<set_scripts mapname 'small_house'>>
+<<set_scripts mapname 'small_house'>>
     <<onmapend to_x 8 to_y 4>>
-        <<mapmove mapname 'small_house' target_x 14 target_y 5 skip_scripts true>>
-    <<onmapend to_x 14 to_y 5>>
-        <<mapmove mapname 'small_house' target_x 8 target_y 4 skip_scripts true>>
-<</set_scripts>> */
+        <<run console.log("!!!")>>
+<</set_scripts>>
 
 :: Start [nobr]
 <<place_mapview
