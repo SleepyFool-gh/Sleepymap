@@ -697,6 +697,7 @@ function create_rose(argObj) {
             target_mapnode,
             target_x: Number.isFinite(target_x) ? target_x : undefined,
             target_y: Number.isFinite(target_y) ? target_y : undefined,
+            suppress_warnings: true,
         });
     });
 
@@ -908,6 +909,7 @@ function create_mapview(argObj) {
                 target_mapnode,
                 target_x,
                 target_y,
+                suppress_warnings: true,
             });
         });
     }
@@ -1166,8 +1168,9 @@ Macro.add(['mapmove', 'map_move'], {
 function begin_mapmove(argObj) {
 
     const { mapname } = argObj;
-    const force_abort = argObj.force_abort ?? false;    // default value
-    const skip_scripts = argObj.skip_scripts ?? false;  // default value
+    const force_abort = argObj.force_abort ?? false;                // default value
+    const skip_scripts = argObj.skip_scripts ?? false;              // default value
+    const suppress_warnings = argObj.suppress_warnings ?? false;    // default value
     const name = argObj.name ?? 'Sleepymap.begin_mapmove';
 
     const this_map = maps[mapname];
@@ -1180,26 +1183,51 @@ function begin_mapmove(argObj) {
     else if (this_map === undefined) {
         throw new Error(`${name} — Sleepymap "${mapname}" not found!`);
     }
+    // ERROR: not enough target information
+    else if (argObj.target_mapnode === undefined && (argObj.target_x === undefined || argObj.target_y === undefined)) {
+        throw new Error(`${name} — Sleepymap "${mapname}" — missing required args, "target_mapnode" or, "target_x" and "target_y"!`);
+    }
 
     const { grid_movement, columns, maparray, mapvars } = this_map;
 
-    // ERROR: no xy target provided
-    if (grid_movement && (argObj.target_x === undefined || argObj.target_y === undefined)) {
-        throw new Error(`${name} — Sleepymap "${mapname}" — this map uses grid movement, please provide "target_x" and "target_y"!`);
+    // WARNING: assumed arg because no xy
+    if (
+        (! suppress_warnings) && 
+        grid_movement && 
+        (argObj.target_x === undefined || argObj.target_y === undefined) && 
+        (argObj.target_mapnode !== undefined)
+    ) {
+        console.warn(`${name} — Sleepymap "${mapname}" — this map uses grid movement, will use first "target_x" and "target_y" found!`);
     }
-    // ERROR: no mapnode target provided
-    else if ((! grid_movement) && (argObj.target_mapnode === undefined)) {
-        throw new Error(`${name} — Sleepymap "${mapname}" — this map uses node movement, please provide "target_mapnode"!`);
+    // WARNING: assumed arg because no mapnode
+    else if (
+        (! suppress_warnings) && 
+        (! grid_movement) && 
+        (argObj.target_mapnode === undefined) && 
+        (argObj.target_x !== undefined && argObj.target_y !== undefined)
+    ) {
+        console.warn(`${name} — Sleepymap "${mapname}" — this map uses node movement, will use "target_mapnode" at xy coordinate!`);
     }
-
-    // WARNING: unused target mapnode provided
-    if (grid_movement && argObj.target_mapnode) {
+    // WARNING: extra mapnode args
+    else if (
+        (! suppress_warnings) &&
+        grid_movement && 
+        (argObj.target_x !== undefined && argObj.target_y !== undefined) && 
+        (argObj.target_mapnode !== undefined)
+    ) {
         console.warn(`${name} — Sleepymap "${mapname}" — this map uses grid movement, "target_mapnode" will be ignored!`);
     }
-    else if ((! grid_movement) && (argObj.target_x || argObj.target_y)) {
+    // WARNING: extra xy args
+    else if (
+        (! suppress_warnings) &&
+        (! grid_movement) && 
+        (argObj.target_mapnode !== undefined) &&
+        (argObj.target_x !== undefined && argObj.target_y !== undefined)
+    ) {
         console.warn(`${name} — Sleepymap "${mapname}" — this map uses node movement, "target_x" and "target_y" will be ignored!`);
     }
 
+    // aux function to fetch all valid xys
     function get_xys(mapnode) {
         const xys = [];
         for (let i = 0; i < maparray.length; i++) {
@@ -1211,14 +1239,39 @@ function begin_mapmove(argObj) {
         return xys;
     }
 
-    const target_mapnode    = grid_movement 
+    // if grid movement && xy defined, use that to calculate mapnode — else use argObj mapnode
+    // reverse for node movement
+    const target_mapnode  = (
+                                grid_movement && 
+                                (argObj.target_x !== undefined) && (argObj.target_y !== undefined)
+                            ) ||
+                            (
+                                (! grid_movement) &&
+                                (argObj.target_mapnode === undefined)
+                            )
                                 ? maparray[xy2i({ xy: { x:argObj.target_x, y:argObj.target_y }, columns })] 
                                 : argObj.target_mapnode;
+
+    // 
+    const target_xys = get_xys(target_mapnode);
+
+    // if node movement or, grid movement && x undefined, fetch first — else use argObj x
+    const target_x        = (! grid_movement) ||
+                            (grid_movement && (argObj.target_x === undefined))
+                                ? target_xys[0].x
+                                : argObj.target_x;
+    // if node movement or, grid movement && y undefined, fetch first — else use argObj y
+    const target_y        = (! grid_movement) ||
+                            (grid_movement && (argObj.target_y === undefined))
+                                ? target_xys[0].y
+                                : argObj.target_y;
+
+    // if node movement, use all possible xys
     const targets = {
         mapnode : target_mapnode,
         xys     : grid_movement 
-                    ? [{ x: argObj.target_x, y: argObj.target_y }]
-                    : get_xys(target_mapnode),
+                    ? [{ x: target_x, y: target_y }]
+                    : target_xys,
     };
 
     const position          = State.variables[mapvars.position.slice(1)];
@@ -1271,6 +1324,7 @@ $(document).on('Sleepymap:mapmove_began', (ev, argObj) => {
 // resolves map movement procedure
 function resolve_mapmove(argObj) {
     const { mapname, origins, targets, force_abort, skip_scripts } = argObj;
+    console.log(argObj);
     const name = argObj.name ?? 'Sleepymap.resolve_mapmove';
     const this_map = maps[mapname];
     const { grid_movement, mapnodes, mapvars } = this_map;
