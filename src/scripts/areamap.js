@@ -15,7 +15,17 @@ const options = {
         autoupdate_rose         : true,
         autoupdate_mapview      : true,
         clickable_mapview       : true,
-        show_names_on_mapview   : false,
+        show_labels_on_mapview  : true,
+    },
+    labels: {
+        N   : "🡱",
+        E   : "🡲",
+        S   : "🡳",
+        W   : "🡰",
+        NE  : "🡵",
+        SE  : "🡶",
+        SW  : "🡷",
+        NW  : "🡴",
     },
     // THIS IS REGEX MAGIC. MANIPULTE AT YOUR OWN RISK.
     barriers: {
@@ -24,9 +34,9 @@ const options = {
         S       : /_/,                                          // match _ character somewhere
         W       : /(?<![a-zA-Z0-9])\|(?=[^\s]*[a-zA-Z0-9])/,    // match | character on <-- left side
         NE      : /(?<=[a-zA-Z0-9][^\s]*)\\(?![a-zA-Z0-9])/,    // match \ character on right side -->
-        NW      : /(?<![a-zA-Z0-9])\/(?=[^\s]*[a-zA-Z0-9])/,    // match / character on <-- left side
         SE      : /(?<=[a-zA-Z0-9][^\s]*)\/(?![a-zA-Z0-9])/,    // match / character on right side -->
         SW      : /(?<![a-zA-Z0-9])\\(?=[^\s]*[a-zA-Z0-9])/,    // match \ character on <-- left side
+        NW      : /(?<![a-zA-Z0-9])\/(?=[^\s]*[a-zA-Z0-9])/,    // match / character on <-- left side
         replace : /[\/\\|_"]/g,                                 // remove " | _ \ / characters to get node id
     }
 }
@@ -41,9 +51,9 @@ const RECIPROCALS = {
     E: 'W',
     W: 'E',
     NE: 'SW',
-    NW: 'SE',
     SE: 'NW',
     SW: 'NE',
+    NW: 'SE',
 };
 // used in update_exits
 const is_diagonal = {
@@ -52,9 +62,9 @@ const is_diagonal = {
     S   : false,
     W   : false,
     NE  : true,
-    NW  : true,
     SE  : true,
     SW  : true,
+    NW  : true,
 };
 
 
@@ -279,9 +289,9 @@ function new_map(argObj) {
             S   : options.barriers.S.test(cell),
             W   : options.barriers.W.test(cell),
             NE  : options.barriers.NE.test(cell),
-            NW  : options.barriers.NW.test(cell),
             SE  : options.barriers.SE.test(cell),
             SW  : options.barriers.SW.test(cell),
+            NW  : options.barriers.NW.test(cell),
         }
         barriers.push(barrier);
         maparray.push(cell.replace(options.barriers.replace, ''));
@@ -481,9 +491,9 @@ function update_exits(argObj) {
             S   : i < (maparray.length - columns),
             W   : i % columns !== 0,
             NE  : (i >= columns) && ((i+1) % columns !== 0),
-            NW  : (i >= columns) && (i % columns !== 0),
             SE  : (i < (maparray.length - columns)) && ((i+1) % columns !== 0),
             SW  : (i < (maparray.length - columns)) && (i % columns !== 0),
+            NW  : (i >= columns) && (i % columns !== 0),
         };
 
         const mapnode = mapnodes[maparray[i]];
@@ -540,7 +550,6 @@ function update_exits(argObj) {
             }
         }
         else {
-            console.log("!!!");
             const { from, to, dir } = exit;
             if (exit.removing) {
                 exits.node[from][dir]?.delete(to);
@@ -630,6 +639,10 @@ function edit_exits(argObj) {
     ) {
         throw new Error(`${name} — Sleepymap "${mapname}" — incomplete data, must specify both from/to or, all of from_x/from_y/to_x/to_y!`);
     }
+    // ERROR: invalid dir
+    else if (! Object.keys(is_diagonal).includes(dir)) {
+        throw new Error(`${name} — Sleepymap "${mapname}" — invalid dir "${dir}", must be one of "N", "E", "S", "W", "NE", "SE", "SW", "NW"!`);
+    }
 
     const exits = this_map.exits;
     // define manual exit
@@ -666,7 +679,7 @@ Macro.add(['place_rose', 'placerose'], {
             background: {
                 type: 'string',
                 aliases: 'bg',
-            }
+            },
         };
         const argObj = new ArgObj(name, template, this.args);
         create_rose({
@@ -740,8 +753,6 @@ function create_rose(argObj) {
         .attr('data-y', position.y)
         .html(mapnode.name)
         .appendTo($rose);
-
-    const offsets = get_offsets({ columns });
     
     // create each dir
     // ordered this way so that grid auto-fills in the correct sequence
@@ -765,6 +776,9 @@ function create_rose(argObj) {
             for (const i of exits.grid[mapindex][dir]) {
                 const mapnode = mapnodes[maparray[i]];
                 const xy = i2xy({ i, columns });
+                const label = position.mapnode === mapnode.id 
+                                ? `<span class='macro-Sleepymap-label'>${options.labels[dir]}</span>`
+                                : `<span class='macro-Sleepymap-label'>${mapnode.name}</span>`;
                 $(document.createElement('a'))
                     .addClass('macro-Sleepymap-link')
                     .attr('data-dir', dir)
@@ -776,7 +790,7 @@ function create_rose(argObj) {
                     .css({
                         visibility: hidden?.[mapnode.id] ? 'hidden' : '',
                     })
-                    .html(mapnode.name)
+                    .html(label)
                     .appendTo($dir);
             }
         }
@@ -897,7 +911,7 @@ Macro.add(['place_mapview', 'placemapview'], {
                 type: 'string',
                 aliases: 'bg',
             },
-            show_names: {
+            show_labels: {
                 type: 'boolean',
             },
         };
@@ -913,7 +927,7 @@ Macro.add(['place_mapview', 'placemapview'], {
 function create_mapview(argObj) {
     const { mapname, background } = argObj;
     const name = argObj.name ?? 'Sleepymap.create_mapview';
-    const show_names    = argObj.show_names ?? options.default.show_names_on_mapview;   // default value
+    const show_labels   = argObj.show_labels ?? options.default.show_labels_on_mapview; // default value
     const autoupdate    = argObj.autoupdate ?? options.default.autoupdate_mapview;      // default value
     const clickable     = argObj.clickable  ?? options.default.clickable_mapview;       // default value
 
@@ -959,13 +973,19 @@ function create_mapview(argObj) {
             '--columns': mapview.columns,
         });
     
-
     // append bg
     if (background) {
         $(document.createElement('div'))
             .addClass('macro-Sleepymap-mapviewbg')
             .wiki(background)
             .appendTo($mapview);
+    }
+
+    const mapindex = xy2i({ xy: position, columns });
+    const offsets = get_offsets({ columns });
+    const i_map = {};
+    for (const dir in offsets) {
+        i_map[mapindex + offsets[dir]] = dir;
     }
 
     // create & append tiles
@@ -977,7 +997,6 @@ function create_mapview(argObj) {
         function is_traversable() {
             if (mapnode.type === 'wall') return false;
             if (grid_movement) {
-                const mapindex = xy2i({ xy: position, columns });
                 if (mapindex === i) return null;
                 return Object.keys(exits.grid[mapindex]).some( dir => exits.grid[mapindex][dir].has(i) );
             }
@@ -992,7 +1011,13 @@ function create_mapview(argObj) {
                         : !! is_traversable();
 
         const xy = i2xy({ i, columns: mapview.columns });
-        
+        const dir = i_map[i];
+        const label = ! (show_labels && grid_movement && is_traversable())
+                        ? ''
+                    : (dir !== undefined) && (position.mapnode === mapnode.id)
+                        ? `<span class='macro-Sleepymap-label'>${options.labels[dir]}</span>`
+                    : `<span class='macro-Sleepymap-label'>${mapnode.name}</span>`;
+        if (dir) console.log(grid_movement, is_traversable(), show_labels, dir);
         const $tile = $(document.createElement(link ? 'a' : 'div'));
         $tile
             .addClass('macro-Sleepymap-tile')
@@ -1009,10 +1034,8 @@ function create_mapview(argObj) {
                 visibility: hidden?.[id] ? 'hidden' : '',
             })
             // defined tile content +? mapnode name wrapped in a span
-            .wiki(
-                ((mapnode.tile !== undefined) ? mapnode.tile : '') +
-                (show_names ? `<span>${mapnode.name}</span>` : '')
-            );
+            .wiki(mapnode.tile ?? '')
+            .wiki(label);
         $mapview.append($tile);
     }
 
@@ -1449,7 +1472,6 @@ $(document).on('Sleepymap:mapmove_began', (ev, argObj) => {
 // resolves map movement procedure
 function resolve_mapmove(argObj) {
     const { mapname, origins, targets, force_abort, skip_scripts } = argObj;
-    console.log(argObj);
     const name = argObj.name ?? 'Sleepymap.resolve_mapmove';
     const this_map = maps[mapname];
     const { grid_movement, mapnodes, mapvars } = this_map;
@@ -1577,9 +1599,9 @@ function get_offsets(argObj) {
         S   : columns,
         W   : -1,
         NE  : -columns + 1,
-        NW  : -columns - 1,
         SE  : columns + 1,
         SW  : columns - 1,
+        NW  : -columns - 1,
     };
 }
 

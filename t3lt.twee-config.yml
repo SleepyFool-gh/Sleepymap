@@ -1,20 +1,38 @@
 sugarcube-2:
   macros:
-    new_areamap:
-      name: new_areamap
+    new_map:
+      name: new_map
       container: true
-      children: ['mapview', 'mapareas', 'mapvars']
-    place_arearose:
-      name: place_arearose
-    update_arearose:
-      name: update_arearose
-    place_areamapview:
-      name: place_areamapview
-    update_areamapview:
-      name: update_areamapview
-    set_areascripts:
-      name: set_areascripts
+      children: ['mapview', 'mapnodes', 'mapvars']
+    mapview:
+      name: mapview
+    mapnodes:
+      name: mapnodes
+    mapvars:
+      name: mapvars
+    place_rose:
+      name: place_rose
+    update_rose:
+      name: update_rose
+    place_mapview:
+      name: place_mapview
+    update_mapview:
+      name: update_mapview
+    set_scripts:
+      name: set_scripts
       container: true
       children: ['onmapattempt', 'onmapstart', 'onmapend', 'onmapabort']
-    areamapmove:
+    onmapattempt:
+      name: onmapattempt
+    onmapstart:
+      name: onmapstart
+    onmapend:
+      name: onmapend
+    onmapabort:
+      name: onmapabort
+    mapmove:
       name: areamapmove
+    connect_map:
+      name: connect_map
+    disconnect_map:
+      name: disconnect_map

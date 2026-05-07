@@ -42,7 +42,13 @@
         width: 100%;
         display: grid;
         place-content: center;
+        place-items: center;
+        position: relative;
+        text-align: center;
     }
+        .macro-Sleepymap-tile .macro-Sleepymap-label {
+            position: absolute;
+        }
     .macro-Sleepymap-tile[data-traversable='current'] {
         font-weight: bold;
         backdrop-filter: contrast(1.4) brightness(1.4);
