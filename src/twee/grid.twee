@@ -41,6 +41,21 @@ This is a demo of the Areamap library for SugarCube, part of the Sleepy Macros c
         <<run console.log("!!!")>>
 <</set_scripts>>
 
+<<set_entity
+    mapname "small_house"
+    entityname "test"
+    x 7
+    y 7
+    tile 'A'
+>>
+<<set_entity
+    mapname "small_house"
+    entityname "test2"
+    x 7
+    y 7
+    tile 'B'
+>>
+
 :: Start [nobr]
 <<place_mapview
     mapname     'small_house'

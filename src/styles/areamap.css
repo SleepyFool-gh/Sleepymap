@@ -46,7 +46,8 @@
         position: relative;
         text-align: center;
     }
-        .macro-Sleepymap-tile .macro-Sleepymap-label {
+        .macro-Sleepymap-tile .macro-Sleepymap-label,
+        .macro-Sleepymap-entity {
             position: absolute;
         }
     .macro-Sleepymap-tile[data-traversable='current'] {
@@ -58,7 +59,4 @@
     }
     .macro-Sleepymap-tile[data-traversable='true'] {
         backdrop-filter: brightness(1.3);
-    }
-    .macro-Sleepymap-tile:not(.macro-Sleepymap-position):not(.macro-Sleepymap-link) {
-        color: rgba(177, 177, 177, .6);
     }
