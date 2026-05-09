@@ -103,6 +103,19 @@ const NEW_MAP_TEMPLATE = {
     diagonals: {
         type: 'boolean',
     },
+    // JS properties
+    maparray: {
+        type: 'object',
+    },
+    mapview: {
+        type: 'object',
+    },
+    mapvars: {
+        type: 'object',
+    },
+    mapnodes: {
+        type: 'object',
+    },
 };
 const MAPVIEW_TEMPLATE = {
     columns: {
@@ -132,8 +145,7 @@ const MAPVARS_TEMPLATE = {
 // macro wrapper for new_map
 Macro.add(['newmap', 'new_map'], {
 
-    // child tags
-    tags    :    ['mapview', 'mapvars', 'mapnodes'],
+    tags: ['mapview', 'mapvars', 'mapnodes'],
 
     handler() {
 
@@ -176,12 +188,8 @@ Macro.add(['newmap', 'new_map'], {
             argObj.mapvars = mapvars_argObj;
         }
 
-        // call function
-        new_map({
-            ...argObj,
-            name,
-        });
-
+        argObj.add_metadata('name', name);
+        new_map(argObj);
     },
 });
 
@@ -607,6 +615,7 @@ Macro.add(['connect_map', 'connectmap', 'disconnect_map', 'disconnectmap'], {
         const name = this.name;
         const argObj = new ArgObj(name, EDIT_EXITS_TEMPLATE, this.args);
         argObj.removing = name.includes('disconnect');
+        argObj.add_metadata('name', name);
         edit_exits(argObj);
     },
 });
@@ -733,10 +742,8 @@ Macro.add(['place_rose', 'placerose'], {
     handler() {
         const name = this.name;
         const argObj = new ArgObj(name, CREATE_ROSE_TEMPLATE, this.args);
-        create_rose({
-            ...argObj,
-            name,
-        }).appendTo(this.output);
+        argObj.add_metadata('name', name);
+        create_rose(argObj).appendTo(this.output);
     }
 });
 
@@ -913,8 +920,10 @@ function create_rose(argObj) {
 // manual update $rose function
 const UPDATE_ROSE_TEMPLATE = {
     selector: {
-        required: true,
         type: 'string',
+    },
+    $rose: {
+        type: 'object',
     },
 }
 // macro wrapper
@@ -922,7 +931,9 @@ Macro.add(['update_rose', 'updaterose'], {
     handler: function() {
         const name = this.name;
         const argObj = new ArgObj(name, UPDATE_ROSE_TEMPLATE, this.args);
-        update_rose({$rose: $(argObj.selector)});
+        argObj.$rose = $(argObj.selector);
+        argObj.add_metadata('name', name);
+        update_rose(argObj);
     }
 });
 function update_rose(argObj) {
@@ -930,11 +941,15 @@ function update_rose(argObj) {
 
     // VALIDATE: required args & type
     ArgObj.validate(name, UPDATE_ROSE_TEMPLATE, argObj);
-    
-    const { $rose } = argObj;
+    // if $rose undefined, check for selector
+    const $rose = argObj.$rose ?? (argObj.selector ? $(argObj.selector) : undefined);
 
+    // ERROR: no input
+    if ($rose === undefined) {
+        throw new Error(`${name} — Sleepymap — no input provided!`);
+    }
     // ERROR: $rose isn't a jQuery obj
-    if (! ($rose instanceof jQuery)) {
+    else if (! ($rose instanceof jQuery)) {
         throw new Error(`${name} — Sleepymap — $rose must be a jQuery instance!`);
     }
     // WARNING: empty jQuery instance
@@ -988,10 +1003,8 @@ Macro.add(['place_mapview', 'placemapview'], {
     handler: function() {
         const name = this.name;
         const argObj = new ArgObj(name, CREATE_MAPVIEW_TEMPLATE, this.args);
-        create_mapview({
-            ...argObj,
-            name,
-        }).appendTo(this.output);
+        argObj.add_metadata('name', name);
+        create_mapview(argObj).appendTo(this.output);
     }
 });
 // returns map object
@@ -1161,8 +1174,10 @@ function create_mapview(argObj) {
 // manual update mapview function
 const UPDATE_MAPVIEW_TEMPLATE = {
     selector: {
-        required: true,
         type: 'string',
+    },
+    $mapview: {
+        type: 'object',
     },
 }
 // macro wrapper
@@ -1170,7 +1185,9 @@ Macro.add(['update_mapview', 'updatemapview'], {
     handler: function() {
         const name = this.name;
         const argObj = new ArgObj(name, UPDATE_MAPVIEW_TEMPLATE, this.args);
-        update_mapview({$mapview: $(argObj.selector)});
+        argObj.$mapview = $(argObj.selector);
+        argObj.add_metadata('name', name);
+        update_mapview(argObj);
     }
 });
 function update_mapview(argObj) {
@@ -1178,11 +1195,14 @@ function update_mapview(argObj) {
 
     // VALIDATE: required args & type
     ArgObj.validate(name, UPDATE_MAPVIEW_TEMPLATE, argObj);
+    const $mapview = argObj.$mapview ?? (argObj.selector ? $(argObj.selector) : undefined);
 
-    const { $mapview } = argObj;
-
+    // ERROR: no mapview provided
+    if ($mapview === undefined) {
+        throw new Error(`${name} — Sleepymap — no mapview provided!`);
+    }
     // ERROR: $mapview isn't a jQuery obj
-    if (! ($mapview instanceof jQuery)) {
+    else if (! ($mapview instanceof jQuery)) {
         throw new Error(`${name} — Sleepymap — $mapview must be a jQuery instance!`);
     }
     // WARNING: empty jQuery instance
@@ -1270,6 +1290,10 @@ const DELETE_ENTITY_TEMPLATE = {
         type: 'string',
         required: true,
     },
+    // JS properties
+    removing: {
+        type: 'boolean',
+    },
 };
 Macro.add(['new_entity', 'newentity', 'set_entity', 'setentity', 'delete_entity', 'deleteentity'], {
     handler() {
@@ -1277,6 +1301,7 @@ Macro.add(['new_entity', 'newentity', 'set_entity', 'setentity', 'delete_entity'
         const template = this.name.includes('delete') ? DELETE_ENTITY_TEMPLATE : SET_ENTITY_TEMPLATE;
         const argObj = new ArgObj(name, template, this.args);
         argObj.removing = this.name.includes('delete');
+        argObj.add_metadata('name', name);
         set_entity(argObj);
     }
 });
@@ -1334,9 +1359,13 @@ const SET_SCRIPTS_TEMPLATE = {
         required: true,
         type: 'string',
     },
+    // JS property
+    scripts: {
+        type: 'object',
+    },
 };
 // SYNC REMINDER: changing here requires also changing the for loop in set_scripts
-const ONMAP_TEMPLATE = {
+const ONMAP_TRIGGERS_TEMPLATE = {
     to: {
         type: ['string', 'object'],
     },
@@ -1371,25 +1400,21 @@ Macro.add(['set_scripts','setscripts'], {
         }
 
         const argObj = new ArgObj(name, SET_SCRIPTS_TEMPLATE, this.args);
-        const mapname = argObj.mapname;
 
         // parse each payload, push to array, attach to argObj
-        const scripts = [];
+        argObj.scripts = [];
         for(let i = 1; i < this.payload.length; i++) {
             const p = this.payload[i];
-            const child_argObj = new ArgObj(p.name, ONMAP_TEMPLATE, p.args);
-            scripts.push({
+            const child_argObj = new ArgObj(p.name, ONMAP_TRIGGERS_TEMPLATE, p.args);
+            argObj.scripts.push({
                 type: p.name,
                 triggers: child_argObj,
                 contents: p.contents,
             });
         }
 
-        set_scripts({
-            name,
-            mapname,
-            scripts,
-        });
+        argObj.add_metadata('name', name);
+        set_scripts(argObj);
     }
 });
 
@@ -1415,10 +1440,10 @@ function set_scripts(argObj) {
     // error checking & object shaping
     for (const script of scripts) {
         // VALIDATE: types
-        ArgObj.validate(name, ONMAP_TEMPLATE, script.triggers);
+        ArgObj.validate(name, ONMAP_TRIGGERS_TEMPLATE, script.triggers);
         
         // SYNC REMINDER: changing here also requires changing <<set_scripts>> args
-        for (const arg of Object.keys(ONMAP_TEMPLATE)) {
+        for (const arg of Object.keys(ONMAP_TRIGGERS_TEMPLATE)) {
             // arg not defined, continue
             if (! Object.hasOwn(script.triggers, arg)) {
                 continue;
@@ -1497,10 +1522,8 @@ Macro.add(['mapmove', 'map_move'], {
     handler() {
         const name = this.name;
         const argObj = new ArgObj(name, BEGIN_MAPMOVE_TEMPLATE, this.args);
-        begin_mapmove({
-            ...argObj,
-            name,
-        });      
+        argObj.add_metadata('name', name);
+        begin_mapmove(argObj);      
     }
 });
 
@@ -1666,7 +1689,7 @@ function begin_mapmove(argObj) {
         // check if script applies to this location, if yes run
         if (
             (script.triggers.from === undefined || script.triggers.from.includes(origins.mapnode)) &&
-            (script.triggers.to === undefined   || script.triggers.to.includes(targets.mapnode)) &&
+            (script.triggers.to === undefined || script.triggers.to.includes(targets.mapnode)) &&
             origins.xys.some( xy =>
                 (script.triggers.from_x === undefined || script.triggers.from_x.includes(xy.x)) &&
                 (script.triggers.from_y === undefined || script.triggers.from_y.includes(xy.y))

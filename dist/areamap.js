@@ -103,6 +103,19 @@ const NEW_MAP_TEMPLATE = {
     diagonals: {
         type: 'boolean',
     },
+    // JS properties
+    maparray: {
+        type: 'object',
+    },
+    mapview: {
+        type: 'object',
+    },
+    mapvars: {
+        type: 'object',
+    },
+    mapnodes: {
+        type: 'object',
+    },
 };
 const MAPVIEW_TEMPLATE = {
     columns: {
@@ -176,12 +189,9 @@ Macro.add(['newmap', 'new_map'], {
             argObj.mapvars = mapvars_argObj;
         }
 
-        // call function
-        new_map({
-            ...argObj,
-            name,
-        });
-
+        argObj.add_meta('name', name);
+        new_map(argObj);
+        window.a = argObj;
     },
 });
 
@@ -1488,6 +1498,9 @@ const BEGIN_MAPMOVE_TEMPLATE = {
     skip_scripts: {
         type: 'boolean',
     },
+    suppress_warnings: {
+        type: 'boolean',
+    },
 };
 // macro wrapper for begin_mapmove
 Macro.add(['mapmove', 'map_move'], {
@@ -1663,7 +1676,7 @@ function begin_mapmove(argObj) {
         // check if script applies to this location, if yes run
         if (
             (script.triggers.from === undefined || script.triggers.from.includes(origins.mapnode)) &&
-            (script.triggers.to === undefined   || script.triggers.to.includes(targets.mapnode)) &&
+            (script.triggers.to === undefined || script.triggers.to.includes(targets.mapnode)) &&
             origins.xys.some( xy =>
                 (script.triggers.from_x === undefined || script.triggers.from_x.includes(xy.x)) &&
                 (script.triggers.from_y === undefined || script.triggers.from_y.includes(xy.y))

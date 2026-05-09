@@ -215,4 +215,12 @@ class ArgObj {
             }
         }
     }
+    add_metadata(key, val) {
+        Object.defineProperty(this, key, {
+            value: val,
+            configurable: true,
+            enumerable: false,
+            writable: true,
+        });
+    }
 }
