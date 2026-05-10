@@ -215,7 +215,7 @@ class ArgObj {
             }
         }
     }
-    add_meta(key, val) {
+    add_metadata(key, val) {
         Object.defineProperty(this, key, {
             value: val,
             configurable: true,

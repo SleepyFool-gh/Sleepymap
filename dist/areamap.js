@@ -17,6 +17,7 @@ const options = {
         clickable_mapview       : true,
         show_labels_on_mapview  : true,
     },
+    map_storage_story_variable  : '$@Sleepymap/maps',
     labels: {
         N   : "🡱",
         E   : "🡲",
@@ -67,6 +68,89 @@ const is_diagonal = {
     SW  : true,
     NW  : true,
 };
+
+
+
+
+//  ████ █     █████ █████ ████  █   █ █    █  ███  ████
+// █     █     █     █     █   █  █ █  ██  ██ █   █ █   █
+//  ███  █     ███   ███   ████    █   █ ██ █ █████ ████
+//     █ █     █     █     █       █   █    █ █   █ █
+// ████  █████ █████ █████ █       █   █    █ █   █ █
+// SECTION: Sleepymap
+// class object to save things to State & to access various exposed functions
+class Sleepymap {
+    constructor(argObj) {
+        const State_key = options.map_storage_story_variable.slice(1);
+        State.variables[State_key] ??= {};
+        State.variables[State_key][argObj.mapname] ??= {};
+
+        this.mapname        = argObj.mapname;
+        this.columns        = argObj.columns;       // State
+        this.diagonals      = argObj.diagonals;     // State
+        this.grid_movement  = argObj.grid_movement;
+        this.mapview        = argObj.mapview;       // State
+        this.maparray       = [];                   // State
+        this.barriers       = [];                   // State
+        this.mapnodes       = {};                   // State
+        this.mapvars        = {};                   // State
+        this.exits          = {
+                                node    : {},
+                                grid    : [],
+                            };                      // State
+        this.scripts        = [];                   // State
+        this.entities       = {};                   // State
+    }
+
+    get storage() {
+        const State_key = options.map_storage_story_variable.slice(1);
+        return State.variables[State_key][this.mapname]
+    }
+    
+    get columns() { return this.storage.columns; }
+    set columns(val) { this.storage.columns = val; }
+
+    get diagonals() { return this.storage.diagonals; }
+    set diagonals(val) { this.storage.diagonals = val; }
+
+    get mapview() { return this.storage.mapview; }
+    set mapview(val) { this.storage.mapview = val; }
+
+    get maparray() { return this.storage.maparray; }
+    set maparray(val) { this.storage.maparray = val; }
+
+    get barriers() { return this.storage.barriers; }
+    set barriers(val) { this.storage.barriers = val; }
+
+    get mapnodes() { return this.storage.mapnodes; }
+    set mapnodes(val) { this.storage.mapnodes = val; }
+
+    get mapvars() { return this.storage.mapvars; }
+    set mapvars(val) { this.storage.mapvars = val; }
+
+    get exits() { return this.storage.exits; }
+    set exits(val) { this.storage.exits = val; }
+
+    get scripts() { return this.storage.scripts; }
+    set scripts(val) { this.storage.scripts = val; }
+
+    get entities() { return this.storage.entities; }
+    set entities(val) { this.storage.entities = val; }
+
+    static new_map(argObj) { new_map(argObj); }
+    static create_rose(argObj) { create_rose(argObj); }
+    static update_rose(argObj) { update_rose(argObj); }
+    static create_mapview(argObj) { create_mapview(argObj); }
+    static update_mapview(argObj) { update_mapview(argObj); }
+    static set_entity(argObj) { set_entity(argObj); }
+    static set_scripts(argObj) { set_scripts(argObj); }
+    static begin_mapmove(argObj) { begin_mapmove(argObj); }
+    static get_map(argObj) { get_map(argObj); }
+    static edit_map(argObj) { edit_map(argObj); }
+    static edit_exits(argObj) { edit_exits(argObj); }
+}
+window.Sleepymap = Sleepymap;
+
 
 
 // █    █ █████ █     █     █    █  ███  ████
@@ -145,8 +229,7 @@ const MAPVARS_TEMPLATE = {
 // macro wrapper for new_map
 Macro.add(['newmap', 'new_map'], {
 
-    // child tags
-    tags    :    ['mapview', 'mapvars', 'mapnodes'],
+    tags: ['mapview', 'mapvars', 'mapnodes'],
 
     handler() {
 
@@ -189,9 +272,8 @@ Macro.add(['newmap', 'new_map'], {
             argObj.mapvars = mapvars_argObj;
         }
 
-        argObj.add_meta('name', name);
+        argObj.add_metadata('name', name);
         new_map(argObj);
-        window.a = argObj;
     },
 });
 
@@ -303,23 +385,30 @@ function new_map(argObj) {
     }
 
     // create map object
-    const this_map = {
+    const this_map = new Sleepymap({
         mapname,
         columns,
         diagonals,
         grid_movement,
         mapview,
-        maparray    : [],           // populated here, later
-        barriers    : [],           // populated here, later
-        mapnodes    : {},           // populated here, later
-        mapvars     : {},           // populated here, later
-        exits       : {             // populated here, later
-            node    : {},
-            grid    : [],
-        },
-        scripts     : [],           // populated in set_scripts, if called
-        entities    : {},           // populated in set_entity, if called
-    };
+    });
+    // const this_map = {
+    //     mapname,
+    //     columns,
+    //     diagonals,
+    //     grid_movement,
+    //     mapview,
+    //     maparray    : [],           // populated here, later
+    //     barriers    : [],           // populated here, later
+    //     mapnodes    : {},           // populated here, later
+    //     mapvars     : {},           // populated here, later
+    //     exits       : {             // populated here, later
+    //         node    : {},
+    //         grid    : [],
+    //     },
+    //     scripts     : [],           // populated in set_scripts, if called
+    //     entities    : {},           // populated in set_entity, if called
+    // };
     maps[mapname] = this_map;
 
 
@@ -610,6 +699,10 @@ const EDIT_EXITS_TEMPLATE = {
         type: 'string',
         aliases: 'direction',
     },
+    // JS property
+    removing: {
+        type: 'boolean',
+    },
 }
 // wrapper for edit_exits
 Macro.add(['connect_map', 'connectmap', 'disconnect_map', 'disconnectmap'], {
@@ -617,6 +710,7 @@ Macro.add(['connect_map', 'connectmap', 'disconnect_map', 'disconnectmap'], {
         const name = this.name;
         const argObj = new ArgObj(name, EDIT_EXITS_TEMPLATE, this.args);
         argObj.removing = name.includes('disconnect');
+        argObj.add_metadata('name', name);
         edit_exits(argObj);
     },
 });
@@ -743,10 +837,8 @@ Macro.add(['place_rose', 'placerose'], {
     handler() {
         const name = this.name;
         const argObj = new ArgObj(name, CREATE_ROSE_TEMPLATE, this.args);
-        create_rose({
-            ...argObj,
-            name,
-        }).appendTo(this.output);
+        argObj.add_metadata('name', name);
+        create_rose(argObj).appendTo(this.output);
     }
 });
 
@@ -923,8 +1015,10 @@ function create_rose(argObj) {
 // manual update $rose function
 const UPDATE_ROSE_TEMPLATE = {
     selector: {
-        required: true,
         type: 'string',
+    },
+    $rose: {
+        type: 'object',
     },
 }
 // macro wrapper
@@ -932,7 +1026,9 @@ Macro.add(['update_rose', 'updaterose'], {
     handler: function() {
         const name = this.name;
         const argObj = new ArgObj(name, UPDATE_ROSE_TEMPLATE, this.args);
-        update_rose({$rose: $(argObj.selector)});
+        argObj.$rose = $(argObj.selector);
+        argObj.add_metadata('name', name);
+        update_rose(argObj);
     }
 });
 function update_rose(argObj) {
@@ -940,11 +1036,15 @@ function update_rose(argObj) {
 
     // VALIDATE: required args & type
     ArgObj.validate(name, UPDATE_ROSE_TEMPLATE, argObj);
-    
-    const { $rose } = argObj;
+    // if $rose undefined, check for selector
+    const $rose = argObj.$rose ?? (argObj.selector ? $(argObj.selector) : undefined);
 
+    // ERROR: no input
+    if ($rose === undefined) {
+        throw new Error(`${name} — Sleepymap — no input provided!`);
+    }
     // ERROR: $rose isn't a jQuery obj
-    if (! ($rose instanceof jQuery)) {
+    else if (! ($rose instanceof jQuery)) {
         throw new Error(`${name} — Sleepymap — $rose must be a jQuery instance!`);
     }
     // WARNING: empty jQuery instance
@@ -998,10 +1098,8 @@ Macro.add(['place_mapview', 'placemapview'], {
     handler: function() {
         const name = this.name;
         const argObj = new ArgObj(name, CREATE_MAPVIEW_TEMPLATE, this.args);
-        create_mapview({
-            ...argObj,
-            name,
-        }).appendTo(this.output);
+        argObj.add_metadata('name', name);
+        create_mapview(argObj).appendTo(this.output);
     }
 });
 // returns map object
@@ -1171,8 +1269,10 @@ function create_mapview(argObj) {
 // manual update mapview function
 const UPDATE_MAPVIEW_TEMPLATE = {
     selector: {
-        required: true,
         type: 'string',
+    },
+    $mapview: {
+        type: 'object',
     },
 }
 // macro wrapper
@@ -1180,7 +1280,9 @@ Macro.add(['update_mapview', 'updatemapview'], {
     handler: function() {
         const name = this.name;
         const argObj = new ArgObj(name, UPDATE_MAPVIEW_TEMPLATE, this.args);
-        update_mapview({$mapview: $(argObj.selector)});
+        argObj.$mapview = $(argObj.selector);
+        argObj.add_metadata('name', name);
+        update_mapview(argObj);
     }
 });
 function update_mapview(argObj) {
@@ -1188,11 +1290,14 @@ function update_mapview(argObj) {
 
     // VALIDATE: required args & type
     ArgObj.validate(name, UPDATE_MAPVIEW_TEMPLATE, argObj);
+    const $mapview = argObj.$mapview ?? (argObj.selector ? $(argObj.selector) : undefined);
 
-    const { $mapview } = argObj;
-
+    // ERROR: no mapview provided
+    if ($mapview === undefined) {
+        throw new Error(`${name} — Sleepymap — no mapview provided!`);
+    }
     // ERROR: $mapview isn't a jQuery obj
-    if (! ($mapview instanceof jQuery)) {
+    else if (! ($mapview instanceof jQuery)) {
         throw new Error(`${name} — Sleepymap — $mapview must be a jQuery instance!`);
     }
     // WARNING: empty jQuery instance
@@ -1270,6 +1375,10 @@ const SET_ENTITY_TEMPLATE = {
     tile: {
         type: 'string',
     },
+    // JS properties
+    removing: {
+        type: 'boolean',
+    },
 };
 const DELETE_ENTITY_TEMPLATE = {
     mapname: {
@@ -1280,6 +1389,10 @@ const DELETE_ENTITY_TEMPLATE = {
         type: 'string',
         required: true,
     },
+    // JS properties
+    removing: {
+        type: 'boolean',
+    },
 };
 Macro.add(['new_entity', 'newentity', 'set_entity', 'setentity', 'delete_entity', 'deleteentity'], {
     handler() {
@@ -1287,7 +1400,9 @@ Macro.add(['new_entity', 'newentity', 'set_entity', 'setentity', 'delete_entity'
         const template = this.name.includes('delete') ? DELETE_ENTITY_TEMPLATE : SET_ENTITY_TEMPLATE;
         const argObj = new ArgObj(name, template, this.args);
         argObj.removing = this.name.includes('delete');
+        argObj.add_metadata('name', name);
         set_entity(argObj);
+        console.log(argObj);
     }
 });
 function set_entity(argObj) {
@@ -1344,9 +1459,13 @@ const SET_SCRIPTS_TEMPLATE = {
         required: true,
         type: 'string',
     },
+    // JS property
+    scripts: {
+        type: 'object',
+    },
 };
 // SYNC REMINDER: changing here requires also changing the for loop in set_scripts
-const ONMAP_TEMPLATE = {
+const ONMAP_TRIGGERS_TEMPLATE = {
     to: {
         type: ['string', 'object'],
     },
@@ -1381,25 +1500,21 @@ Macro.add(['set_scripts','setscripts'], {
         }
 
         const argObj = new ArgObj(name, SET_SCRIPTS_TEMPLATE, this.args);
-        const mapname = argObj.mapname;
 
         // parse each payload, push to array, attach to argObj
-        const scripts = [];
+        argObj.scripts = [];
         for(let i = 1; i < this.payload.length; i++) {
             const p = this.payload[i];
-            const child_argObj = new ArgObj(p.name, ONMAP_TEMPLATE, p.args);
-            scripts.push({
+            const child_argObj = new ArgObj(p.name, ONMAP_TRIGGERS_TEMPLATE, p.args);
+            argObj.scripts.push({
                 type: p.name,
                 triggers: child_argObj,
                 contents: p.contents,
             });
         }
 
-        set_scripts({
-            name,
-            mapname,
-            scripts,
-        });
+        argObj.add_metadata('name', name);
+        set_scripts(argObj);
     }
 });
 
@@ -1425,10 +1540,10 @@ function set_scripts(argObj) {
     // error checking & object shaping
     for (const script of scripts) {
         // VALIDATE: types
-        ArgObj.validate(name, ONMAP_TEMPLATE, script.triggers);
+        ArgObj.validate(name, ONMAP_TRIGGERS_TEMPLATE, script.triggers);
         
         // SYNC REMINDER: changing here also requires changing <<set_scripts>> args
-        for (const arg of Object.keys(ONMAP_TEMPLATE)) {
+        for (const arg of Object.keys(ONMAP_TRIGGERS_TEMPLATE)) {
             // arg not defined, continue
             if (! Object.hasOwn(script.triggers, arg)) {
                 continue;
@@ -1507,10 +1622,8 @@ Macro.add(['mapmove', 'map_move'], {
     handler() {
         const name = this.name;
         const argObj = new ArgObj(name, BEGIN_MAPMOVE_TEMPLATE, this.args);
-        begin_mapmove({
-            ...argObj,
-            name,
-        });      
+        argObj.add_metadata('name', name);
+        begin_mapmove(argObj);      
     }
 });
 
@@ -1893,8 +2006,8 @@ function validate_bounds(argObj) {
 // exposed helpers
 // fetch a clone of map object
 function get_map(argObj) {
-    const mapname = argObj.mapname;
     const name = 'Sleepymap.get_map';
+    const mapname = argObj.mapname;
     const this_map = maps[mapname];
     // ERROR: missing arg
     if (mapname === undefined) {
@@ -1908,8 +2021,8 @@ function get_map(argObj) {
 }
 // edit the map object
 function edit_map(argObj) {
-    const { mapname, diagonals, columns, maparray, mapview, mapnodes } = argObj;
     const name = 'Sleepymap.edit_map';
+    const { mapname, diagonals, columns, maparray, mapview, mapnodes } = argObj;
     const this_map = maps[mapname];
     let exits_need_updating = false;
 
@@ -2036,27 +2149,14 @@ function edit_map(argObj) {
 }
 
 
-
-
-// █████ █   █ ████   ████   ████ █████
-// █      █ █  █   █ █    █ █     █
-// ███     █   ████  █    █  ███  ███
-// █      █ █  █     █    █     █ █
-// █████ █   █ █      ████  ████  █████
-// SECTION: expose functions
-
-window.Sleepymap = {
-    new_map,
-    create_rose,
-    update_rose,
-    create_mapview,
-    update_mapview,
-    set_entity,
-    set_scripts,
-    begin_mapmove,
-    get_map,
-    edit_map,
-    edit_exits,
-};
+// █      ████   ███  ████  ███ █    █  ███
+// █     █    █ █   █ █   █  █  ██   █ █
+// █     █    █ █████ █   █  █  █ █  █ █  ██
+// █     █    █ █   █ █   █  █  █  █ █ █   █
+// █████  ████  █   █ ████  ███ █   ██  ███
+// SECTION: loading
+// fix mapviews & roses being created during StoryInit data but 
+$(document).one(':passagedisplay', function() {
+});
 
 })();
