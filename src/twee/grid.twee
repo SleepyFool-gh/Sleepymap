@@ -18,9 +18,8 @@ This is a demo of the Areamap library for SugarCube, part of the Sleepy Macros c
 <<new_map 
     mapname     'small_house'
     columns     16
-    grid_mode   true
-    start_x     4
-    start_y     4
+    grid_mode   false
+    start       'P'
 >>
     .   .   .   .   .   .   .   .    .   .   .   .   .   .    .   .
     .   .   .   .   K   K   K   K    K   .   L   L   L   L    L   .

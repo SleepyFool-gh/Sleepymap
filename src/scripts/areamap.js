@@ -79,6 +79,7 @@ const is_diagonal = {
 // ████  █████ █████ █████ █       █   █    █ █   █ █
 // SECTION: Sleepymap
 // class object to save things to State & to access various exposed functions
+// class needed to write each property directly to State because SugarCube breaks references on passage navigation
 class Sleepymap {
     constructor(argObj) {
         const State_key = options.map_storage_story_variable.slice(1);
@@ -88,30 +89,35 @@ class Sleepymap {
         this.mapname        = argObj.mapname;
         this.columns        = argObj.columns;       // State
         this.diagonals      = argObj.diagonals;     // State
-        this.grid_movement  = argObj.grid_movement;
+        this.grid_movement  = argObj.grid_movement; // State
         this.mapview        = argObj.mapview;       // State
-        this.maparray       = [];                   // State
-        this.barriers       = [];                   // State
-        this.mapnodes       = {};                   // State
-        this.mapvars        = {};                   // State
+        this.maparray       = [];                   // State, populated in new_map
+        this.barriers       = [];                   // State, populated in new_map
+        this.mapnodes       = {};                   // State, populated in new_map
+        this.mapvars        = {};                   // State, populated in new_map
         this.exits          = {
                                 node    : {},
                                 grid    : [],
-                            };                      // State
-        this.scripts        = [];                   // State
-        this.entities       = {};                   // State
+                            };                      // State, populated in update_exits
+        this.scripts        = [];                   // State, populated in set_scripts
+        this.entities       = {};                   // State, populated in set_entity
     }
 
+    // helper to fetch storage
     get storage() {
         const State_key = options.map_storage_story_variable.slice(1);
         return State.variables[State_key][this.mapname]
     }
     
+    // save every prop to State
     get columns() { return this.storage.columns; }
     set columns(val) { this.storage.columns = val; }
 
     get diagonals() { return this.storage.diagonals; }
     set diagonals(val) { this.storage.diagonals = val; }
+
+    get grid_movement() { return this.storage.grid_movement; }
+    set grid_movement(val) { this.storage.grid_movement = val; }
 
     get mapview() { return this.storage.mapview; }
     set mapview(val) { this.storage.mapview = val; }
@@ -154,6 +160,7 @@ class Sleepymap {
     static edit_exits(argObj) { edit_exits(argObj); }
 }
 window.Sleepymap = Sleepymap;
+window.maps = maps;
 
 
 
@@ -396,23 +403,7 @@ function new_map(argObj) {
         grid_movement,
         mapview,
     });
-    // const this_map = {
-    //     mapname,
-    //     columns,
-    //     diagonals,
-    //     grid_movement,
-    //     mapview,
-    //     maparray    : [],           // populated here, later
-    //     barriers    : [],           // populated here, later
-    //     mapnodes    : {},           // populated here, later
-    //     mapvars     : {},           // populated here, later
-    //     exits       : {             // populated here, later
-    //         node    : {},
-    //         grid    : [],
-    //     },
-    //     scripts     : [],           // populated in set_scripts, if called
-    //     entities    : {},           // populated in set_entity, if called
-    // };
+
     maps[mapname] = this_map;
 
 
@@ -1001,16 +992,17 @@ function create_rose(argObj) {
             return;
         }
         // attempt move to target
-        const target_mapnode = $(this).attr('data-mapnode');
-        const target_x = Number($(this).attr('data-x'));
-        const target_y = Number($(this).attr('data-y'));
-        begin_mapmove({
+        const target_mapnode    = $(this).attr('data-mapnode');
+        const target_x          = Number($(this).attr('data-x'));
+        const target_y          = Number($(this).attr('data-y'));
+        const target_argObj = {
             mapname,
             target_mapnode,
-            target_x: Number.isFinite(target_x) ? target_x : undefined,
-            target_y: Number.isFinite(target_y) ? target_y : undefined,
-            suppress_warnings: true,
-        });
+        };
+        // only define if valid numbers
+        if (Number.isFinite(target_x)) target_argObj.target_x = target_x;
+        if (Number.isFinite(target_y)) target_argObj.target_y = target_y;
+        begin_mapmove(target_argObj);
     });
 
     return $rose;
@@ -1254,16 +1246,17 @@ function create_mapview(argObj) {
                 return;
             }
             // attempt mapmove
-            const target_mapnode = $(this).attr('data-mapnode');
-            const target_x = Number($(this).attr('data-x'));
-            const target_y = Number($(this).attr('data-y'));
-            begin_mapmove({
+            const target_mapnode    = $(this).attr('data-mapnode');
+            const target_x          = Number($(this).attr('data-x'));
+            const target_y          = Number($(this).attr('data-y'));
+            const target_argObj = {
                 mapname,
                 target_mapnode,
-                target_x: Number.isFinite(target_x) ? target_x : undefined,
-                target_y: Number.isFinite(target_y) ? target_y : undefined,
-                suppress_warnings: true,
-            });
+            };
+            // only define if valid numbers
+            if (Number.isFinite(target_x)) target_argObj.target_x = target_x;
+            if (Number.isFinite(target_y)) target_argObj.target_y = target_y;
+            begin_mapmove(target_argObj);
         });
     }
 
@@ -1406,7 +1399,6 @@ Macro.add(['new_entity', 'newentity', 'set_entity', 'setentity', 'delete_entity'
         argObj.removing = this.name.includes('delete');
         argObj.add_metadata('name', name);
         set_entity(argObj);
-        console.log(argObj);
     }
 });
 function set_entity(argObj) {
