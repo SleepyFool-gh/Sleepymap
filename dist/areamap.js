@@ -754,6 +754,9 @@ const CREATE_ROSE_TEMPLATE = {
         type: 'string',
         aliases: 'bg',
     },
+    keydown: {
+        type: 'object',
+    },
 }
 // macro wrapper, calls the create_rose function (which returns a $rose object)
 // then attaches it to the macro output
@@ -774,7 +777,7 @@ function create_rose(argObj) {
     // VALIDATE: required args & type
     ArgObj.validate(name, CREATE_ROSE_TEMPLATE, argObj);
 
-    const { mapname, background } = argObj;
+    const { mapname, background, keydown } = argObj;
     const autoupdate = argObj.autoupdate ?? options.default.autoupdate_rose;    // default value
     const this_map = maps[mapname];
 
@@ -805,6 +808,7 @@ function create_rose(argObj) {
     const $rose = $(document.createElement('div'));
     $rose
         .addClass('macro-Sleepymap-rose')
+        .attr('data-maptype', grid_movement ? 'grid' : 'node')
         .attr('data-mapname', mapname)
         .attr('data-mapnode', position.mapnode)
         .attr('data-x', position.x)
@@ -912,27 +916,13 @@ function create_rose(argObj) {
         }
     }
 
-    // click listener that triggers mapmove & rose refresh
-    $rose.on('click', '.macro-Sleepymap-link', function(ev) {
-        // uses "this" because that is the element that matches the selector ^
-        // whereas ev.target is the thing clicked, which maybe inside the matched element
-        // link disabled, do nothing
-        if ($(this).attr('disabled')) {
-            return;
-        }
-        // attempt move to target
-        const target_mapnode    = $(this).attr('data-mapnode');
-        const target_x          = Number($(this).attr('data-x'));
-        const target_y          = Number($(this).attr('data-y'));
-        const target_argObj = {
-            mapname,
-            target_mapnode,
-        };
-        // only define if valid numbers
-        if (Number.isFinite(target_x)) target_argObj.target_x = target_x;
-        if (Number.isFinite(target_y)) target_argObj.target_y = target_y;
-        begin_mapmove(target_argObj);
-    });
+    // attach click listener
+    attach_click({ name, mapname, $interface: $rose });
+
+    // attach keydown listener
+    if (keydown) {
+        attach_keydown({ name, mapname, keydown, $interface: $rose });
+    }
 
     return $rose;
 }
@@ -965,6 +955,9 @@ const CREATE_MAPVIEW_TEMPLATE = {
     show_labels: {
         type: 'boolean',
     },
+    keydown: {
+        type: 'object',
+    },
 }
 // macro wrapper, creates & places mapview
 Macro.add(['place_mapview', 'placemapview'], {
@@ -982,7 +975,7 @@ function create_mapview(argObj) {
     // VALIDATE: required args & type
     ArgObj.validate(name, CREATE_MAPVIEW_TEMPLATE, argObj);
 
-    const { mapname, background } = argObj;
+    const { mapname, background, keydown } = argObj;
     const show_labels   = argObj.show_labels ?? options.default.show_labels_on_mapview; // default value
     const autoupdate    = argObj.autoupdate ?? options.default.autoupdate_mapview;      // default value
     const clickable     = argObj.clickable  ?? options.default.clickable_mapview;       // default value
@@ -1089,6 +1082,7 @@ function create_mapview(argObj) {
             // change traversable to 'current' for CSS targeting
             .attr('data-traversable', is_traversable() === null ? 'current' : is_traversable())
             .attr('data-type', mapnode.type)
+            .attr('data-dir', dir)
             .attr('data-mapnode-name', mapnode.name)
             .attr('data-mapnode', id)
             .attr('data-x', xy.x)
@@ -1113,28 +1107,13 @@ function create_mapview(argObj) {
         $mapview.append($tile);
     }
 
-    // if clickable add link functionality
+    // attach click listener
     if (clickable) {
-        $mapview.on('click', '.macro-Sleepymap-link', function(ev) {
-            // uses "this" because that is the element that matches the selector ^
-            // whereas ev.target is the thing clicked, which maybe inside the matched element
-            // if disabled, do nothing
-            if ($(this).attr('disabled')) {
-                return;
-            }
-            // attempt mapmove
-            const target_mapnode    = $(this).attr('data-mapnode');
-            const target_x          = Number($(this).attr('data-x'));
-            const target_y          = Number($(this).attr('data-y'));
-            const target_argObj = {
-                mapname,
-                target_mapnode,
-            };
-            // only define if valid numbers
-            if (Number.isFinite(target_x)) target_argObj.target_x = target_x;
-            if (Number.isFinite(target_y)) target_argObj.target_y = target_y;
-            begin_mapmove(target_argObj);
-        });
+        attach_click({ name, mapname, $interface: $mapview });
+    }
+    // attach keydown listener
+    if (keydown) {
+        attach_keydown({ name, mapname, keydown, $interface: $mapview });
     }
 
     return $mapview;
@@ -1176,7 +1155,7 @@ const UPDATE_INTERFACE_TEMPLATE = {
     },
     $interface: {
         type: 'object',
-        aliases: ['$rose', '$mapview'],
+        aliases: ['$rose', '$mapview', 'interface'],
     },
 }
 // macro wrapper
@@ -1227,6 +1206,88 @@ function update_interface(argObj) {
     });
 }
 
+// ┌─┐┌─┐┌┐┌┌┬┐┬─┐┌─┐┬  ┬  ┌─┐┬─┐┌─┐
+// │  │ ││││ │ ├┬┘│ ││  │  ├┤ ├┬┘└─┐
+// └─┘└─┘┘└┘ ┴ ┴└─└─┘┴─┘┴─┘└─┘┴└─└─┘
+// SECTION: controllers
+
+// helper function to attach clicks
+function attach_click(argObj) {
+    const name = argObj.name ?? 'Sleepymap.attach_click';
+    const { mapname, $interface } = argObj;
+    $interface.on('click', '.macro-Sleepymap-link', function(ev) {
+        // uses "this" because that is the element that matches the selector ^
+        // whereas ev.target is the thing clicked, which maybe inside the matched element
+        // link disabled, do nothing
+        if ($(this).attr('disabled')) {
+            return;
+        }
+        // attempt move to target
+        const target_mapnode    = $(this).attr('data-mapnode');
+        const target_x          = Number($(this).attr('data-x'));
+        const target_y          = Number($(this).attr('data-y'));
+        const target_argObj = {
+            mapname,
+            target_mapnode,
+            suppress_warnings: true,
+        };
+        // only define if valid numbers
+        if (Number.isFinite(target_x)) target_argObj.target_x = target_x;
+        if (Number.isFinite(target_y)) target_argObj.target_y = target_y;
+        begin_mapmove(target_argObj);
+    });
+}
+// helper function to attach keydown
+function attach_keydown(argObj) {
+    const name = argObj.name ?? 'Sleepymap.attach_keydown';
+    const { mapname, keydown, $interface } = argObj;
+    // build a reverse map: key value → direction
+    const key_to_dir = {};
+    for (const [dir, keys] of Object.entries(keydown)) {
+        // WARNING: dir not a valid direction
+        if (! ['N', 'E', 'S', 'W', 'NE', 'SE', 'SW', 'NW'].includes(dir)) {
+            console.warn(`${name} — Sleepymap "${mapname}" — keydown key "${dir}" is not a valid rose direction; IGNORED`);
+            continue;
+        }
+        const key_arr = Array.isArray(keys) ? keys : [keys];
+        for (const k of key_arr) {
+            // WARNING: key is not a string
+            if (typeof k !== 'string') {
+                console.warn(`${name} — Sleepymap "${mapname}" — keydown key "${k}" is not a string; IGNORED`);
+                continue;
+            }
+            key_to_dir[k] = dir;
+        }
+    }
+
+    // unique namespace so teardown only removes this listener
+    const namespace = `Sleepymap.${crypto.randomUUID()}`;
+
+    $(document).on(`keydown.${namespace}`, function(ev) {
+        // if interface item is no longer in the DOM, remove listener and bail
+        if (! $.contains(document.body, $interface[0])) {
+            $(document).off(`keydown.${namespace}`);
+            return;
+        }
+        
+        // match by key string first, then keyCode as fallback
+        const dir = key_to_dir[ev.key] ?? key_to_dir[ev.keyCode];
+        // no match, do nothing
+        if (dir === undefined) return;
+
+        // find the first enabled link in the target direction
+        const $link = $interface
+                        .find(`.macro-Sleepymap-link[data-dir="${dir}"]:not([disabled])`)
+                        .first();
+
+        // if link exists, trigger click
+        if ($link.length) {
+            ev.preventDefault();
+            $link.trigger('click');
+        }
+        console.log('----');
+    });
+}
 
 
 

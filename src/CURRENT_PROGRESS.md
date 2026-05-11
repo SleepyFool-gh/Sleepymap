@@ -20,7 +20,9 @@
 - added entities to mapmove events
 - changed name to metadata on argObj
 - changed map to class that has properties set/get from State
+- remove class, changed to proxy
+- removed update_rose & update_mapview for update_interface
+- added keydown listener
 
-- need to add keyboard controller
 - need to add pathing
 - need to update documentation
