@@ -8,6 +8,7 @@
 // SECTION: options & other global constants
 
 const options = {
+    // various config settings which can all also be set when calling the macro / JS function
     default: {
         wall_id                 : '.',
         diagonals               : false,
@@ -18,7 +19,7 @@ const options = {
         show_labels_on_mapview  : true,
         pathing_on_mapview      : true,
     },
-    map_storage_story_variable  : '$@Sleepymap/maps',
+    // shows on mapview & rose in grid_movment mode
     labels: {
         N   : "🡱",
         E   : "🡲",
@@ -29,7 +30,9 @@ const options = {
         SW  : "🡷",
         NW  : "🡴",
     },
-    // THIS IS REGEX MAGIC. MANIPULTE AT YOUR OWN RISK.
+    // State variable which holds the map data
+    map_storage_story_variable  : '$@Sleepymap/maps',
+    // regex magic for detecting barriers / thin walls. MANIPULTE AT YOUR OWN RISK.
     barriers: {
         N       : /"/,                                          // match " character somewhere
         E       : /(?<=[a-zA-Z0-9][^\s]*)\|(?![a-zA-Z0-9])/,    // match | character on right side -->
@@ -1138,16 +1141,16 @@ function create_mapview(argObj) {
     if (keydown) {
         attach_keydown({ name, mapname, keydown, $interface: $mapview });
     }
-    // add pathing {
-    if (pathing) {
+    // add pathing
+    if (pathing && grid_movement) {
         $mapview.on('mouseover', function(ev) {
             const item = ev.target.closest('.macro-Sleepymap-tile');
             if (item) {
-                const target_i = $(item).attr('data-i');
+                const target_i = Number($(item).attr('data-i'));
                 const path = Sleepymap.find_path({
                     mapname, 
-                    start_i: Number(position_i), 
-                    end_i: Number(target_i),
+                    from_i  : position_i, 
+                    to_i    : target_i,
                 });
                 for (let i = 0; i < maparray.length; i++) {
                     const $path_tile = $(`.macro-Sleepymap-tile[data-i="${i}"]`);
@@ -1168,12 +1171,12 @@ function create_mapview(argObj) {
 
 
 
-// ███ █    █ █████ █████ ████  █████  ███   ████ █████     █   █ ████  ████   ███  █████ ███ █    █  ███
-//  █  ██   █   █   █     █   █ █     █   █ █     █         █   █ █   █ █   █ █   █   █    █  ██   █ █
-//  █  █ █  █   █   ███   ████  ███   █████ █     ███       █   █ ████  █   █ █████   █    █  █ █  █ █  ██
-//  █  █  █ █   █   █     █   █ █     █   █ █     █         █   █ █     █   █ █   █   █    █  █  █ █ █   █
-// ███ █   ██   █   █████ █   █ █     █   █  ████ █████      ███  █     ████  █   █   █   ███ █   ██  ███
-// SECTION: updating interface for rose & mapview
+//  ████ ███ █    █ █████ █████ ████  █████  ███   ████ █████
+// █ █    █  ██   █   █   █     █   █ █     █   █ █     █
+//  ███   █  █ █  █   █   ███   ████  ███   █████ █     ███
+//   █ █  █  █  █ █   █   █     █   █ █     █   █ █     █
+// ████  ███ █   ██   █   █████ █   █ █     █   █  ████ █████
+// SECTION: $interface things, updating
 
 // autoupdate handler
 $(document).on('Sleepymap:mapmove_resolved Sleepymap:map_edited', function(ev, data) {
@@ -1901,35 +1904,40 @@ function resolve_mapmove(argObj) {
 function find_path(argObj) {
  
     const name = argObj.name ?? 'Sleepymap.find_path';
-    const { mapname, start_i, end_i } = argObj;
+    const { mapname, from_i, to_i, from_x, from_y, to_x, to_y } = argObj;
     const this_map = maps[mapname];
  
+    const has_i_inputs = from_i !== undefined || to_i !== undefined;
+    const has_xy_inputs = from_x !== undefined || from_y !== undefined || to_x !== undefined || to_y !== undefined;
+
     // ERROR: non-extant map
     if (this_map === undefined) {
         throw new Error(`${name} — Sleepymap "${mapname}" not found!`);
     }
+    // ERROR: mixed inputs
+    else if (has_i_inputs && has_xy_inputs) {
+        throw new Error(`${name} — Sleepymap "${mapname}" — can't have both i & xy inputs!`);
+    }
+    // ERROR: insufficient inputs
+    else if (
+        (has_i_inputs && (from_i === undefined || to_i === undefined)) ||
+        (has_xy_inputs && (from_x === undefined || from_y === undefined || to_x === undefined || to_y === undefined))
+    ) {
+        throw new Error(`${name} — Sleepymap "${mapname}" — insufficient inputs, need both from_i/to_i or, all of from_x/from_y/to_x/to_y!`);
+    }
  
-    const { exits, maparray } = this_map;
-    const grid = exits.grid;
-    const len  = maparray.length;
+    const { exits, maparray, columns } = this_map;
+    const start_i   = from_i ?? xy2i({ xy: { x: from_x, y: from_y }, columns });
+    const end_i     = to_i ?? xy2i({ xy: { x: to_x, y: to_y }, columns });
  
     // TRIVIAL CASE
     if (start_i === end_i) {
         return [start_i];
     }
  
-    //////////////////////////////////////////////////
     // BFS
-    //
-    // exits.grid[i] is an object whose values are Sets of neighbour indices,
-    // one Set per direction that has at least one connection:
-    //   { N: Set{3}, E: Set{5, 6}, … }
-    //
-    // Walls have no entries in exits.grid (update_exits skips them),
-    // so they naturally dead-end and are never traversed.
- 
     // came_from[i] = the index we arrived at i from (-1 sentinel for start)
-    const came_from = new Array(len).fill(undefined);
+    const came_from = new Array(maparray.length).fill(undefined);
     came_from[start_i]   = -1;
  
     const queue = [start_i];
@@ -1941,7 +1949,7 @@ function find_path(argObj) {
         head++;
  
         // iterate every direction that has neighbours
-        for (const dirs of Object.values(grid[current_i] ?? {})) {
+        for (const dirs of Object.values(exits.grid[current_i] ?? {})) {
             for (const neighbor_i of dirs) {
  
                 // already visited
@@ -1964,13 +1972,17 @@ function find_path(argObj) {
         return null;
     }
  
-    //////////////////////////////////////////////////
     // RECONSTRUCT PATH (walk backwards through came_from)
- 
     const path = [];
     let   step = end_i;
     while (step !== -1) {
-        path.push(step);
+        // convert to xy if input was xy
+        if (has_xy_inputs) {
+            path.push(i2xy({ i: step, columns }));
+        }
+        else {
+            path.push(step);
+        }
         step = came_from[step];
     }
     path.reverse();

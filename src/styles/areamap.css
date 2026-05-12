@@ -51,7 +51,7 @@
             position: absolute;
         }
         .macro-Sleepymap-path {
-            background: rgba(255, 255, 0, 0.3);
+            background: rgba(82, 209, 255, 0.3);
         }
     .macro-Sleepymap-tile[data-traversable='current'] {
         font-weight: bold;
