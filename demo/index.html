@@ -156,6 +156,9 @@ var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZa
         .macro-Sleepymap-entity {
             position: absolute;
         }
+        .macro-Sleepymap-path {
+            background: rgba(255, 255, 0, 0.3);
+        }
     .macro-Sleepymap-tile[data-traversable='current'] {
         font-weight: bold;
         backdrop-filter: contrast(1.4) brightness(1.4);
@@ -415,6 +418,7 @@ const options = {
         autoupdate_mapview      : true,
         clickable_mapview       : true,
         show_labels_on_mapview  : true,
+        pathing_on_mapview      : true,
     },
     map_storage_story_variable  : '$@Sleepymap/maps',
     labels: {
@@ -1249,17 +1253,17 @@ function create_rose(argObj) {
         // diagonals will be empty if not enabled
         // grid travel
         if (grid_movement) {
-            const mapindex = xy2i({ xy: position, columns });
+            const position_i = xy2i({ xy: position, columns });
             // skip if no exit in this direction
-            if (exits.grid[mapindex][dir] === undefined) {
+            if (exits.grid[position_i][dir] === undefined) {
                 continue;
             }
-            for (const i of exits.grid[mapindex][dir]) {
+            for (const i of exits.grid[position_i][dir]) {
                 const exit_mapnode = mapnodes[maparray[i]];
 
                 // WARNING: skip corrupted nodes
                 if (exit_mapnode === undefined) {
-                    console.warn(`${name} — Sleepymap "${mapname}" — encountered invalid mapindex "${i}" for direction "${dir}"`);
+                    console.warn(`${name} — Sleepymap "${mapname}" — encountered invalid position_i "${i}" for direction "${dir}"`);
                     continue;
                 }
 
@@ -1357,6 +1361,9 @@ const CREATE_MAPVIEW_TEMPLATE = {
     keydown: {
         type: 'object',
     },
+    pathing: {
+        type: 'boolean',
+    },
 }
 // macro wrapper, creates & places mapview
 Macro.add(['place_mapview', 'placemapview'], {
@@ -1376,8 +1383,9 @@ function create_mapview(argObj) {
 
     const { mapname, background, keydown } = argObj;
     const show_labels   = argObj.show_labels ?? options.default.show_labels_on_mapview; // default value
-    const autoupdate    = argObj.autoupdate ?? options.default.autoupdate_mapview;      // default value
-    const clickable     = argObj.clickable  ?? options.default.clickable_mapview;       // default value
+    const autoupdate    = argObj.autoupdate  ?? options.default.autoupdate_mapview;     // default value
+    const clickable     = argObj.clickable   ?? options.default.clickable_mapview;      // default value
+    const pathing       = argObj.pathing     ?? options.default.pathing_on_mapview      // default value
     const this_map = maps[mapname];
 
     // ERROR: non-extant map
@@ -1411,8 +1419,8 @@ function create_mapview(argObj) {
         .attr('data-maptype', grid_movement ? 'grid' : 'node')
         .attr('data-mapname', mapname)
         .attr('data-mapnode', position.mapnode)
-        .attr('data-x', position.x)
-        .attr('data-y', position.y)
+        .attr('data-position-x', position.x)
+        .attr('data-position-y', position.y)
         .attr('data-autoupdate', autoupdate)
         .data('argObj', argObj)
         .css({
@@ -1427,48 +1435,65 @@ function create_mapview(argObj) {
             .appendTo($mapview);
     }
 
-    // map out dirs to i's
-    const mapindex = xy2i({ xy: position, columns });
-    const offsets = get_offsets({ columns });
-    const dir_map = {};
-    for (const dir in offsets) {
-        dir_map[mapindex + offsets[dir]] = dir;
+    // map out dirs to i's from exits
+    const position_i = xy2i({ xy: position, columns });
+    const i2dir = [];
+    if (grid_movement) {
+        for (const dir in exits.grid[position_i]) {
+            const exit_is = exits.grid[position_i][dir];
+            exit_is.forEach( i => i2dir[i] = dir );
+        }
+    }
+    else {
+        for (const dir in exits.node[position.mapnode]) {
+            const exit_nodes = exits.node[position.mapnode][dir];
+                console.log(exit_nodes);
+            for (const node of exit_nodes) {
+                const exit_is = [];
+                maparray.reduce( function(acc, el, i) {
+                    if (el === node) exit_is.push(i);
+                }, null);
+                exit_is.forEach( i => i2dir[i] = dir );
+            }
+        }
     }
     // map out entities to i's
-    const entity_map = {}
+    const i2entity = [];
     for (const entityname in entities) {
         const entity = entities[entityname];
         const i = xy2i({ xy: { x: entity.x, y: entity.y }, columns });
-        entity_map[i] ??= [];
-        entity_map[i].push(entity.entityname);
+        i2entity[i] ??= [];
+        i2entity[i].push(entity.entityname);
+    }
+
+    // define traversability
+    function is_traversable(i) {
+        const id = mapview.array[i];
+        const mapnode = mapnodes[id];
+        if (mapnode.type === 'wall') return false;
+        if (grid_movement) {
+            if (position_i === i) return null;
+            return Object.keys(exits.grid[position_i]).some( dir => exits.grid[position_i][dir].has(i) );
+        }
+        else {
+            if (position.mapnode === id) return null;
+            return Object.values(exits.node[position.mapnode]).some( dir => dir.has(id) );
+        }
     }
 
     // create & append tiles
     for (let i = 0; i < mapview.array.length; i++) {
         const id = mapview.array[i];
         const mapnode = mapnodes[id];
-
-        // define traversability
-        function is_traversable() {
-            if (mapnode.type === 'wall') return false;
-            if (grid_movement) {
-                if (mapindex === i) return null;
-                return Object.keys(exits.grid[mapindex]).some( dir => exits.grid[mapindex][dir].has(i) );
-            }
-            else {
-                if (position.mapnode === id) return null;
-                return Object.values(exits.node[position.mapnode]).some( dir => dir.has(id) );
-            }
-        }
         // if clickable & valid travel destination --> clickable
         const link  = ! clickable
                         ? false
-                        : !! is_traversable();
+                        : !! is_traversable(i);
 
         const xy = i2xy({ i, columns: mapview.columns });
         // labels only work in grid mode
-        const dir = dir_map[i];
-        const label     = ! (show_labels && grid_movement && is_traversable())
+        const dir = i2dir[i];
+        const label     = ! (show_labels && grid_movement && is_traversable(i))
                             ? ''
                         // use labels if same room or if room name is non-extant
                         : (dir !== undefined) && ((position.mapnode === mapnode.id) || (mapnode.name === undefined))
@@ -1479,11 +1504,12 @@ function create_mapview(argObj) {
             .addClass('macro-Sleepymap-tile')
             .addClass(link ? 'macro-Sleepymap-link' : '')
             // change traversable to 'current' for CSS targeting
-            .attr('data-traversable', is_traversable() === null ? 'current' : is_traversable())
+            .attr('data-traversable', is_traversable(i) === null ? 'current' : is_traversable(i))
             .attr('data-type', mapnode.type)
             .attr('data-dir', dir)
             .attr('data-mapnode-name', mapnode.name)
             .attr('data-mapnode', id)
+            .attr('data-i', i)
             .attr('data-x', xy.x)
             .attr('data-y', xy.y)
             .attr('disabled', disabled?.[id] || frozen)
@@ -1496,8 +1522,8 @@ function create_mapview(argObj) {
             .wiki(label)
 
         // print entities
-        if (entity_map[i] !== undefined) {
-            for (const entityname of entity_map[i]) {
+        if (i2entity[i] !== undefined) {
+            for (const entityname of i2entity[i]) {
                 const entity = entities[entityname];
                 $tile.wiki(`<span class='macro-Sleepymap-entity'>${entity?.tile ?? ''}</span>`);
             }
@@ -1513,6 +1539,29 @@ function create_mapview(argObj) {
     // attach keydown listener
     if (keydown) {
         attach_keydown({ name, mapname, keydown, $interface: $mapview });
+    }
+    // add pathing {
+    if (pathing) {
+        $mapview.on('mouseover', function(ev) {
+        const item = ev.target.closest('.macro-Sleepymap-tile');
+        if (item) {
+            const target_i = $(item).attr('data-i');
+            const path = Sleepymap.find_path({
+                mapname, 
+                start_i: Number(position_i), 
+                end_i: Number(target_i),
+            });
+            for (let i = 0; i < maparray.length; i++) {
+                const $path_tile = $(`.macro-Sleepymap-tile[data-i="${i}"]`);
+                if (path?.includes(i)) {
+                    $path_tile.addClass('macro-Sleepymap-path');
+                }
+                else {
+                    $path_tile.removeClass('macro-Sleepymap-path');
+                }
+            }
+        }
+        });
     }
 
     return $mapview;
@@ -1684,7 +1733,6 @@ function attach_keydown(argObj) {
             ev.preventDefault();
             $link.trigger('click');
         }
-        console.log('----');
     });
 }
 
@@ -2033,18 +2081,6 @@ function begin_mapmove(argObj) {
         console.warn(`${name} — Sleepymap "${mapname}" — this map uses node movement, "target_x" and "target_y" will be ignored!`);
     }
 
-    // aux function to fetch all valid xys
-    function get_xys(mapnode) {
-        const xys = [];
-        for (let i = 0; i < maparray.length; i++) {
-            if (maparray[i] === mapnode) {
-                const xy = i2xy({ i, columns });
-                xys.push(xy);
-            }
-        }
-        return xys;
-    }
-
     // if grid movement && xy defined, use that to calculate mapnode — else use argObj mapnode
     // reverse for node movement
     const target_mapnode  = (
@@ -2058,7 +2094,7 @@ function begin_mapmove(argObj) {
                                 ? maparray[xy2i({ xy: { x:argObj.target_x, y:argObj.target_y }, columns })] 
                                 : argObj.target_mapnode;
 
-    const target_xys = get_xys(target_mapnode);
+    const target_xys = get_xys({ mapname, mapnode: target_mapnode });
 
     // WARNING: unplaced mapnode
     if (target_xys.length === 0) {
@@ -2091,7 +2127,7 @@ function begin_mapmove(argObj) {
         mapnode     : origin_mapnode,
         xys         : grid_movement
                         ? [{ x: position.x, y: position.y }]
-                        : get_xys(origin_mapnode),
+                        : get_xys({ mapname, origin_mapnode }),
         entities    : [],
     };
 
@@ -2257,6 +2293,96 @@ function resolve_mapmove(argObj) {
 
 
 
+// ████   ███  █████ █   █ ███ █    █  ███
+// █   █ █   █   █   █   █  █  ██   █ █
+// ████  █████   █   █████  █  █ █  █ █  ██
+// █     █   █   █   █   █  █  █  █ █ █   █
+// █     █   █   █   █   █ ███ █   ██  ███
+// SECTION: pathing
+
+function find_path(argObj) {
+ 
+    const name = argObj.name ?? 'Sleepymap.find_path';
+    const { mapname, start_i, end_i } = argObj;
+    const this_map = maps[mapname];
+ 
+    // ERROR: non-extant map
+    if (this_map === undefined) {
+        throw new Error(`${name} — Sleepymap "${mapname}" not found!`);
+    }
+ 
+    const { exits, maparray } = this_map;
+    const grid = exits.grid;
+    const len  = maparray.length;
+ 
+    // TRIVIAL CASE
+    if (start_i === end_i) {
+        return [start_i];
+    }
+ 
+    //////////////////////////////////////////////////
+    // BFS
+    //
+    // exits.grid[i] is an object whose values are Sets of neighbour indices,
+    // one Set per direction that has at least one connection:
+    //   { N: Set{3}, E: Set{5, 6}, … }
+    //
+    // Walls have no entries in exits.grid (update_exits skips them),
+    // so they naturally dead-end and are never traversed.
+ 
+    // came_from[i] = the index we arrived at i from (-1 sentinel for start)
+    const came_from = new Array(len).fill(undefined);
+    came_from[start_i]   = -1;
+ 
+    const queue = [start_i];
+    let   head  = 0;        // pointer into queue — avoids O(n) shift()
+ 
+    bfs: while (head < queue.length) {
+ 
+        const current_i = queue[head];
+        head++;
+ 
+        // iterate every direction that has neighbours
+        for (const dirs of Object.values(grid[current_i] ?? {})) {
+            for (const neighbor_i of dirs) {
+ 
+                // already visited
+                if (came_from[neighbor_i] !== undefined) continue;
+ 
+                came_from[neighbor_i] = current_i;
+ 
+                // destination reached — reconstruct path immediately
+                if (neighbor_i === end_i) {
+                    break bfs;
+                }
+ 
+                queue.push(neighbor_i);
+            }
+        }
+    }
+ 
+    // end_i was never reached
+    if (came_from[end_i] === undefined) {
+        return null;
+    }
+ 
+    //////////////////////////////////////////////////
+    // RECONSTRUCT PATH (walk backwards through came_from)
+ 
+    const path = [];
+    let   step = end_i;
+    while (step !== -1) {
+        path.push(step);
+        step = came_from[step];
+    }
+    path.reverse();
+ 
+    return path;
+}
+
+
+
+
 //  ███  █   █ █   █
 // █   █ █   █  █ █
 // █████ █   █   █
@@ -2275,6 +2401,7 @@ function i2xy(argObj) {
     return { x: i % columns, y: Math.floor(i / columns) };
 }
 // generate object with offsets
+// currently only used in update_exits
 function get_offsets(argObj) {
     const { columns } = argObj;
     return {
@@ -2287,6 +2414,21 @@ function get_offsets(argObj) {
         SW  : columns - 1,
         NW  : -columns - 1,
     };
+}
+// aux function to fetch all valid xys
+// currently only used in begin_mapmove
+function get_xys(argObj) {
+    const { mapname, mapnode } = argObj;
+    const this_map = maps[mapname];
+    const { maparray, columns } = this_map;
+    const xys = [];
+    for (let i = 0; i < maparray.length; i++) {
+        if (maparray[i] === mapnode) {
+            const xy = i2xy({ i, columns });
+            xys.push(xy);
+        }
+    }
+    return xys;
 }
 // validate position object
 function validate_position(argObj) {
@@ -2511,6 +2653,7 @@ const Sleepymap = {
     get_map,
     edit_map,
     edit_exits,
+    find_path,
 };
 window.Sleepymap = Sleepymap;
 
@@ -2531,9 +2674,8 @@ window.Sleepymap = Sleepymap;
 &lt;&lt;new_map 
     mapname     &#39;small_house&#39;
     columns     16
-    grid_mode   true
-    start_x     5
-    start_y     5
+    grid_mode   false
+    start       &#39;K&#39;
 &gt;&gt;
     .   .   .   .   .   .   .   .    .   .   .   .   .   .    .   .
     .   .   .   .   K   K   K   K    K   .   L   L   L   L    L   .
@@ -2572,6 +2714,7 @@ window.Sleepymap = Sleepymap;
     background  &#39;&lt;img src=&quot;./assets/small_house.png&quot;&gt;&#39;
     autoupdate  true
     keydown     `{N:&quot;w&quot;, S:&quot;s&quot;, E:&quot;d&quot;, W:&quot;a&quot;}`
+    pathing     true
 &gt;&gt;
 &lt;div style=&#39;display:grid; grid-template-columns: auto auto; row-gap:1rem;&#39;&gt;
     &lt;div&gt;
@@ -2608,18 +2751,18 @@ window.Sleepymap = Sleepymap;
 
 &lt;&lt;connect_map
     mapname &quot;small_house&quot;
-    from_x 5
-    from_y 5
-    to_x 10
+    from_x 8
+    from_y 4
+    to_x 14
     to_y 5
     direction &quot;N&quot;
 &gt;&gt;
 &lt;&lt;disconnect_map
     mapname &quot;small_house&quot;
     from_x 5
-    from_y 4
+    from_y 3
     to_x 5
-    to_y 3
+    to_y 4
     direction &quot;N&quot;
 &gt;&gt;</tw-passagedata></tw-storydata>
 	<script id="script-sugarcube" type="text/javascript">

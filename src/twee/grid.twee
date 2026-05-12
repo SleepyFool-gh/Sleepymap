@@ -18,9 +18,8 @@ This is a demo of the Areamap library for SugarCube, part of the Sleepy Macros c
 <<new_map 
     mapname     'small_house'
     columns     16
-    grid_mode   true
-    start_x     5
-    start_y     5
+    grid_mode   false
+    start       'K'
 >>
     .   .   .   .   .   .   .   .    .   .   .   .   .   .    .   .
     .   .   .   .   K   K   K   K    K   .   L   L   L   L    L   .
@@ -62,6 +61,7 @@ This is a demo of the Areamap library for SugarCube, part of the Sleepy Macros c
     background  '<img src="./assets/small_house.png">'
     autoupdate  true
     keydown     `{N:"w", S:"s", E:"d", W:"a"}`
+    pathing     true
 >>
 <div style='display:grid; grid-template-columns: auto auto; row-gap:1rem;'>
     <div>
@@ -98,17 +98,17 @@ This is a demo of the Areamap library for SugarCube, part of the Sleepy Macros c
 
 <<connect_map
     mapname "small_house"
-    from_x 5
-    from_y 5
-    to_x 10
+    from_x 8
+    from_y 4
+    to_x 14
     to_y 5
     direction "N"
 >>
 <<disconnect_map
     mapname "small_house"
     from_x 5
-    from_y 4
+    from_y 3
     to_x 5
-    to_y 3
+    to_y 4
     direction "N"
 >>
