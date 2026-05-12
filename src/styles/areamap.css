@@ -63,3 +63,6 @@
     .macro-Sleepymap-tile[data-traversable='true'] {
         backdrop-filter: brightness(1.3);
     }
+    .macro-Sleepymap-segment {
+        position: absolute;
+    }

@@ -983,7 +983,7 @@ function create_mapview(argObj) {
     const show_labels   = argObj.show_labels ?? options.default.show_labels_on_mapview; // default value
     const autoupdate    = argObj.autoupdate  ?? options.default.autoupdate_mapview;     // default value
     const clickable     = argObj.clickable   ?? options.default.clickable_mapview;      // default value
-    const pathing       = argObj.pathing     ?? options.default.pathing_on_mapview      // default value
+    const pathing       = argObj.pathing     ?? options.default.pathing_on_mapview;      // default value
     const this_map = maps[mapname];
 
     // ERROR: non-extant map
@@ -1141,24 +1141,24 @@ function create_mapview(argObj) {
     // add pathing {
     if (pathing) {
         $mapview.on('mouseover', function(ev) {
-        const item = ev.target.closest('.macro-Sleepymap-tile');
-        if (item) {
-            const target_i = $(item).attr('data-i');
-            const path = Sleepymap.find_path({
-                mapname, 
-                start_i: Number(position_i), 
-                end_i: Number(target_i),
-            });
-            for (let i = 0; i < maparray.length; i++) {
-                const $path_tile = $(`.macro-Sleepymap-tile[data-i="${i}"]`);
-                if (path?.includes(i)) {
-                    $path_tile.addClass('macro-Sleepymap-path');
-                }
-                else {
-                    $path_tile.removeClass('macro-Sleepymap-path');
+            const item = ev.target.closest('.macro-Sleepymap-tile');
+            if (item) {
+                const target_i = $(item).attr('data-i');
+                const path = Sleepymap.find_path({
+                    mapname, 
+                    start_i: Number(position_i), 
+                    end_i: Number(target_i),
+                });
+                for (let i = 0; i < maparray.length; i++) {
+                    const $path_tile = $(`.macro-Sleepymap-tile[data-i="${i}"]`);
+                    if (path?.includes(i)) {
+                        $path_tile.addClass('macro-Sleepymap-path');
+                    }
+                    else {
+                        $path_tile.removeClass('macro-Sleepymap-path');
+                    }
                 }
             }
-        }
         });
     }
 

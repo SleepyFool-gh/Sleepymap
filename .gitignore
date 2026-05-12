@@ -62,5 +62,4 @@ typings/
 
 .vscode/
 _archive/
-src/etc/
 src/scripts/CTRL+R_RESETS_STATE.js
