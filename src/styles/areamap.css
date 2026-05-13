@@ -61,8 +61,8 @@
         border: 0.19rem dashed black;
     }
     .macro-Sleepymap-tile[data-traversable='true'] {
-        backdrop-filter: brightness(1.3);
+        backdrop-filter: brightness(1.23);
     }
-    .macro-Sleepymap-segment {
-        position: absolute;
-    }
+.macro-Sleepymap-hoverlink {
+    cursor: pointer;
+}

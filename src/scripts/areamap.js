@@ -10,14 +10,16 @@
 const options = {
     // various config settings which can all also be set when calling the macro / JS function
     default: {
-        wall_id                 : '.',
-        diagonals               : false,
-        position_story_variable : '$@Sleepymap/position',
-        autoupdate_rose         : true,
-        autoupdate_mapview      : true,
-        clickable_mapview       : true,
-        show_labels_on_mapview  : true,
-        pathing_on_mapview      : true,
+        wall_id                  : '.',
+        diagonals                : false,
+        position_story_variable  : '$@Sleepymap/position',
+        autoupdate_rose          : true,
+        autoupdate_mapview       : true,
+        clickable_mapview        : true,
+        show_labels_on_mapview   : true,
+        pathing_on_mapview       : true,
+        enable_mapview_quickmove : true,
+        pathmove_delay           : 250,
     },
     // shows on mapview & rose in grid_movment mode
     labels: {
@@ -965,6 +967,9 @@ const CREATE_MAPVIEW_TEMPLATE = {
     pathing: {
         type: 'boolean',
     },
+    quickmove: {
+        type: 'boolean',
+    },
 }
 // macro wrapper, creates & places mapview
 Macro.add(['place_mapview', 'placemapview'], {
@@ -983,15 +988,21 @@ function create_mapview(argObj) {
     ArgObj.validate(name, CREATE_MAPVIEW_TEMPLATE, argObj);
 
     const { mapname, background, keydown } = argObj;
-    const show_labels   = argObj.show_labels ?? options.default.show_labels_on_mapview; // default value
-    const autoupdate    = argObj.autoupdate  ?? options.default.autoupdate_mapview;     // default value
-    const clickable     = argObj.clickable   ?? options.default.clickable_mapview;      // default value
-    const pathing       = argObj.pathing     ?? options.default.pathing_on_mapview;      // default value
+    // default values
+    const show_labels   = argObj.show_labels ?? options.default.show_labels_on_mapview; 
+    const autoupdate    = argObj.autoupdate  ?? options.default.autoupdate_mapview;
+    const clickable     = argObj.clickable   ?? options.default.clickable_mapview;
+    const pathing       = argObj.pathing     ?? options.default.pathing_on_mapview;
+    const quickmove     = argObj.quickmove   ?? options.default.enable_mapview_quickmove;
     const this_map = maps[mapname];
 
     // ERROR: non-extant map
     if (this_map === undefined) {
         throw new Error(`${name} — Sleepymap "${mapname}" not found!`);
+    }
+    // WARNING: quickmove without pathing
+    if (quickmove && (! pathing)) {
+        console.warn(`${name} — Sleepymap "${mapname}" — quickmove without showing pathing isn't sensible!`);
     }
 
     const mapvars = this_map.mapvars;
@@ -1048,7 +1059,6 @@ function create_mapview(argObj) {
     else {
         for (const dir in exits.node[position.mapnode]) {
             const exit_nodes = exits.node[position.mapnode][dir];
-                console.log(exit_nodes);
             for (const node of exit_nodes) {
                 const exit_is = [];
                 maparray.reduce( function(acc, el, i) {
@@ -1082,6 +1092,7 @@ function create_mapview(argObj) {
         }
     }
 
+    const $tiles = [];
     // create & append tiles
     for (let i = 0; i < mapview.array.length; i++) {
         const id = mapview.array[i];
@@ -1131,6 +1142,7 @@ function create_mapview(argObj) {
         }
         
         $mapview.append($tile);
+        $tiles[i] = $tile;
     }
 
     // attach click listener
@@ -1141,28 +1153,45 @@ function create_mapview(argObj) {
     if (keydown) {
         attach_keydown({ name, mapname, keydown, $interface: $mapview });
     }
-    // add pathing
-    if (pathing && grid_movement) {
+    // pathing always works, but hidden if not shown
+    if (grid_movement) {
+        let path;
         $mapview.on('mouseover', function(ev) {
             const item = ev.target.closest('.macro-Sleepymap-tile');
             if (item) {
                 const target_i = Number($(item).attr('data-i'));
-                const path = Sleepymap.find_path({
+                path = Sleepymap.find_path({
                     mapname, 
                     from_i  : position_i, 
                     to_i    : target_i,
                 });
-                for (let i = 0; i < maparray.length; i++) {
-                    const $path_tile = $(`.macro-Sleepymap-tile[data-i="${i}"]`);
-                    if (path?.includes(i)) {
-                        $path_tile.addClass('macro-Sleepymap-path');
+                // show pathing
+                if (pathing) {
+                    // remove path class on all tiles
+                    $mapview[0]
+                        .querySelectorAll('.macro-Sleepymap-path')
+                        .forEach( el => el.classList.remove('macro-Sleepymap-path'));
+                    // add path class to each path tile
+                    for (let i = 0; i < path?.length; i++) {
+                        $tiles[path[i]].addClass('macro-Sleepymap-path');
                     }
-                    else {
-                        $path_tile.removeClass('macro-Sleepymap-path');
+                }
+                // if quickmove enabled
+                if (quickmove) {
+                    // if path exists, movable
+                    $(item).removeClass('macro-Sleepymap-hoverlink');
+                    if (path) {
+                        $(item).addClass('macro-Sleepymap-hoverlink');
                     }
                 }
             }
         });
+        if (quickmove) {
+            $mapview.on('click', '.macro-Sleepymap-tile', function(ev) {
+                console.log(path);
+                begin_pathmove({ mapname, path });
+            });
+        }
     }
 
     return $mapview;
@@ -1620,6 +1649,7 @@ Macro.add(['mapmove', 'map_move'], {
 // begins map movement procedure
 function begin_mapmove(argObj) {
     const name = argObj.name ?? 'Sleepymap.begin_mapmove';
+    console.log(argObj);
 
     // VALIDATE: required args & type
     ArgObj.validate(name, BEGIN_MAPMOVE_TEMPLATE, argObj);
@@ -1889,8 +1919,75 @@ function resolve_mapmove(argObj) {
         targets,
         succeeded,
     });
+    console.log(origins, targets, succeeded);
 }
 
+async function begin_pathmove(argObj) {
+    const name = argObj.name ?? 'Sleepymap.begin_pathmove';
+    const { mapname, path } = argObj;
+    // default values
+    const skip_scripts      = argObj.skip_scripts ?? false;
+    const suppress_warnings = argObj.suppress_warnings ?? false;
+    const pathmove_delay    = argObj.pathmove_delay ?? options.default.pathmove_delay;
+
+    const this_map = maps[mapname];
+
+    // ERROR: no map found
+    if (this_map === undefined) {
+        throw new Error(`${name} — Sleepymap "${mapname}" not found!`);
+    }
+    // WARNING: empty path, exit early
+    else if ((path === null || path === undefined || path?.length === 0)) {
+        if (! suppress_warnings) {
+            console.warn(`${name} — Sleepymap "${mapname}" — path is empty, nothing to do; ABORTED`);
+        }
+        return;
+    }
+    // ERROR: path not an array
+    else if (! Array.isArray(path)) {
+        throw new Error(`${name} — Sleepymap "${mapname}" — "path" must be an array!`);
+    }
+
+    const { columns } = this_map;
+
+    // skip first as it is start position
+    for (let i = 1; i < path.length; i++) {
+        const step = path[i];
+
+        // --- resolve the step into target_x / target_y ---
+        // path entries can be either an index (number) or an {x, y} object,
+        // matching both formats find_path() can return
+        let target_x, target_y;
+        if (typeof step === 'number') {
+            ({ x: target_x, y: target_y } = i2xy({ i: step, columns }));
+        }
+        else {
+            ({ x: target_x, y: target_y } = step);
+        }
+        console.log(target_x, target_y);
+
+
+        // --- wait for resolution, check success ---
+        const succeeded = await new Promise(resolve => {
+            // listener needs to be set BEFORE firing mapmove
+            $(document).one('Sleepymap:mapmove_resolved', (ev, data) => {
+                resolve(data.succeeded);
+            });
+            setTimeout( function() {
+                begin_mapmove({
+                    mapname, 
+                    skip_scripts, 
+                    target_x, 
+                    target_y, 
+                    suppress_warnings,
+                });
+            }, i === 1 ? 0 : pathmove_delay)
+        });
+
+        // abort the whole path if any step fails
+        if (! succeeded) break;
+    }
+}
 
 
 
@@ -2243,7 +2340,6 @@ function edit_map(argObj) {
 
 
 
-
 //  ████ █     █████ █████ ████  █   █ █    █  ███  ████
 // █     █     █     █     █   █  █ █  ██  ██ █   █ █   █
 //  ███  █     ███   ███   ████    █   █ ██ █ █████ ████
@@ -2268,6 +2364,6 @@ const Sleepymap = {
 window.Sleepymap = Sleepymap;
 
 
-
-
 })();
+
+

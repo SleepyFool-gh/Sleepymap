@@ -34,6 +34,7 @@ This is a demo of the Areamap library for SugarCube, part of the Sleepy Macros c
 <<mapnodes _mapnodes>>
 <<mapvars
     position '$position'
+    blocked  '$blocked'
 >>
 <</new_map>>
 <<set_scripts mapname 'small_house'>>

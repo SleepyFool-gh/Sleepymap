@@ -1,3 +1,169 @@
+function find_path_Astar(argObj) {
+ 
+    const name = argObj.name ?? 'Sleepymap.find_path';
+    const { mapname, from_i, to_i, from_x, from_y, to_x, to_y } = argObj;
+    const this_map = maps[mapname];
+ 
+    const has_i_inputs = from_i !== undefined || to_i !== undefined;
+    const has_xy_inputs = from_x !== undefined || from_y !== undefined || to_x !== undefined || to_y !== undefined;
+
+    // ERROR: non-extant map
+    if (this_map === undefined) {
+        throw new Error(`${name} — Sleepymap "${mapname}" not found!`);
+    }
+    // ERROR: mixed inputs
+    else if (has_i_inputs && has_xy_inputs) {
+        throw new Error(`${name} — Sleepymap "${mapname}" — can't have both i & xy inputs!`);
+    }
+    // ERROR: insufficient inputs
+    else if (
+        (has_i_inputs && (from_i === undefined || to_i === undefined)) ||
+        (has_xy_inputs && (from_x === undefined || from_y === undefined || to_x === undefined || to_y === undefined))
+    ) {
+        throw new Error(`${name} — Sleepymap "${mapname}" — insufficient inputs, need both from_i/to_i or, all of from_x/from_y/to_x/to_y!`);
+    }
+ 
+    const { exits, maparray, columns } = this_map;
+    const start_i   = from_i ?? xy2i({ xy: { x: from_x, y: from_y }, columns });
+    const end_i     = to_i ?? xy2i({ xy: { x: to_x, y: to_y }, columns });
+ 
+    // TRIVIAL CASE
+    if (start_i === end_i) {
+        return [start_i];
+    }
+
+    // A*
+    // g_cost[i] = cheapest known cost from start to i
+    const g_cost   = new Array(maparray.length).fill(Infinity);
+    const came_from = new Array(maparray.length).fill(undefined);
+
+    g_cost[start_i]   = 0;
+    came_from[start_i] = -1;
+
+    const open = new MinHeap();
+    open.push(start_i, heuristic(start_i, end_i, columns)); // f = 0 + h
+
+    while (open.size > 0) {
+        const current_i = open.pop();
+
+        // destination reached — reconstruct path immediately
+        if (current_i === end_i) break;
+
+        for (const dirs of Object.values(exits.grid[current_i] ?? {})) {
+            for (const neighbor_i of dirs) {
+                // cost: 1 for cardinal, √2 for diagonal (optional, see note below)
+                const tentative_g = g_cost[current_i] + 1;
+
+                if (tentative_g < g_cost[neighbor_i]) {
+                    came_from[neighbor_i] = current_i;
+                    g_cost[neighbor_i]    = tentative_g;
+                    const f = tentative_g + heuristic(neighbor_i, end_i, columns);
+                    open.push(neighbor_i, f);
+                }
+            }
+        }
+    }
+ 
+    // end_i was never reached
+    if (came_from[end_i] === undefined) {
+        return null;
+    }
+ 
+    // RECONSTRUCT PATH (walk backwards through came_from)
+    const path = [];
+    let   step = end_i;
+    while (step !== -1) {
+        // convert to xy if input was xy
+        if (has_xy_inputs) {
+            path.push(i2xy({ i: step, columns }));
+        }
+        else {
+            path.push(step);
+        }
+        step = came_from[step];
+    }
+    path.reverse();
+ 
+    return path;
+}// Chebyshev distance handles both cardinal-only and diagonal grids.
+// For cardinal-only maps you can use Manhattan instead.
+function heuristic(i, end_i, columns) {
+    const ax = i % columns,     ay = Math.floor(i / columns);
+    const bx = end_i % columns, by = Math.floor(end_i / columns);
+    const dx = Math.abs(ax - bx), dy = Math.abs(ay - by);
+    // Chebyshev: diagonals cost 1, same as cardinals
+    return Math.max(dx, dy);
+    // Manhattan alternative (cardinal-only maps):
+    // return dx + dy;
+}
+class MinHeap {
+    constructor() { this._h = []; }
+    push(item, priority) {
+        this._h.push({ item, priority });
+        this._bubbleUp(this._h.length - 1);
+    }
+    pop() {
+        const top = this._h[0];
+        const last = this._h.pop();
+        if (this._h.length > 0) { this._h[0] = last; this._siftDown(0); }
+        return top?.item;
+    }
+    get size() { return this._h.length; }
+    _bubbleUp(i) {
+        while (i > 0) {
+            const p = (i - 1) >> 1;
+            if (this._h[p].priority <= this._h[i].priority) break;
+            [this._h[p], this._h[i]] = [this._h[i], this._h[p]];
+            i = p;
+        }
+    }
+    _siftDown(i) {
+        const n = this._h.length;
+        while (true) {
+            let min = i, l = 2*i+1, r = 2*i+2;
+            if (l < n && this._h[l].priority < this._h[min].priority) min = l;
+            if (r < n && this._h[r].priority < this._h[min].priority) min = r;
+            if (min === i) break;
+            [this._h[min], this._h[i]] = [this._h[i], this._h[min]];
+            i = min;
+        }
+    }
+}
+
+
+function performance_test(n) {
+    let start, end;
+    const this_map = maps['small_house'];
+    const { maparray, columns } = this_map;
+    start = performance.now();
+    const BFS_paths = [];
+    for (let i = 0; i < n; i++) {
+        const path = find_path({
+            mapname: 'small_house',
+            from_i: random(0, maparray.length-1),
+            to_i: random(0, maparray.length-1),
+        });
+        BFS_paths.push(path);
+    }
+    end = performance.now();
+    console.log('BFS', end - start);
+    console.log(BFS_paths);
+    start = performance.now();
+    const Astar_paths = [];
+    for (let i = 0; i < n; i++) {
+        const path = find_path_Astar({
+            mapname: 'small_house',
+            from_i: random(0, maparray.length-1),
+            to_i: random(0, maparray.length-1),
+        });
+        Astar_paths.push(path);
+    }
+    end = performance.now();
+    console.log('A*', end - start);
+    console.log(Astar_paths);
+}
+window.performance_test = performance_test;
+
 
 
     // add pathing {

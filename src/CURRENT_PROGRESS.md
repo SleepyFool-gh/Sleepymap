@@ -23,6 +23,7 @@
 - remove class, changed to proxy
 - removed update_rose & update_mapview for update_interface
 - added keydown listener
+- added BFS pathing
+- added pathmove
 
-- need to add pathing
 - need to update documentation
