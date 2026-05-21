@@ -1098,14 +1098,14 @@ function create_mapview(argObj) {
         const id = mapview.array[i];
         const mapnode = mapnodes[id];
         // if clickable & valid travel destination --> clickable
-        const link  = ! clickable
+        const link  = (! clickable) || _pathmove_running
                         ? false
                         : !! is_traversable(i);
 
         const xy = i2xy({ i, columns: mapview.columns });
         // labels only work in grid mode
         const dir = i2dir[i];
-        const label     = ! (show_labels && grid_movement && is_traversable(i))
+        const label     = _pathmove_running || (! show_labels) || (! grid_movement) || (! is_traversable(i))
                             ? ''
                         // use labels if same room or if room name is non-extant
                         : (dir !== undefined) && ((position.mapnode === mapnode.id) || (mapnode.name === undefined))
@@ -1116,7 +1116,7 @@ function create_mapview(argObj) {
             .addClass('macro-Sleepymap-tile')
             .addClass(link ? 'macro-Sleepymap-link' : '')
             // change traversable to 'current' for CSS targeting
-            .attr('data-traversable', is_traversable(i) === null ? 'current' : is_traversable(i))
+            .attr('data-traversable', is_traversable(i) === null ? 'current' : (is_traversable(i) && (! _pathmove_running)))
             .attr('data-type', mapnode.type)
             .attr('data-dir', dir)
             .attr('data-mapnode-name', mapnode.name)
@@ -1165,8 +1165,8 @@ function create_mapview(argObj) {
                     from_i  : position_i, 
                     to_i    : target_i,
                 });
-                // show pathing
-                if (pathing) {
+                // show pathing if enabled and not pathmoving
+                if (pathing && ! _pathmove_running) {
                     // remove path class on all tiles
                     $mapview[0]
                         .querySelectorAll('.macro-Sleepymap-path')
@@ -1176,8 +1176,8 @@ function create_mapview(argObj) {
                         $tiles[path[i]].addClass('macro-Sleepymap-path');
                     }
                 }
-                // if quickmove enabled
-                if (quickmove) {
+                // if quickmove enabled and not pathmoving
+                if (quickmove && ! _pathmove_running) {
                     // if path exists, movable
                     $(item).removeClass('macro-Sleepymap-hoverlink');
                     if (path) {
@@ -1188,7 +1188,6 @@ function create_mapview(argObj) {
         });
         if (quickmove) {
             $mapview.on('click', '.macro-Sleepymap-tile', function(ev) {
-                console.log(path);
                 begin_pathmove({ mapname, path });
             });
         }
@@ -1297,9 +1296,9 @@ function attach_click(argObj) {
         // uses "this" because that is the element that matches the selector ^
         // whereas ev.target is the thing clicked, which maybe inside the matched element
         // link disabled, do nothing
-        if ($(this).attr('disabled')) {
-            return;
-        }
+        if ($(this).attr('disabled')) return;
+        // pathmove running, do nothing
+        if (_pathmove_running) return;
         // attempt move to target
         const target_mapnode    = $(this).attr('data-mapnode');
         const target_x          = Number($(this).attr('data-x'));
@@ -1347,6 +1346,8 @@ function attach_keydown(argObj) {
             $(document).off(`keydown.${namespace}`);
             return;
         }
+        // pathmove running, do nothing
+        if (_pathmove_running) return;
         
         // match by key string first, then keyCode as fallback
         const dir = key_to_dir[ev.key] ?? key_to_dir[ev.keyCode];
@@ -1649,7 +1650,6 @@ Macro.add(['mapmove', 'map_move'], {
 // begins map movement procedure
 function begin_mapmove(argObj) {
     const name = argObj.name ?? 'Sleepymap.begin_mapmove';
-    console.log(argObj);
 
     // VALIDATE: required args & type
     ArgObj.validate(name, BEGIN_MAPMOVE_TEMPLATE, argObj);
@@ -1919,11 +1919,15 @@ function resolve_mapmove(argObj) {
         targets,
         succeeded,
     });
-    console.log(origins, targets, succeeded);
 }
 
-async function begin_pathmove(argObj) {
+let _pathmove_running = false;
+function begin_pathmove(argObj) {
     const name = argObj.name ?? 'Sleepymap.begin_pathmove';
+
+    // do nothing if pathmove running
+    if (_pathmove_running) return;
+
     const { mapname, path } = argObj;
     // default values
     const skip_scripts      = argObj.skip_scripts ?? false;
@@ -1950,13 +1954,12 @@ async function begin_pathmove(argObj) {
 
     const { columns } = this_map;
 
-    // skip first as it is start position
-    for (let i = 1; i < path.length; i++) {
+    _pathmove_running = true;
+    // recursive fn to execute each step
+    function execute_step(i) {
         const step = path[i];
 
-        // --- resolve the step into target_x / target_y ---
-        // path entries can be either an index (number) or an {x, y} object,
-        // matching both formats find_path() can return
+        // path might be in i or xy
         let target_x, target_y;
         if (typeof step === 'number') {
             ({ x: target_x, y: target_y } = i2xy({ i: step, columns }));
@@ -1964,29 +1967,36 @@ async function begin_pathmove(argObj) {
         else {
             ({ x: target_x, y: target_y } = step);
         }
-        console.log(target_x, target_y);
-
-
-        // --- wait for resolution, check success ---
-        const succeeded = await new Promise(resolve => {
-            // listener needs to be set BEFORE firing mapmove
+        
+        // attach listener for next step if needed
+        if (path.length > i+1) {
             $(document).one('Sleepymap:mapmove_resolved', (ev, data) => {
-                resolve(data.succeeded);
-            });
-            setTimeout( function() {
-                begin_mapmove({
-                    mapname, 
-                    skip_scripts, 
-                    target_x, 
-                    target_y, 
-                    suppress_warnings,
-                });
-            }, i === 1 ? 0 : pathmove_delay)
-        });
+                // only proceed to next step if succeeded
+                if (data.succeeded) {
+                    setTimeout( () => execute_step(i+1), pathmove_delay);
+                }
+                // unlock if not
+                else {
+                    _pathmove_running = false;
+                }
+            })
+        }
+        // unlock if not
+        else {
+            _pathmove_running = false;
+        }
 
-        // abort the whole path if any step fails
-        if (! succeeded) break;
+        begin_mapmove({
+            mapname, 
+            skip_scripts, 
+            target_x, 
+            target_y, 
+            suppress_warnings,
+        });
     }
+
+    // start recursion
+    execute_step(1);
 }
 
 

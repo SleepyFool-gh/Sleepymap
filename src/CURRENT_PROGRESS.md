@@ -25,5 +25,8 @@
 - added keydown listener
 - added BFS pathing
 - added pathmove
+- disabled all links while pathmoving
+- disabled all mapview visual click indicators while pathmoving
 
+- need to add $walled mapvar
 - need to update documentation

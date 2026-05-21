@@ -39,7 +39,7 @@ This is a demo of the Areamap library for SugarCube, part of the Sleepy Macros c
 <</new_map>>
 <<set_scripts mapname 'small_house'>>
     <<onmapend to_x 4 to_y 4>>
-        <<run console.log("!!!")>>
+        <<run console.log("x4y4!")>>
 <</set_scripts>>
 
 <<set_entity
@@ -114,3 +114,4 @@ This is a demo of the Areamap library for SugarCube, part of the Sleepy Macros c
     to_y 4
     direction "N"
 >>
+<<run Sleepymap.edit_map({mapname:'small_house', mapnode:{"S":{nodetype:'wall'}}})>>
