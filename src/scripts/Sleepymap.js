@@ -346,7 +346,7 @@ function new_map(argObj) {
     const mapnodes = this_map.mapnodes;
     // take unique values from map array, create nodes for each
     [...new Set(maparray)].forEach( function(id) {
-        // SYNC REMINDER: changing here also requires changing default wall below & edit_map fn
+        // SYNC REMINDER: changing here also requires changing default wall below & set_mapnode & set_mapstate fn's
         mapnodes[id] = {
             id          : id,                                               // identifier
             name        : argObj.mapnodes?.[id]?.name       ?? id,          // displayed in rose
@@ -441,6 +441,17 @@ function set_mapstate(argObj) {
     if (this_map === undefined) {
         throw new Error(`${name} — Sleepymap — couldn't find map with name "${mapname}"!`);
     }
+    // ERROR: no mapstate provided
+    if (
+        (! Object.hasOwn(argObj, 'position')) &&
+        (! Object.hasOwn(argObj, 'frozen')) &&
+        (! Object.hasOwn(argObj, 'disabled')) &&
+        (! Object.hasOwn(argObj, 'hidden')) &&
+        (! Object.hasOwn(argObj, 'blocked')) &&
+        (! Object.hasOwn(argObj, 'walled'))
+    ) {
+        throw new Error(`${name} — Sleepymap "${mapname}" — no mapstate provided!`);
+    }
 
     const { grid_movement, columns, maparray, mapnodes } = this_map;
 
@@ -479,7 +490,7 @@ function set_mapstate(argObj) {
         this_map.frozen = argObj.frozen;
     }
 
-    // SYNC REMINDER: if changing here, need to change in SET_MAPSTATE_TEMPLATE & edit_map? (TODO: check edit_map)
+    // SYNC REMINDER: if changing here, need to change in SET_MAPSTATE_TEMPLATE, new_map, set_mapstate, & set_mapnode
     for (const mapstate of ['disabled', 'hidden', 'blocked', 'walled']) {
         // no input, skip
         if (argObj[mapstate] === undefined) continue;
@@ -517,7 +528,7 @@ function get_mapstate(argObj) {
     }
     // ERROR: no mapstate requested
     else if (mapstate === undefined) {
-        throw new Error(`${name} — Sleepymap "${mapname}" — mapstate parameter is required!`);
+        throw new Error(`${name} — Sleepymap "${mapname}" — mapstate args is required!`);
     }
     
     const { mapnodes } = this_map;
@@ -545,12 +556,89 @@ function get_mapstate(argObj) {
     return id2mapstate;
 }
 
+
+
+
 //  ████ █████ █████      ███  █████ █████     █    █  ███  ████  █    █  ████  ████  █████
 // █     █       █       █     █       █       ██  ██ █   █ █   █ ██   █ █    █ █   █ █
 //  ███  ███     █       █  ██ ███     █       █ ██ █ █████ ████  █ █  █ █    █ █   █ ███
 //     █ █       █       █   █ █       █       █    █ █   █ █     █  █ █ █    █ █   █ █
 // ████  █████   █        ███  █████   █       █    █ █   █ █     █   ██  ████  ████  █████
 // SECTION: set / get mapnode
+const SET_MAPNODE_TEMPLATE = {
+    mapname: {
+        type: 'string',
+        required: true,
+    },
+    mapnode: {
+        type: 'string',
+        required: true,
+    },
+    data: {
+        type: 'object',
+        required: true,
+    },
+};
+Macro.add(['set_mapnode'], {
+    handler() {
+        const name = this.name;
+        const argObj = new ArgObj(name, SET_MAPNODE_TEMPLATE, this.args);
+        argObj.add_metadata('name', name);
+        set_mapstate(argObj);
+    }
+});
+function set_mapnode(argObj) {
+    const name = argObj.name ?? 'Sleepymap.set_mapnode';
+
+    // VALIDATE: required args & type
+    ArgObj.validate(name, SET_MAPSTATE_TEMPLATE, argObj);
+
+    const { mapname, data } = argObj;
+    const this_map = maps[mapname];
+
+    // ERROR: non-extant map
+    if (this_map === undefined) {
+        throw new Error(`${name} — Sleepymap — couldn't find map with name "${mapname}"!`);
+    }
+
+    const { mapnodes } = this_map;
+    if (mapnodes[argObj.mapnode] === undefined) {
+        throw new Error(`${name} — Sleepymap "${mapname}" — mapnode "${argObj.mapnode}" doesn't exist on map!`);
+    }
+
+    // SYNC REMINDER: updating here requires updating in new_map
+    const valid_props = ['name', 'tile', 'disabled', 'hidden', 'blocked', 'walled'];
+    for (const prop in data) {
+        if (! valid_props.includes(prop)) {
+            console.warn(`${name} — Sleepymap "${mapname}" — "${prop}" is not a valid mapnode property, ignoring...`);
+            continue;
+        }
+
+    }
+
+    // HERE
+}
+function get_mapnode(argObj) {
+    const name = argObj.name ?? 'Sleepymap.get_mapnode';
+    const { mapname } = argObj;
+    const this_map = maps[mapname];
+
+    // ERROR: non-extant map
+    if (this_map === undefined) {
+        throw new Error(`${name} — Sleepymap — couldn't find map with name "${mapname}"!`);
+    }
+    // ERROR: missing mapnode args
+    else if (argObj.mapnode === undefined) {
+        throw new Error(`${name} — Sleepymap "${mapname}" — missing required args "mapnode"!`);
+    }
+
+    const { mapnodes } = this_map;
+    if (mapnodes[argObj.mapnode] === undefined) {
+        throw new Error(`${name} — Sleepymap "${mapname}" — mapnode "${argObj.mapnode}" doesn't exist on map!`);
+    }
+
+    return structuredClone(mapnodes[argObj.mapnode]);
+}
 
 
 
@@ -714,7 +802,7 @@ const EDIT_EXITS_TEMPLATE = {
     },
 }
 // wrapper for edit_exits
-Macro.add(['connect_map', 'connectmap', 'disconnect_map', 'disconnectmap'], {
+Macro.add(['connect_map', 'disconnect_map'], {
     handler() {
         const name = this.name;
         const argObj = new ArgObj(name, EDIT_EXITS_TEMPLATE, this.args);
@@ -733,7 +821,6 @@ function edit_exits(argObj) {
     const { mapname, from, to, from_x, from_y, to_x, to_y, dir } = argObj;
     const removing = argObj.removing ?? false   // default value
     const this_map = maps[mapname];
-    const { mapnodes, maparray, columns } = this_map;
 
     // BASIC ERRORS
     // ERROR: no map found
@@ -744,6 +831,8 @@ function edit_exits(argObj) {
     else if (! Object.hasOwn(is_diagonal, dir)) {
         throw new Error(`${name} — Sleepymap "${mapname}" — invalid dir "${dir}", must be one of "N", "E", "S", "W", "NE", "SE", "SW", "NW"!`);
     }
+
+    const { mapnodes, maparray, columns } = this_map;
 
     // FROM/TO INPUT ERRORS
     const has_node_inputs = from !== undefined || to !== undefined;
@@ -846,7 +935,7 @@ const CREATE_ROSE_TEMPLATE = {
 }
 // macro wrapper, calls the create_rose function (which returns a $rose object)
 // then attaches it to the macro output
-Macro.add(['place_rose', 'placerose'], {
+Macro.add(['place_rose'], {
     handler() {
         const name = this.name;
         const argObj = new ArgObj(name, CREATE_ROSE_TEMPLATE, this.args);
@@ -1037,7 +1126,7 @@ const CREATE_MAPVIEW_TEMPLATE = {
     },
 }
 // macro wrapper, creates & places mapview
-Macro.add(['place_mapview', 'placemapview'], {
+Macro.add(['place_mapview'], {
     handler: function() {
         const name = this.name;
         const argObj = new ArgObj(name, CREATE_MAPVIEW_TEMPLATE, this.args);
@@ -1291,7 +1380,7 @@ const UPDATE_INTERFACE_TEMPLATE = {
     },
 }
 // macro wrapper
-Macro.add(['update_interface', 'updateinterface'], {
+Macro.add(['update_interface'], {
     handler: function() {
         const name = this.name;
         const argObj = new ArgObj(name, UPDATE_INTERFACE_TEMPLATE, this.args);
@@ -1472,7 +1561,7 @@ const DELETE_ENTITY_TEMPLATE = {
         type: 'boolean',
     },
 };
-Macro.add(['new_entity', 'newentity', 'set_entity', 'setentity', 'delete_entity', 'deleteentity'], {
+Macro.add(['new_entity', 'set_entity', 'delete_entity'], {
     handler() {
         const name = this.name;
         const template = this.name.includes('delete') ? DELETE_ENTITY_TEMPLATE : SET_ENTITY_TEMPLATE;
@@ -1563,7 +1652,7 @@ const ONMAP_TRIGGERS_TEMPLATE = {
     },
 };
 // macro wrapper for set_scripts
-Macro.add(['set_scripts','setscripts'], {
+Macro.add(['set_scripts'], {
 
     tags: ['onmapattempt', 'onmapstart', 'onmapend', 'onmapabort'],
 
@@ -1695,7 +1784,7 @@ const BEGIN_MAPMOVE_TEMPLATE = {
     },
 };
 // macro wrapper for begin_mapmove
-Macro.add(['mapmove', 'map_move'], {
+Macro.add(['mapmove'], {
     handler() {
         const name = this.name;
         const argObj = new ArgObj(name, BEGIN_MAPMOVE_TEMPLATE, this.args);
