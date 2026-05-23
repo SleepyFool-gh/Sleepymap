@@ -115,3 +115,4 @@ This is a demo of the Areamap library for SugarCube, part of the Sleepy Macros c
     direction "N"
 >>
 <<run Sleepymap.edit_map({mapname:'small_house', mapnode:{"S":{nodetype:'wall'}}})>>
+<<set_mapstate mapname 'small_house' disabled `{kitchen: true}`>>

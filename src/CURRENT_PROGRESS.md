@@ -27,6 +27,10 @@
 - added pathmove
 - disabled all links while pathmoving
 - disabled all mapview visual click indicators while pathmoving
+- finished updating to new mapstates structure
 
-- need to add $walled mapvar
+- adding get / set mapnodes
+- need to add some way to remove manual exits
+- need to ensure hidden tiles aren't pathed through
+- need to add settings to disable automatic disabling and hiding of disabled / hidden maptiles?
 - need to update documentation
