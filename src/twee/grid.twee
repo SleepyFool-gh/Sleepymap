@@ -25,7 +25,7 @@ This is a demo of the Areamap library for SugarCube, part of the Sleepy Macros c
     .   .   .   .   .   .   .   .    .   .   .   .   .   .    .   .
     .   .   .   .   K   K   K   K    K   .   L   L   L   L    L   .
     .   .   .   .   K   K   K   K    K   .   L   L   L   L    L   .
-    .   P   P   P|  K_  K   K_  K_  _K   .   L   L_  L_  L_   L   .
+    .   P   P   P|  K_  Y   K_  K_  _K   .   L   L_  L_  L_   L   .
     .   P   P   P|  D   D   D   D   |S   .   H  |G   G   G   |S   .
     .   P   P   P|  D   D   D   D   |S   .   H   G_  G_  G_ _|S   .
     .   P   P   P   D   D   D   D    D   .   H  |M   M   M    M   .
@@ -84,8 +84,9 @@ This is a demo of the Areamap library for SugarCube, part of the Sleepy Macros c
         <<link 'go to guest bedroom'>>
             <<mapmove mapname 'small_house' target_mapnode 'G'>>
         <</link>>
-        <<link 'update rose'>>
-            <<update_rose selector '.macro-Sleepymap-rose'>>
+        <<link 'update interfaces'>>
+            <<update_interface selector '.macro-Sleepymap-rose'>>
+            <<update_interface selector '.macro-Sleepymap-mapview'>>
         <</link>>
     </div>
     <div>
@@ -114,5 +115,4 @@ This is a demo of the Areamap library for SugarCube, part of the Sleepy Macros c
     to_y 4
     direction "N"
 >>
-<<run Sleepymap.edit_map({mapname:'small_house', mapnode:{"S":{nodetype:'wall'}}})>>
-<<set_mapstate mapname 'small_house' disabled `{kitchen: true}`>>
+<<set_mapstate mapname 'small_house' hidden `{Y: true}`>>

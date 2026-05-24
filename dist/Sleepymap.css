@@ -53,11 +53,11 @@
         .macro-Sleepymap-path {
             background: rgba(82, 209, 255, 0.3);
         }
-    .macro-Sleepymap-tile[data-traversable='current'] {
+    .macro-Sleepymap-tile[data-current-position='true'] {
         font-weight: bold;
         backdrop-filter: contrast(1.4) brightness(1.4);
     }
-    .macro-Sleepymap-mapview[data-maptype='grid'] .macro-Sleepymap-tile[data-traversable='current'] {
+    .macro-Sleepymap-mapview[data-maptype='grid'] .macro-Sleepymap-tile[data-current-position='true'] {
         border: 0.19rem dashed black;
     }
     .macro-Sleepymap-tile[data-traversable='true'] {

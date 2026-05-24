@@ -20,6 +20,9 @@ const options = {
         pathing_on_mapview       : true,
         enable_mapview_quickmove : true,
         pathmove_delay           : 250,
+        disabled_stops_pathing   : true,
+        hidden_stops_pathing     : true,
+        blocked_stops_pathing    : false,
     },
     // shows on mapview & rose in grid_movment mode
     labels: {
@@ -491,6 +494,7 @@ function set_mapstate(argObj) {
     }
 
     // SYNC REMINDER: if changing here, need to change in SET_MAPSTATE_TEMPLATE, new_map, set_mapstate, & set_mapnode
+    let interfaces_need_updating = false;
     for (const mapstate of ['disabled', 'hidden', 'blocked', 'walled']) {
         // no input, skip
         if (argObj[mapstate] === undefined) continue;
@@ -508,12 +512,17 @@ function set_mapstate(argObj) {
                 continue;
             }
             mapnodes[mapnode_id][mapstate] = argObj[mapstate][mapnode_id];
+            interfaces_need_updating = true;
         }
     }
 
     // update exits if walls changed
     if (argObj.walled !== undefined) {
         update_exits({ mapname });
+    }
+    // update interfaces
+    if (interfaces_need_updating) {
+        setTimeout( () => $('#passages').trigger('Sleepymap:map_edited', { mapname }), 0);
     }
 }
 function get_mapstate(argObj) {
@@ -584,14 +593,14 @@ Macro.add(['set_mapnode'], {
         const name = this.name;
         const argObj = new ArgObj(name, SET_MAPNODE_TEMPLATE, this.args);
         argObj.add_metadata('name', name);
-        set_mapstate(argObj);
+        set_mapnode(argObj);
     }
 });
 function set_mapnode(argObj) {
     const name = argObj.name ?? 'Sleepymap.set_mapnode';
 
     // VALIDATE: required args & type
-    ArgObj.validate(name, SET_MAPSTATE_TEMPLATE, argObj);
+    ArgObj.validate(name, SET_MAPNODE_TEMPLATE, argObj);
 
     const { mapname, data } = argObj;
     const this_map = maps[mapname];
@@ -607,16 +616,34 @@ function set_mapnode(argObj) {
     }
 
     // SYNC REMINDER: updating here requires updating in new_map
-    const valid_props = ['name', 'tile', 'disabled', 'hidden', 'blocked', 'walled'];
+    const MAPTILE_PROPS = {
+        name: 'string',
+        tile: 'string',
+        disabled: 'boolean',
+        hidden: 'boolean',
+        blocked: 'boolean',
+        walled: 'boolean',
+    };
+    let interfaces_need_updating = false;
     for (const prop in data) {
-        if (! valid_props.includes(prop)) {
+        // WARNING: not valid property, skip
+        if (! Object.hasOwn(MAPTILE_PROPS, prop)) {
             console.warn(`${name} — Sleepymap "${mapname}" — "${prop}" is not a valid mapnode property, ignoring...`);
             continue;
         }
-
+        // WARNING: invalid type, skip
+        if (typeof data[prop] !== MAPTILE_PROPS[prop]) {
+            console.warn(`${name} — Sleepymap "${mapname}" — "${prop}" is not of type "${MAPTILE_PROPS[prop]}", ignoring...`);
+            continue;
+        }
+        mapnodes[argObj.mapnode][prop] = data[prop];
+        interfaces_need_updating = true;
     }
 
-    // HERE
+    // update interfaces
+    if (interfaces_need_updating) {
+        setTimeout( () => $('#passages').trigger('Sleepymap:map_edited', { mapname }), 0);
+    }
 }
 function get_mapnode(argObj) {
     const name = argObj.name ?? 'Sleepymap.get_mapnode';
@@ -1037,9 +1064,7 @@ function create_rose(argObj) {
                     .attr('data-x', xy.x)
                     .attr('data-y', xy.y)
                     .attr('disabled', exit_mapnode.disabled || frozen)
-                    .css({
-                        visibility: exit_mapnode.hidden ? 'hidden' : '',
-                    })
+                    .css({ opacity: exit_mapnode.hidden ? '0' : '' })   // opacity instead of visibility because of mapview
                     .html(label)
                     .appendTo($dir);
             }
@@ -1266,10 +1291,10 @@ function create_mapview(argObj) {
             .attr('data-i', i)
             .attr('data-x', xy.x)
             .attr('data-y', xy.y)
-            .attr('data-disbled', mapnode.disabled)
+            .attr('data-disabled', mapnode.disabled)
             .attr('disabled', mapnode.disabled || frozen)
             .attr('data-hidden', mapnode.hidden)
-            .css({ visibility: mapnode.hidden ? 'hidden' : '' })
+            .css({ opacity: mapnode.hidden ? '0' : '' }) // opacity instead of visibility because of onhover triggers
             .attr('data-blocked', mapnode.blocked)
             .attr('data-walled', mapnode.walled)
             // defined tile content +? mapnode name wrapped in a span
@@ -1300,33 +1325,30 @@ function create_mapview(argObj) {
     // pathing always works, but hidden if not shown
     if (grid_movement) {
         let path;
-        $mapview.on('mouseover', function(ev) {
-            const item = ev.target.closest('.macro-Sleepymap-tile');
-            if (item) {
-                const target_i = Number($(item).attr('data-i'));
-                path = Sleepymap.find_path({
-                    mapname, 
-                    from_i  : position_i, 
-                    to_i    : target_i,
-                });
-                // show pathing if enabled and not pathmoving
-                if (pathing && ! _pathmove_running) {
-                    // remove path class on all tiles
-                    $mapview[0]
-                        .querySelectorAll('.macro-Sleepymap-path')
-                        .forEach( el => el.classList.remove('macro-Sleepymap-path'));
-                    // add path class to each path tile
-                    for (let i = 0; i < path?.length; i++) {
-                        $tiles[path[i]].addClass('macro-Sleepymap-path');
-                    }
+        $mapview.on('mouseover', '.macro-Sleepymap-tile', function(ev) {
+            const target_i = Number($(this).attr('data-i'));
+            path = Sleepymap.find_path({
+                mapname, 
+                from_i  : position_i, 
+                to_i    : target_i,
+            });
+            // show pathing if enabled and not pathmoving
+            if (pathing && ! _pathmove_running) {
+                // remove path class on all tiles
+                $mapview[0]
+                    .querySelectorAll('.macro-Sleepymap-path')
+                    .forEach( el => el.classList.remove('macro-Sleepymap-path'));
+                // add path class to each path tile
+                for (let i = 0; i < path?.length; i++) {
+                    $tiles[path[i]].addClass('macro-Sleepymap-path');
                 }
-                // if quickmove enabled and not pathmoving
-                if (quickmove && ! _pathmove_running) {
-                    // if path exists, movable
-                    $(item).removeClass('macro-Sleepymap-hoverlink');
-                    if (path) {
-                        $(item).addClass('macro-Sleepymap-hoverlink');
-                    }
+            }
+            // if quickmove enabled and not pathmoving
+            if (quickmove && ! _pathmove_running) {
+                // if path exists, movable
+                $(this).removeClass('macro-Sleepymap-hoverlink');
+                if (path) {
+                    $(this).addClass('macro-Sleepymap-hoverlink');
                 }
             }
         });
@@ -1604,6 +1626,9 @@ function set_entity(argObj) {
             tile,
         }
     }
+
+    // update maps
+    $('#passages').trigger('Sleepymap:map_edited', { mapname })
 }
 
 
@@ -2157,6 +2182,9 @@ function find_path(argObj) {
  
     const name = argObj.name ?? 'Sleepymap.find_path';
     const { mapname, from_i, to_i, from_x, from_y, to_x, to_y } = argObj;
+    const stopped_by_disabled   = argObj.stopped_by_disabled    ?? options.default.disabled_stops_pathing;
+    const stopped_by_hidden     = argObj.stopped_by_hidden      ?? options.default.hidden_stops_pathing;
+    const stopped_by_blocked    = argObj.stopped_by_blocked     ?? options.default.blocked_stops_pathing;
     const this_map = maps[mapname];
  
     const has_i_inputs = from_i !== undefined || to_i !== undefined;
@@ -2178,14 +2206,23 @@ function find_path(argObj) {
         throw new Error(`${name} — Sleepymap "${mapname}" — insufficient inputs, need both from_i/to_i or, all of from_x/from_y/to_x/to_y!`);
     }
  
-    const { exits, maparray, columns } = this_map;
+    const { exits, maparray, columns, mapnodes } = this_map;
     const start_i   = from_i ?? xy2i({ xy: { x: from_x, y: from_y }, columns });
     const end_i     = to_i   ?? xy2i({ xy: { x: to_x, y: to_y }, columns });
  
-    // TRIVIAL CASE
+    const end_mapnode = mapnodes[maparray[end_i]];
+
+    // TRIVIAL CASES
+    // start & end same
     if (start_i === end_i) {
         return [start_i];
     }
+    // end node is a stopping mapstate
+    else if (
+        (end_mapnode.disabled && stopped_by_disabled)   ||
+        (end_mapnode.hidden && stopped_by_hidden)       ||
+        (end_mapnode.blocked && stopped_by_blocked)
+    ) return null;
  
     // BFS
     // came_from[i] = the index we arrived at i from (-1 sentinel for start)
@@ -2199,14 +2236,22 @@ function find_path(argObj) {
  
         const current_i = queue[head];
         head++;
+
+        // prevent pathing through stopping mapstates
+        const current_mapnode = mapnodes[maparray[current_i]];
+        if (
+            (current_mapnode.disabled && stopped_by_disabled)   ||
+            (current_mapnode.hidden && stopped_by_hidden)       ||
+            (current_mapnode.blocked && stopped_by_blocked)
+        ) continue;
  
         // searches if this thing is destination, if not pushes its exits into queue
         for (const dirs of Object.values(exits.grid[current_i])) {
             for (const neighbor_i of dirs) {
  
-                // already visited
+                // already visited, skip
                 if (came_from[neighbor_i] !== undefined) continue;
- 
+                // add step in path
                 came_from[neighbor_i] = current_i;
  
                 // destination reached — reconstruct path immediately
@@ -2455,12 +2500,12 @@ const Sleepymap = {
 
     begin_mapmove,
 
+    set_map,
+    get_map,
     set_mapstate,
     get_mapstate,
     set_mapnode,
     get_mapnode,
-    set_map,
-    get_map,
 
     edit_exits,
     find_path,

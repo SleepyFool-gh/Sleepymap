@@ -30,8 +30,8 @@
 - finished updating to new mapstates structure
 
 - adding get / set mapnodes
-- consolidate mapnode property checks?
+- tweaked pathing so that disabled / hidden / blocked mapstates are accounted for and can be conditionally pathed through or not
+
 - need to add some way to remove manual exits
-- need to ensure hidden tiles aren't pathed through
 - need to add settings to disable automatic disabling and hiding of disabled / hidden maptiles?
 - need to update documentation
