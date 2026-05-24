@@ -25,17 +25,13 @@ This is a demo of the Areamap library for SugarCube, part of the Sleepy Macros c
     .   .   .   .   .   .   .   .    .   .   .   .   .   .    .   .
     .   .   .   .   K   K   K   K    K   .   L   L   L   L    L   .
     .   .   .   .   K   K   K   K    K   .   L   L   L   L    L   .
-    .   P   P   P|  K_  Y   K_  K_  _K   .   L   L_  L_  L_   L   .
+    .   P   P   P|  K_  K   K_  K_  _K   .   L   L_  L_  L_   L   .
     .   P   P   P|  D   D   D   D   |S   .   H  |G   G   G   |S   .
     .   P   P   P|  D   D   D   D   |S   .   H   G_  G_  G_ _|S   .
     .   P   P   P   D   D   D   D    D   .   H  |M   M   M    M   .
     .   P   P   P|  D   D   D   D    D   .   H   M   M   M    M   .
     .   .   .   .   .   .   .   .    .   .   .   .   .   .    .   .
 <<mapnodes _mapnodes>>
-<<mapvars
-    position '$position'
-    blocked  '$blocked'
->>
 <</new_map>>
 <<set_scripts mapname 'small_house'>>
     <<onmapend to_x 4 to_y 4>>
@@ -55,6 +51,13 @@ This is a demo of the Areamap library for SugarCube, part of the Sleepy Macros c
     x 7
     y 7
     tile 'B'
+>>
+<<new_entity 
+    mapname     'small_house' 
+    entityname  'kitty' 
+    x           7
+    y           5
+    tile        '🐱'
 >>
 
 :: Start [nobr]

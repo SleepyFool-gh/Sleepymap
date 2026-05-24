@@ -1,5 +1,5 @@
 ---
-title: Sleepy Macros — Areamap library
+title: Sleepy Macros — Sleepymap library
 ---
 
 <!-- stylesheet -->
@@ -70,11 +70,12 @@ title: Sleepy Macros — Areamap library
  SECTION: intro
 -->
 
-<h1 id='intro'><code>Areamap</code> Library</h1>
+<h1 id='intro'><code>Sleepymap</code> Library</h1>
 
-`Areamap` is a map library for SugarCube designed for room-to-room movement like **Darkest Dungeon** or node-to-node movement like **Faster Than Light** — NOT for grid movement like **Zelda** or **Final Fantasy Tactics**.
-
-`Areamap` takes a space-separated 2D text grid and converts it into a functional map for player movement (`mapmove`). All grid spaces with the same id will be treated as one big room (`maparea`) — regardless of how many grid spaces it occupies or whether it is continuous or not. Adjacent `mapareas` will be connected by `exits` that allow navigation between them.
+`Sleepymap` is a map library for SugarCube which takes a space-separated 2D text grid (`maparray`) and converts it into a functional map for player movement (`mapmove`). It has two modes:
+    1. **`node travel`:** Node-to-node movement like **Faster Than Light** or room-to-room movement like **Darkest Dungeon**. All grid spaces with the same id will be treated as one big room (`mapnode`) — regardless of how many grid spaces it occupies or whether it is continuous or not. Adjacent `mapnode` will be connected by `exits` that allow navigation between them. Because `mapnode` size is irrelevant, multiple links to different rooms may appear in the same direction on the `rose` (default / set by `grid_movement = false`)
+    2. **`grid travel`:** Grid movement like **Zelda** or **Final Fantasy Tactics**. Adjacent grid spaces with the same id will inherit the same properties, but will need to be traversed through one grid space at a time. Each grid space is connected by `exits` to adjacent grid spaces it can reach. (set by `grid_movement = true`)
+Note: `mapmove` *DOES NOT* trigger passage navigation. Authors **must** navigate to save map changes to `State`.
 
 [Get the map library here](https://github.com/SleepyFool-gh/areamap)
 
@@ -85,14 +86,21 @@ title: Sleepy Macros — Areamap library
 
 #### Features:
 
-- **Built-in navigation options:**
-    1. compass rose with directional buttons (`rose`)
-    2. visual map with optionally clickable `mapareas` (`mapview`)
-- **TwineScripts payloads:** Scripts can be assigned to run at various stages of the `mapmove` process.
-- **Separation of map logic & map view:** The 2D grid used to generate the `mapview` can be configured independently from the 2D grid useed for map logic.
-- **Linked `story variables`:** Map state can be linked to `story variables` for map behavior manipulation.
-- **Movement link manipulation:** Movement links can be `hidden` (links hidden), `disabled` (links disabled, `mapmove` prevented), or `blocked` (links available, `mapmove` attempted but fails).
-- **JavaScript methods:** for manipulating `areamaps`, `roses`, and `mapviews`
+- **Built-in navigation `interfaces`:**
+    - compass rose with directional buttons (`rose`)
+    - visual map, optionally clickable `mapnodes`, optional pathing (`mapview`)
+    - both `interface` items also accept keydown inputs for triggering `mapmove` with the keyboard
+- **TwineScripts payloads:** Scripts can be assigned to run at various stages of the `mapmove` process and conditionally on nodes or grid spaces.
+- **Separation of display & logic for `node travel`:** Since the size of the `mapnode` doesn't matter for `node travel`, the displayed map (`mapview`) can be independently configured from the `maparray`.
+- **Linked `story variables`:** Map states are saved in `State` and survive passage navigations and saves / loads.
+- **Manually adjust exits:** While exits are automatically generated from the provided `maparray`, it can be manually tweaked to create more complex navigation patterns.
+- **`mapnode` behavior manipulation:** 
+    - `hidden` — links & maptiles hidden, but navigation still works
+    - `disabled` — links & maptiles disabled, but navigation still works if triggered manually
+    - `blocked` — links & maptiles still available, but movement through it is blocked
+    - `walled` — changes the `mapnode` into a wall that blocks movement
+- **Entity placement:** Entities can be set and moved around the `map` — though interactions must be handled by the author
+- **JavaScript methods:** for manipulating maps, `mapnodes`, `mapstates`, `exits`, `mapviews`, `roses`, and `entities`. 
 - **Configurable defaults:** for various settings
 
 <p align="center">
@@ -113,131 +121,335 @@ title: Sleepy Macros — Areamap library
 
 <h2 id="macros">Macros</h2>
 
-<h3 id="macro-new_areamap"><code>&lt;&lt;new_areamap&gt;&gt;</code></h3>
+<h3 id="macro-new_map"><code>&lt;&lt;new_map&gt;&gt;</code></h3>
 
-Defines a new `areamap`. This macro **must** be called in `StoryInit`. It accepts a 2D grid layout via its contents and supports optional child tags for advanced configuration.
+Defines a new `Sleepymap`. This macro **must** be called in `StoryInit`. It accepts a 2D grid layout via its contents and supports optional child tags for advanced configuration.
 
 - **Arguments:** 
-    - `mapname`: (string) name of `areamap`
-    - `start`: (string) starting position in map, must be a valid `maparea` id
+    - `mapname`: (string) name of `map`
+    - `grid_movement`: (boolean) *(optional)* whether to use grid-based movement (default: `false`, node-to-node movement)
+    - `start`: (string) starting position in map, must be a valid `mapnode` id (only for node movement mode)
+    - `start_x`: (number) starting x coordinate (only for grid movement mode)
+    - `start_y`: (number) starting y coordinate (only for grid movement mode)
     - `columns`: (number) # of columns in the logic representation grid
     - `diagonals`: (boolean) *(optional)* whether diagonal movement is allowed
 - **Contents:** 
-    - 2D space-separated text grid representing map logic, must be rectangular.
+    - 2D space-separated text grid representing map logic, must be rectangular. By default, several wall and border options are available. These can be changed via `options`, but thin borders requires Regex. For a mapnode with id `id`, the defaults are:
+        - thick wall which occupies its own grid cell: `.`
+        - thin border to N of grid cell: `"id` or `id"`
+        - thin border to E of grid cell: `id|`
+        - thin border to S of grid cell: `_id` or `id_`
+        - thin border to W of grid cell: `id\`
+        - thin border to NE of grid cell: `id\`
+        - thin border to SE of grid cell: `id/`
+        - thin broder to SW of grid cell: `\id`
+        - thin border to NW of grid cell: `/id`
 - **Child Tags:**
-    - `<<mapview>>`: *(optional)* Defines a different 2D grid to use for `mapview` instead of the map logic grid
+    - `<<mapview>>`: *(optional)* Defines a different 2D grid to use for `mapview` instead of the map logic grid, can only be used in `node travel`
         - **Arguments:** `columns` (number) # of columns in the visual representation grid
         - **Contents:** 2D space-separated grid, must be rectangular.
-    - `<<mapvars>>`: *(optional)* Links map state to `story variables` for map behavior manipulation. `position` will update automatically when `mapmove` succeeds. These must all be `story variables` names starting with `$`.
-        - **Arguments:** 
-            - `position`: (string) stores current `areamap` position, as a string
-            - `disabled`: (string) *(optional)* stores whether `rose` and `mapview` links to each `maparea` are shown but disabled, as an object of booleans
-            - `hidden`: (string) *(optional)* stores whether `rose` and `mapview` links to each `mapareea` should be hidden, as an object of booleans
-            - `blocked`: (string) *(optional)* stores whether `mapmove` to each `maparea` should fail, as an object of booleans
-            - `frozen`: (string) *(optional)* stores whether ALL `rose` and `mapview` links for an `areamap` are `disabled`, as a boolean
-    - `<<mapareas>>`: *(optional)* Defines additional metadata for each `maparea`. Partial objects will be filled with default values.
+    - `<<mapnodes>>`: *(optional)* Defines additional metadata for each `mapnode`. Partial objects will be filled with default values.
         - **Arguments:**
-            - `name`: (string) *(optional)* used for links in `roses` & for the `show_names` option in `mapviews`, default is the `maparea` id
-            - `type`: ("floor"\|"wall") *(optional)* `floors` can be occupied by a player, `walls` can't and block movement; default `"floor"`
+            - `name`: (string) *(optional)* used for links in `roses` & for the `show_labels` option in `mapviews`, default is the `mapnode` id
             - `tile`: (HTML string) *(optional)* inserted into each space in the `mapview`, default none
+            - `disabled`: (boolean) *(optional)* disables `interface` links for this node, default `false`
+            - `hidden`: (boolean) *(optional)* hides the node and links by setting opacity to zero, default `false`
+            - `blocked`: (boolean) *(optional)* stops movement through this node but will not stop the player from *trying* to move through it, default `false`
+            - `walled`: (boolean) *(optional)* turns the node into a wall, default `false`
 - **Examples:**
     ```js
-    <<set _mapareas = {
-        MB: {name: 'Master Bedroom'},
-        GB: {name: 'Guest Bedroom'},
-        HW: {name: 'Hallway'},
-        LR: {name: 'Living Room'},
-        ST: {name: 'Stairs'},
-        DR: {name: 'Dining Room'},
-        KT: {name: 'Kitchen'},
-        PT: {name: 'Pantry'},
+    <<set _mapnodes = {
+        M: {name: 'Master Bedroom'},
+        G: {name: 'Guest Bedroom'},
+        H: {name: 'Hallway'},
+        L: {name: 'Living Room'},
+        S: {name: 'Stairs'},
+        D: {name: 'Dining Room'},
+        K: {name: 'Kitchen'},
+        P: {name: 'Pantry'},
     }>>
-    <<new_areamap 
-        mapname     'small_house'
-        columns     7
-        diagonals   false
-        start       'KT'
-    >>
-        .   .   .   .   LR  LR  LR
-        .   KT  .   .   LR  .   ST
-        PT  DR  ST  .   HW  .   .
-        .   .   .   .   HW  .   .
-        .   .   .   .   HW  GB  .
-        .   .   .   .   MB  .   .
-    <<mapview 
+
+    /* node travel */
+    <<new_map 
+        mapname     'node_house'
         columns     16
+        start       'D'
     >>
-        .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
-        .   .   .   .   KT  KT  KT  KT  KT  .   LR  LR  LR  LR  LR  .
-        .   .   .   .   KT  KT  KT  KT  KT  .   LR  LR  LR  LR  LR  .
-        .   PT  PT  PT  KT  KT  KT  KT  KT  .   LR  LR  LR  LR  LR  .
-        .   PT  PT  PT  DR  DR  DR  DR  ST  .   HW  GB  GB  GB  ST  .
-        .   PT  PT  PT  DR  DR  DR  DR  ST  .   HW  GB  GB  GB  ST  .
-        .   PT  PT  PT  DR  DR  DR  DR  DR  .   HW  MB  MB  MB  MB  .
-        .   PT  PT  PT  DR  DR  DR  DR  DR  .   HW  MB  MB  MB  MB  .
-        .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
-    <<mapareas _mapareas>>
-    <</new_areamap>>
+        .   .   .   .   .   .   .   .    .   .   .   .   .   .    .   .
+        .   .   .   .   K   K   K   K    K   .   L   L   L   L    L   .
+        .   .   .   .   K   K   K   K    K   .   L   L   L   L    L   .
+        .   P   P   P|  K_  K   K_  K_  _K   .   L   L_  L_  L_   L   .
+        .   P   P   P|  D   D   D   D   |S   .   H  |G   G   G   |S   .
+        .   P   P   P|  D   D   D   D   |S   .   H   G_  G_  G_ _|S   .
+        .   P   P   P   D   D   D   D    D   .   H  |M   M   M    M   .
+        .   P   P   P|  D   D   D   D    D   .   H   M   M   M    M   .
+        .   .   .   .   .   .   .   .    .   .   .   .   .   .    .   .
+    <<mapnodes _mapnodes>>
+    <</new_map>>
+
+    /* grid travel */
+    <<new_map 
+        mapname     'grid_house'
+        columns     16
+        grid_mode   true
+        start_x     4
+        start_y     5
+    >>
+        .   .   .   .   .   .   .   .    .   .   .   .   .   .    .   .
+        .   .   .   .   K   K   K   K    K   .   L   L   L   L    L   .
+        .   .   .   .   K   K   K   K    K   .   L   L   L   L    L   .
+        .   P   P   P|  K_  K   K_  K_  _K   .   L   L_  L_  L_   L   .
+        .   P   P   P|  D   D   D   D   |S   .   H  |G   G   G   |S   .
+        .   P   P   P|  D   D   D   D   |S   .   H   G_  G_  G_ _|S   .
+        .   P   P   P   D   D   D   D    D   .   H  |M   M   M    M   .
+        .   P   P   P|  D   D   D   D    D   .   H   M   M   M    M   .
+        .   .   .   .   .   .   .   .    .   .   .   .   .   .    .   .
+    <<mapnodes _mapnodes>>
+    <</new_map>>
     ```
 
 
-<h3 id='macro-place_arearose'><code>&lt;&lt;place_arearose&gt;&gt;</code></h3>
+<h3 id="macro-set_mapnode"><code>&lt;&lt;set_mapnode&gt;&gt;</code></h3>
+
+Updates the metadata for a specific `mapnode` in an existing `map`. Incomplete objects are accepted, only the specified properties will be updated. `mapnode` ids *cannot* be changed. `node travel` and `grid travel` maps use the same syntax.
+
+- **Arguments:** 
+    - `mapname`: (string) name of `map`
+    - `mapnode`: (string) id of the `mapnode` to modify
+    - `data`: (object) object containing properties to update
+        - `name`: (string) *(optional)* display name
+        - `tile`: (HTML string) *(optional)* display tile to be printed in `mapview`
+        - `disabled`: (boolean) *(optional)* stops `interface` interactions
+        - `hidden`: (boolean) *(optional)* hides links on `roses` and tiles on `mapviews` by setting opacity to zero
+        - `blocked`: (boolean) *(optional)* stops `mapmove` through it, but doesn't prevent attempts
+        - `walled`: (boolean) *(optional)* turns the `mapnode` into a wall, stopping `mapmove` and attempts
+- **Examples:**
+    ```js
+    /* lock the pantry */
+    <<set _P = { name: 'Locked Pantry', blocked: true }>>
+    <<set_mapnode
+        mapname     'node_house'
+        mapnode     'P'
+        data        _P
+    >>
+    ```
+
+
+<h3 id="macro-set_mapstate"><code>&lt;&lt;set_mapstate&gt;&gt;</code></h3>
+
+Updates the operational state (`mapstate`) of a map, such as the current position, or toggles states like `blocked` or `hidden` for multiple mapnodes at once. `node travel` and `grid travel` maps use the same syntax. This macro will update `interface` items set to autoupdate.
+
+- **Arguments:** 
+    - `mapname`: (string) name of `map`
+    - `position`: (object) *(optional)* 
+        - For `node travel`: 
+            - `mapnode`: id of new `mapnode` position
+        - For `grid travel`: 
+            - `x`: (number) new x position
+            - `y`: (number) new y position
+    - `frozen`: (boolean) *(optional)* disables *all* `interface` interactions if true
+    - `disabled`: (object) *(optional)*
+        - [`mapnode` id]: (boolean) whether the `mapnode` is disabled
+    - `hidden`: (object) *(optional)*
+        - [`mapnode` id]: (boolean) whether the `mapnode` is hidden
+    - `blocked`: (object) *(optional)*
+        - [`mapnode` id]: (boolean) whether the `mapnode` is blocked
+    - `walled`: (object) *(optional)*
+        - [`mapnode` id]: (boolean) whether the `mapnode` is walled
+- **Examples:**
+    ```js
+    /* move player in grid mode */
+    <<set _position = { x: 10, y: 5 }>>
+    <<set_mapstate
+        mapname     'grid_house'
+        position    _position
+    >>
+
+    /* unlock pantry and hide both bedrooms */
+    <<set _blocked = { 'P': false }>>
+    <<set _hidden = { 'M': true, 'G': true }>>
+    <<set_mapstate
+        mapname     'node_house'
+        blocked     _blocked
+        hidden      _hidden
+    >>
+    ```
+
+
+<h3 id="macro-connect_map"><code>&lt;&lt;connect_map&gt;&gt;</code></h3>
+
+Manually creates a new exit between two `mapnodes` or two grid coordinates. If this is a `node travel` map, specify `from` and `to`. If this is a `grid travel` map, specify `from_x`, `from_y`, `to_x`, and `to_y`.
+
+- **Arguments:** 
+    - `mapname`: (string) name of `map`
+    - `direction`: (string) the direction of the connection ("N", "E", "S", "W", "NE", "SE", "SW", "NW")
+    - `from` / `to`: (string) *(`node travel`)* ids of the nodes to connect
+    - `from_x`/`from_y` / `to_x`/`to_y`: (number) *(`grid travel`)* coordinates to connect
+- **Examples:**
+    ```js
+    /* node travel, create secret passage from master bedroom to pantry */
+    <<connect_map 
+        mapname     'node_house' 
+        from        'M' 
+        to          'P' 
+        direction   'S' 
+    >>
+
+    /* grid travel, connect the bottom floor stairs to the top floor stairs */
+    <<connect_map
+        mapname     "grid_house"
+        from_x      8
+        from_y      4
+        to_x        14
+        to_y        5
+        direction   "N"
+    >>
+    ```
+
+<h3 id="macro-disconnect_map"><code>&lt;&lt;disconnect_map&gt;&gt;</code></h3>
+
+Removes an exit that was automatically created between two `mapnodes` or grid coordinates from the `maparray`. If this is a `node travel` map, specify `from` and `to`. If this is a `grid travel` map, specify `from_x`, `from_y`, `to_x`, and `to_y`.
+
+- **Arguments:** 
+    - `mapname`: (string) name of `map`
+    - `direction`: (string) the direction of the connection to remove
+    - `from` / `to`: (string) *(`node travel`)* IDs of the nodes to disconnect
+    - `from_x`/`from_y` / `to_x`/`to_y`: (number) *(`grid travel`)* coordinates to disconnect
+- **Examples:**
+    ```js
+    /* make leaving the kitchen impossible by removing the exit back to dining room */
+    <<disconnect_map 
+        mapname   'node_house' 
+        direction 'S' 
+        from      'K' 
+        to        'D' 
+    >>
+    ```
+
+
+<h3 id="macro-place_rose"><code>&lt;&lt;place_rose&gt;&gt;</code></h3>
 
 Generates a 3x3 grid of directional links for navigation.
 
 - **Arguments:** 
-    - `mapname`: (string) name of `areamap`
-    - `autoupdate`: (boolean) *(optional)* whether the `rose` automatically updates after each `mapmove` or when the areamap changes, default set in `options`
+    - `mapname`: (string) name of `map`
     - `background`: (HTML string) *(optional)* inserted as a background element for the `rose`
+    - `autoupdate`: (boolean) *(optional)* whether the `rose` automatically updates after each `mapmove` or when the `map` changes, default set in `options`
+    - `keydown`: (object) *(optional)* enables keyboard control, if multiple links are present in a given direction, the first one will be triggered
+        - [direction]: (string\|array\<string\>) keydown identifiers to assign to each direction
 - **Examples:**
     ```js
-    <<place_arearose
-        mapname     'small_house'
-        background  '<img src="./assets/rose.png">'
+    /* places a rose with keybinds attached */
+    <<set _keys = {
+        N: ["w", "ArrowUp"],
+        S: ["s", "ArrowDown"],
+        E: ["d", "ArrowRight"],
+        W: ["a", "ArrowLeft"]
+    }>>
+    <<place_rose
+        mapname     'grid_house'
+        background  '<img src="./assets/small_house.png">'
+        keydown     _keys
     >>
     ```
 
 
-<h3 id='macro-update_arearose'><code>&lt;&lt;update_arearose&gt;&gt;</code></h3>
+<h3 id="macro-place_mapview"><code>&lt;&lt;place_mapview&gt;&gt;</code></h3>
 
-Manually updates a `rose` element.
-
-- **Arguments:** 
-    - `selector`: (selector string) jQuery selector for the `rose` element to update
-- **Examples:**
-    ```js
-    <<update_arearose selector '.macro-areamap-rose'>>
-    ```
-
-
-<h3 id='macro-place_areamapview'><code>&lt;&lt;place_areamapview&gt;&gt;</code></h3>
-
-Renders a visual representation of the `areamap` with the tiles configured in the `<<mapareas>>` child tag of `<<new_areamap>>`, using the 2D grid defined in the `<<mapview>>` child tag of `<<new_areamap>>`. If no `<<mapview>>` was used, the 2D logic map is used. Can optionally be made clickable for navigation or to display maparea names.
+Renders a visual representation of the `map` with the tiles. For `node travel`, if a `mapview` was configured during map creation, it will be used instead of the `maparray`. Options include clickable nodes, node labels, and path highlighting.
 
 - **Arguments:** 
-    - `mapname`: (string) name of `areamap`
-    - `autoupdate`: (boolean) *(optional)* whether the `mapview` automatically updates after each `mapmove` or when the `areamap` changes, default set in `options`
-    - `clickable`: (boolean) *(optional)* whether mapareas can be clicked to navigate, default set in `options`
-    - `show_names`: (boolean) *(optional)* whether to display names for each `maparea`, default set in `options`
+    - `mapname`: (string) name of `map`
     - `background`: (HTML string) *(optional)* inserted as a background element for the `mapview`
+    - `autoupdate`: (boolean) *(optional)* whether the `mapview` automatically updates after each `mapmove` or when the `map` changes, default set in `options`
+    - `clickable`: (boolean) *(optional)* whether nodes can be clicked to navigate, default set in `options`
+    - `show_labels`: (boolean) *(optional)* whether to display labels (names or directional icons) for each node, default set in `options`
+    - `pathing`: (boolean) *(optional)* whether to highlight the path to the hovered tile, default set in `options`
+    - `quickmove`: (boolean) *(optional)* whether clicking a distant traversable tile initiates multiple sequential `mapmoves`, default set in `options`, quickmove forces the `mapview` to be clickable
+    - `keydown`: (object) *(optional)* enables keyboard control
+        - [direction]: (string\|array\<string\>) keydown identifiers to assign to each direction
 - **Examples:**
     ```js
-    <<place_areamapview
+    /* places a mapview that has pathing enabled */
+    <<place_mapview
         mapname     'small_house'
         background  '<img src="./assets/small_house.png">'
+        clickable   true
+        pathing     true
+        quickmove   true
     >>
     ```
 
+<h3 id="macro-update_interface"><code>&lt;&lt;update_interface&gt;&gt;</code></h3>
 
-<h3 id='macro-update_areamapview'><code>&lt;&lt;update_areamapview&gt;&gt;</code></h3>
-
-Manually updates a `mapview` element.
+Manually triggers an update for a `rose` or `mapview` element. This is useful if the author has manually modified `interface` items or turned off autoupdate.
 
 - **Arguments:** 
-    - `selector`: (selector string) jQuery selector for the `mapview` element to update
+    - `selector`: (selector string) jQuery selector for the interface element(s) to update
 - **Examples:**
     ```js
-    <<update_areamapview selector '.macro-areamap-mapview'>>
+    /* updates all mapviews on the page */
+    <<update_interface selector '.macro-Sleepymap-mapview'>>
+    ```
+
+
+<h3 id="macro-new_entity"><code>&lt;&lt;new_entity&gt;&gt;</code></h3>
+
+Creates a new entity on the map at the specified coordinates.
+
+- **Arguments:** 
+    - `mapname`: (string) name of `map`
+    - `entityname`: (string) unique identifier for the entity
+    - `x`: (number) x coordinate
+    - `y`: (number) y coordinate
+    - `tile`: (HTML string) *(optional)* display tile for the entity
+- **Examples:**
+    ```js
+    /* places a kitty in the dining room */
+    <<new_entity 
+        mapname     'node_house' 
+        entityname  'kitty' 
+        x           7
+        y           8
+        tile        '🐱'
+    >>
+    ```
+
+HERE
+
+<h3 id="macro-set_entity"><code>&lt;&lt;set_entity&gt;&gt;</code></h3>
+
+Updates the position or display tile of an existing entity.
+
+- **Arguments:** 
+    - `mapname`: (string) name of `map`
+    - `entityname`: (string) identifier of the entity to modify
+    - `x`: (number) new x coordinate
+    - `y`: (number) new y coordinate
+    - `tile`: (HTML string) *(optional)* new display tile
+- **Examples:**
+    ```js
+    <<set_entity 
+        mapname    'small_house' 
+        entityname 'cat' 
+        x          5 
+        y          2 
+    >>
+    ```
+
+<h3 id="macro-delete_entity"><code>&lt;&lt;delete_entity&gt;&gt;</code></h3>
+
+Removes an entity from the map.
+
+- **Arguments:** 
+    - `mapname`: (string) name of `map`
+    - `entityname`: (string) identifier of the entity to remove
+- **Examples:**
+    ```js
+    <<delete_entity 
+        mapname    'small_house' 
+        entityname 'cat' 
+    >>
     ```
 
 

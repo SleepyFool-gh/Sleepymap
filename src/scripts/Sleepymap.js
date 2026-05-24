@@ -391,6 +391,108 @@ function new_map(argObj) {
 
 
 
+//  ████ █████ █████      ███  █████ █████     █    █  ███  ████  █    █  ████  ████  █████
+// █     █       █       █     █       █       ██  ██ █   █ █   █ ██   █ █    █ █   █ █
+//  ███  ███     █       █  ██ ███     █       █ ██ █ █████ ████  █ █  █ █    █ █   █ ███
+//     █ █       █       █   █ █       █       █    █ █   █ █     █  █ █ █    █ █   █ █
+// ████  █████   █        ███  █████   █       █    █ █   █ █     █   ██  ████  ████  █████
+// SECTION: set / get mapnode
+const SET_MAPNODE_TEMPLATE = {
+    mapname: {
+        type: 'string',
+        required: true,
+    },
+    mapnode: {
+        type: 'string',
+        required: true,
+    },
+    data: {
+        type: 'object',
+        required: true,
+    },
+};
+Macro.add(['set_mapnode'], {
+    handler() {
+        const name = this.name;
+        const argObj = new ArgObj(name, SET_MAPNODE_TEMPLATE, this.args);
+        argObj.add_metadata('name', name);
+        set_mapnode(argObj);
+    }
+});
+function set_mapnode(argObj) {
+    const name = argObj.name ?? 'Sleepymap.set_mapnode';
+
+    // VALIDATE: required args & type
+    ArgObj.validate(name, SET_MAPNODE_TEMPLATE, argObj);
+
+    const { mapname, data } = argObj;
+    const this_map = maps[mapname];
+
+    // ERROR: non-extant map
+    if (this_map === undefined) {
+        throw new Error(`${name} — Sleepymap — couldn't find map with name "${mapname}"!`);
+    }
+
+    const { mapnodes } = this_map;
+    if (mapnodes[argObj.mapnode] === undefined) {
+        throw new Error(`${name} — Sleepymap "${mapname}" — mapnode "${argObj.mapnode}" doesn't exist on map!`);
+    }
+
+    // SYNC REMINDER: updating here requires updating in new_map
+    const MAPTILE_PROPS = {
+        name: 'string',
+        tile: 'string',
+        disabled: 'boolean',
+        hidden: 'boolean',
+        blocked: 'boolean',
+        walled: 'boolean',
+    };
+    let interfaces_need_updating = false;
+    for (const prop in data) {
+        // WARNING: not valid property, skip
+        if (! Object.hasOwn(MAPTILE_PROPS, prop)) {
+            console.warn(`${name} — Sleepymap "${mapname}" — "${prop}" is not a valid mapnode property, ignoring...`);
+            continue;
+        }
+        // WARNING: invalid type, skip
+        if (typeof data[prop] !== MAPTILE_PROPS[prop]) {
+            console.warn(`${name} — Sleepymap "${mapname}" — "${prop}" is not of type "${MAPTILE_PROPS[prop]}", ignoring...`);
+            continue;
+        }
+        mapnodes[argObj.mapnode][prop] = data[prop];
+        interfaces_need_updating = true;
+    }
+
+    // update interfaces
+    if (interfaces_need_updating) {
+        setTimeout( () => $('#passages').trigger('Sleepymap:map_edited', { mapname }), 0);
+    }
+}
+function get_mapnode(argObj) {
+    const name = argObj.name ?? 'Sleepymap.get_mapnode';
+    const { mapname } = argObj;
+    const this_map = maps[mapname];
+
+    // ERROR: non-extant map
+    if (this_map === undefined) {
+        throw new Error(`${name} — Sleepymap — couldn't find map with name "${mapname}"!`);
+    }
+    // ERROR: missing mapnode args
+    else if (argObj.mapnode === undefined) {
+        throw new Error(`${name} — Sleepymap "${mapname}" — missing required args "mapnode"!`);
+    }
+
+    const { mapnodes } = this_map;
+    if (mapnodes[argObj.mapnode] === undefined) {
+        throw new Error(`${name} — Sleepymap "${mapname}" — mapnode "${argObj.mapnode}" doesn't exist on map!`);
+    }
+
+    return structuredClone(mapnodes[argObj.mapnode]);
+}
+
+
+
+
 //  ████ █████ █████      ███  █████ █████     █    █  ███  ████   ████ █████  ███  █████ █████
 // █     █       █       █     █       █       ██  ██ █   █ █   █ █       █   █   █   █   █
 //  ███  ███     █       █  ██ ███     █       █ ██ █ █████ ████   ███    █   █████   █   ███
@@ -563,108 +665,6 @@ function get_mapstate(argObj) {
         id2mapstate[mapnode_id] = mapnodes[mapnode_id][mapstate];
     }
     return id2mapstate;
-}
-
-
-
-
-//  ████ █████ █████      ███  █████ █████     █    █  ███  ████  █    █  ████  ████  █████
-// █     █       █       █     █       █       ██  ██ █   █ █   █ ██   █ █    █ █   █ █
-//  ███  ███     █       █  ██ ███     █       █ ██ █ █████ ████  █ █  █ █    █ █   █ ███
-//     █ █       █       █   █ █       █       █    █ █   █ █     █  █ █ █    █ █   █ █
-// ████  █████   █        ███  █████   █       █    █ █   █ █     █   ██  ████  ████  █████
-// SECTION: set / get mapnode
-const SET_MAPNODE_TEMPLATE = {
-    mapname: {
-        type: 'string',
-        required: true,
-    },
-    mapnode: {
-        type: 'string',
-        required: true,
-    },
-    data: {
-        type: 'object',
-        required: true,
-    },
-};
-Macro.add(['set_mapnode'], {
-    handler() {
-        const name = this.name;
-        const argObj = new ArgObj(name, SET_MAPNODE_TEMPLATE, this.args);
-        argObj.add_metadata('name', name);
-        set_mapnode(argObj);
-    }
-});
-function set_mapnode(argObj) {
-    const name = argObj.name ?? 'Sleepymap.set_mapnode';
-
-    // VALIDATE: required args & type
-    ArgObj.validate(name, SET_MAPNODE_TEMPLATE, argObj);
-
-    const { mapname, data } = argObj;
-    const this_map = maps[mapname];
-
-    // ERROR: non-extant map
-    if (this_map === undefined) {
-        throw new Error(`${name} — Sleepymap — couldn't find map with name "${mapname}"!`);
-    }
-
-    const { mapnodes } = this_map;
-    if (mapnodes[argObj.mapnode] === undefined) {
-        throw new Error(`${name} — Sleepymap "${mapname}" — mapnode "${argObj.mapnode}" doesn't exist on map!`);
-    }
-
-    // SYNC REMINDER: updating here requires updating in new_map
-    const MAPTILE_PROPS = {
-        name: 'string',
-        tile: 'string',
-        disabled: 'boolean',
-        hidden: 'boolean',
-        blocked: 'boolean',
-        walled: 'boolean',
-    };
-    let interfaces_need_updating = false;
-    for (const prop in data) {
-        // WARNING: not valid property, skip
-        if (! Object.hasOwn(MAPTILE_PROPS, prop)) {
-            console.warn(`${name} — Sleepymap "${mapname}" — "${prop}" is not a valid mapnode property, ignoring...`);
-            continue;
-        }
-        // WARNING: invalid type, skip
-        if (typeof data[prop] !== MAPTILE_PROPS[prop]) {
-            console.warn(`${name} — Sleepymap "${mapname}" — "${prop}" is not of type "${MAPTILE_PROPS[prop]}", ignoring...`);
-            continue;
-        }
-        mapnodes[argObj.mapnode][prop] = data[prop];
-        interfaces_need_updating = true;
-    }
-
-    // update interfaces
-    if (interfaces_need_updating) {
-        setTimeout( () => $('#passages').trigger('Sleepymap:map_edited', { mapname }), 0);
-    }
-}
-function get_mapnode(argObj) {
-    const name = argObj.name ?? 'Sleepymap.get_mapnode';
-    const { mapname } = argObj;
-    const this_map = maps[mapname];
-
-    // ERROR: non-extant map
-    if (this_map === undefined) {
-        throw new Error(`${name} — Sleepymap — couldn't find map with name "${mapname}"!`);
-    }
-    // ERROR: missing mapnode args
-    else if (argObj.mapnode === undefined) {
-        throw new Error(`${name} — Sleepymap "${mapname}" — missing required args "mapnode"!`);
-    }
-
-    const { mapnodes } = this_map;
-    if (mapnodes[argObj.mapnode] === undefined) {
-        throw new Error(`${name} — Sleepymap "${mapname}" — mapnode "${argObj.mapnode}" doesn't exist on map!`);
-    }
-
-    return structuredClone(mapnodes[argObj.mapnode]);
 }
 
 
