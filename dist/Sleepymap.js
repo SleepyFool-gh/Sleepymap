@@ -24,7 +24,7 @@ const options = {
         hidden_stops_pathing     : true,
         blocked_stops_pathing    : false,
     },
-    // shows on mapview & rose in grid_movment mode
+    // shows on mapview & rose in grid_travel mode
     labels: {
         N   : "🡱",
         E   : "🡲",
@@ -418,7 +418,7 @@ function set_mapnode(argObj) {
 
     // update interfaces
     if (interfaces_need_updating) {
-        setTimeout( () => $('#passages').trigger('Sleepymap:map_edited', { mapname }), 0);
+        setTimeout( () => $('#passages').trigger('Sleepymap:map_edited', { mapname }), Engine.DOM_DELAY);
     }
 }
 function get_mapnode(argObj) {
@@ -577,7 +577,7 @@ function set_mapstate(argObj) {
     }
     // update interfaces
     if (interfaces_need_updating) {
-        setTimeout( () => $('#passages').trigger('Sleepymap:map_edited', { mapname }), 0);
+        setTimeout( () => $('#passages').trigger('Sleepymap:map_edited', { mapname }), Engine.DOM_DELAY);
     }
 }
 function get_mapstate(argObj) {
@@ -644,10 +644,19 @@ function update_exits(argObj) {
         throw new Error(`${name} — Sleepymap "${mapname}" does not exist!`);
     }
 
-    const { maparray, barriers, mapnodes, columns, diagonals, exits } = this_map;
+    const { grid_travel, maparray, barriers, mapnodes, columns, diagonals, exits } = this_map;
 
     // get offsets
-    const offsets = get_offsets({ columns });
+    const offsets = {
+        N   : -columns,
+        E   : 1,
+        S   : columns,
+        W   : -1,
+        NE  : -columns + 1,
+        SE  : columns + 1,
+        SW  : columns - 1,
+        NW  : -columns - 1,
+    };
 
     // init exits
     exits.node = Object.fromEntries(Object.keys(mapnodes).map(id => [id, {}]));
@@ -709,7 +718,24 @@ function update_exits(argObj) {
 
     // check manual exits
     for (const exit of exits.manual) {
-        if (exit.grid_mode) {
+        // node travel
+        if (Object.hasOwn(exit, 'from')) {
+            const { from, to, dir } = exit;
+            if (exit.removing) {
+                // remove
+                exits.node[from][dir]?.delete(to);
+                // clean up empty sets
+                if (! exits.node[from][dir]?.size) {
+                    delete exits.node[from][dir];
+                }
+            }
+            else {
+                exits.node[from][dir] ??= new Set();
+                exits.node[from][dir].add(to);
+            }
+        }
+        // grid travel
+        else {
             // VALIDATE: bounds
             validate_bounds({ name, mapname, columns, maparray, x: exit.from_x, y: exit.from_y });
             validate_bounds({ name, mapname, columns, maparray, x: exit.to_x, y: exit.to_y });
@@ -728,21 +754,6 @@ function update_exits(argObj) {
             else {
                 exits.grid[from_i][dir] ??= new Set();
                 exits.grid[from_i][dir].add(to_i);
-            }
-        }
-        else {
-            const { from, to, dir } = exit;
-            if (exit.removing) {
-                // remove
-                exits.node[from][dir]?.delete(to);
-                // clean up empty sets
-                if (! exits.node[from][dir]?.size) {
-                    delete exits.node[from][dir];
-                }
-            }
-            else {
-                exits.node[from][dir] ??= new Set();
-                exits.node[from][dir].add(to);
             }
         }
     }
@@ -812,7 +823,7 @@ function edit_exits(argObj) {
         throw new Error(`${name} — Sleepymap "${mapname}" — invalid dir "${dir}", must be one of "N", "E", "S", "W", "NE", "SE", "SW", "NW"!`);
     }
 
-    const { mapnodes, maparray, columns } = this_map;
+    const { grid_travel, mapnodes, maparray, columns } = this_map;
 
     // FROM/TO INPUT ERRORS
     const has_node_inputs = from !== undefined || to !== undefined;
@@ -860,6 +871,13 @@ function edit_exits(argObj) {
                             ? to 
                             : maparray[xy2i({ xy: { x: to_x, y: to_y }, columns })];
 
+    // WARNING: wrong inputs for travel type
+    if (has_node_inputs && grid_travel) {
+        console.warn(`${name} — Sleepymap "${mapname}" — this is a grid travel map, manually configured node exits will be non-functional!`);
+    }
+    if (has_grid_inputs && ! grid_travel) {
+        console.warn(`${name} — Sleepymap "${mapname}" — this is a node travel map, manually configured grid exits will be non-functional!`);
+    }
     // WARNING: connecting from a wall
     if (mapnodes[from_mapnode].walled) {
         console.warn(`${name} — Sleepymap "${mapname}" — mapnode "${from_mapnode}" is a wall, this connection will be non-functional!`);
@@ -870,18 +888,18 @@ function edit_exits(argObj) {
     }
     // WARNING: node input, connecting to self
     if (has_node_inputs && (from === to)) {
-        console.warn(`${name} — Sleepymap "${mapname}" — connecting mapnode "${from_mapnode}" to itself is usually redundant!`);
+        console.warn(`${name} — Sleepymap "${mapname}" — connecting mapnode "${from_mapnode}" to itself is non-functional!`);
     }
     // WARNING grid input, connecting to self
     if (has_grid_inputs && (from_x === to_x && from_y === to_y)) {
-        console.warn(`${name} — Sleepymap "${mapname}" — connecting grid position (${from_x}, ${from_y}) to itself is usually redundant!`);
+        console.warn(`${name} — Sleepymap "${mapname}" — connecting grid position (${from_x}, ${from_y}) to itself is non-functional!`);
     }
 
     const exits = this_map.exits;
     // define manual exit
     const manual_exit   = from === undefined
-                            ? { grid_mode: true, removing, dir, from_x, from_y, to_x, to_y }
-                            : { grid_mode: false, removing, dir, from, to };
+                            ? { removing, dir, from_x, from_y, to_x, to_y }
+                            : { removing, dir, from, to };
     // store into exits object
     exits.manual.push(manual_exit);
     update_exits({ mapname });
@@ -1614,17 +1632,11 @@ const SET_MAPSCRIPTS_TEMPLATE = {
 };
 // SYNC REMINDER: changing here requires also changing the for loop in set_mapscripts
 const ONMAP_TRIGGERS_TEMPLATE = {
-    to: {
-        type: ['string', 'object'],
-    },
     from: {
         type: ['string', 'object'],
     },
-    to_x: {
-        type: ['number', 'object'],
-    },
-    to_y: {
-        type: ['number', 'object'],
+    to: {
+        type: ['string', 'object'],
     },
     from_x: {
         type: ['number', 'object'],
@@ -1632,11 +1644,17 @@ const ONMAP_TRIGGERS_TEMPLATE = {
     from_y: {
         type: ['number', 'object'],
     },
+    to_x: {
+        type: ['number', 'object'],
+    },
+    to_y: {
+        type: ['number', 'object'],
+    },
 };
 // macro wrapper for set_mapscripts
 Macro.add(['set_mapscripts'], {
 
-    tags: ['onmapattempt', 'onmapstart', 'onmapend', 'onmapabort'],
+    tags: ['onmapattempt', 'onmapstart', 'onmapend', 'onmapabort', 'onmapresolve'],
 
     handler() {
 
@@ -1709,11 +1727,11 @@ function set_mapscripts(argObj) {
             // check each array element
             script.triggers[arg].forEach( trigger => {
                 // ERROR: make sure each from/to element is a string
-                if (['to', 'from'].includes(arg) && typeof trigger !== 'string') {
+                if (['from', 'to'].includes(arg) && typeof trigger !== 'string') {
                     throw new Error(`${name} — ${script.type} — Sleepymap "${mapname}", "${arg}" must be a string, array of strings, or keyword "any"`);
                 }
                 // ERROR: make sure each from_x/from_y/to_x/to_y element is a number
-                else if (typeof trigger !== 'number') {
+                else if (['from_x', 'from_y', 'to_x', 'to_y'].includes(arg) && typeof trigger !== 'number') {
                     throw new Error(`${name} — ${script.type} — Sleepymap "${mapname}", "${arg}" must be a number, array of numbers, or keyword "any"`);
                 }
             });
@@ -1776,6 +1794,31 @@ Macro.add(['mapmove'], {
     }
 });
 
+// aux function to check scripts & run them
+// used in both begin_mapmove & resolve_mapmove
+function run_mapscripts(argObj) {
+    const { mapname, origins, targets, trigger } = argObj;
+    const this_map = maps[mapname];
+    // check for any onmapstart scripts
+    const scripts = this_map.scripts.filter(script => script.type === trigger);
+    for (const script of scripts) {
+        // check if script applies to this location, if yes run
+        if (
+            (script.triggers.from === undefined || script.triggers.from.includes(origins.mapnode)) &&
+            (script.triggers.to === undefined   || script.triggers.to.includes(targets.mapnode)) &&
+            origins.xys.some( xy =>
+                (script.triggers.from_x === undefined || script.triggers.from_x.includes(xy.x)) &&
+                (script.triggers.from_y === undefined || script.triggers.from_y.includes(xy.y))
+            ) &&
+            targets.xys.some( xy =>
+                (script.triggers.to_x === undefined || script.triggers.to_x.includes(xy.x)) &&
+                (script.triggers.to_y === undefined || script.triggers.to_y.includes(xy.y))
+            )
+        ) {
+            $.wiki(script.contents);
+        }
+    }
+}
 // begins map movement procedure
 function begin_mapmove(argObj) {
     const name = argObj.name ?? 'Sleepymap.begin_mapmove';
@@ -1854,7 +1897,20 @@ function begin_mapmove(argObj) {
                                 ? maparray[xy2i({ xy: { x:argObj.target_x, y:argObj.target_y }, columns })] 
                                 : argObj.target_mapnode;
 
-    const target_xys = get_xys({ mapname, mapnode: target_mapnode });
+    // aux function to fetch all valid xys
+    function get_xys(mapnode) {
+        const this_map = maps[mapname];
+        const { maparray, columns } = this_map;
+        const xys = [];
+        for (let i = 0; i < maparray.length; i++) {
+            if (maparray[i] === mapnode) {
+                const xy = i2xy({ i, columns });
+                xys.push(xy);
+            }
+        }
+        return xys;
+    }
+    const target_xys = get_xys(target_mapnode);
 
     // WARNING: unplaced mapnode
     if (target_xys.length === 0) {
@@ -1886,7 +1942,7 @@ function begin_mapmove(argObj) {
         mapnode     : origin_mapnode,
         xys         : grid_travel
                         ? [{ x: position.x, y: position.y }]
-                        : get_xys({ mapname, origin_mapnode }),
+                        : get_xys(origin_mapnode),
         entities    : [],
     };
 
@@ -1920,24 +1976,7 @@ function begin_mapmove(argObj) {
     if (skip_scripts) return;
 
     // check for any scripts to fire when beginning an attempt
-    const scripts_attempt = this_map.scripts.filter(script => script.type === 'onmapattempt');
-    for (const script of scripts_attempt) {
-        // check if script applies to this location, if yes run
-        if (
-            (script.triggers.from === undefined || script.triggers.from.includes(origins.mapnode)) &&
-            (script.triggers.to === undefined || script.triggers.to.includes(targets.mapnode)) &&
-            origins.xys.some( xy =>
-                (script.triggers.from_x === undefined || script.triggers.from_x.includes(xy.x)) &&
-                (script.triggers.from_y === undefined || script.triggers.from_y.includes(xy.y))
-            ) &&
-            targets.xys.some( xy =>
-                (script.triggers.to_x === undefined || script.triggers.to_x.includes(xy.x)) &&
-                (script.triggers.to_y === undefined || script.triggers.to_y.includes(xy.y))
-            )
-        ) {
-            $.wiki(script.contents);
-        }
-    }
+    run_mapscripts({ mapname, origins, targets, trigger: 'onmapattempt' });
 }
 
 // document listener to catch events and resolve
@@ -1966,24 +2005,7 @@ function resolve_mapmove(argObj) {
     if (succeeded) {
         if (! skip_scripts) {
             // check for any onmapstart scripts
-            const scripts_start = this_map.scripts.filter(script => script.type === 'onmapstart');
-            for (const script of scripts_start) {
-                // check if script applies to this location, if yes run
-                if (
-                    (script.triggers.from === undefined || script.triggers.from.includes(origins.mapnode)) &&
-                    (script.triggers.to === undefined   || script.triggers.to.includes(targets.mapnode)) &&
-                    origins.xys.some( xy =>
-                        (script.triggers.from_x === undefined || script.triggers.from_x.includes(xy.x)) &&
-                        (script.triggers.from_y === undefined || script.triggers.from_y.includes(xy.y))
-                    ) &&
-                    targets.xys.some( xy =>
-                        (script.triggers.to_x === undefined || script.triggers.to_x.includes(xy.x)) &&
-                        (script.triggers.to_y === undefined || script.triggers.to_y.includes(xy.y))
-                    )
-                ) {
-                    $.wiki(script.contents);
-                }
-            }
+            run_mapscripts({ mapname, origins, targets, triggr: 'onmapstart' });
         }
 
         if (grid_travel) {
@@ -1997,47 +2019,13 @@ function resolve_mapmove(argObj) {
 
         if (! skip_scripts) {
             // check for any onmapend scripts
-            const scripts_end = this_map.scripts.filter(script => script.type === 'onmapend');
-            for (const script of scripts_end) {
-                // check if script applies to this location, if yes run
-                if (
-                    (script.triggers.from === undefined || script.triggers.from.includes(origins.mapnode)) &&
-                    (script.triggers.to === undefined   || script.triggers.to.includes(targets.mapnode)) &&
-                    origins.xys.some( xy =>
-                        (script.triggers.from_x === undefined || script.triggers.from_x.includes(xy.x)) &&
-                        (script.triggers.from_y === undefined || script.triggers.from_y.includes(xy.y))
-                    ) &&
-                    targets.xys.some( xy =>
-                        (script.triggers.to_x === undefined || script.triggers.to_x.includes(xy.x)) &&
-                        (script.triggers.to_y === undefined || script.triggers.to_y.includes(xy.y))
-                    )
-                ) {
-                    $.wiki(script.contents);
-                }
-            }
+            run_mapscripts({ mapname, origins, targets, trigger: 'onmapend' });
         }
     }
     // aborting
     else if (! skip_scripts) {
         // check for any onmapabort scripts
-        const scripts_abort = this_map.scripts.filter(script => script.type === 'onmapabort');
-        for (const script of scripts_abort) {
-            // check if script applies to this location, if yes run
-            if (
-                (script.triggers.from === undefined || script.triggers.from.includes(origins.mapnode)) &&
-                (script.triggers.to === undefined   || script.triggers.to.includes(targets.mapnode)) &&
-                origins.xys.some( xy =>
-                    (script.triggers.from_x === undefined || script.triggers.from_x.includes(xy.x)) &&
-                    (script.triggers.from_y === undefined || script.triggers.from_y.includes(xy.y))
-                ) &&
-                targets.xys.some( xy =>
-                    (script.triggers.to_x === undefined || script.triggers.to_x.includes(xy.x)) &&
-                    (script.triggers.to_y === undefined || script.triggers.to_y.includes(xy.y))
-                )
-            ) {
-                $.wiki(script.contents);
-            }
-        }
+        run_mapscripts({ mapname, origins, targets, trigger: 'onmapabort' });
     }
     
     // fire resolved event
@@ -2271,37 +2259,6 @@ function i2xy(argObj) {
     const { i, columns } = argObj;
     return { x: i % columns, y: Math.floor(i / columns) };
 }
-// generate object with offsets
-// currently only used in update_exits
-function get_offsets(argObj) {
-    const { columns } = argObj;
-    return {
-        N   : -columns,
-        E   : 1,
-        S   : columns,
-        W   : -1,
-        NE  : -columns + 1,
-        SE  : columns + 1,
-        SW  : columns - 1,
-        NW  : -columns - 1,
-    };
-}
-// aux function to fetch all valid xys
-// currently only used in begin_mapmove
-function get_xys(argObj) {
-    const { mapname, mapnode } = argObj;
-    const this_map = maps[mapname];
-    const { maparray, columns } = this_map;
-    const xys = [];
-    for (let i = 0; i < maparray.length; i++) {
-        if (maparray[i] === mapnode) {
-            const xy = i2xy({ i, columns });
-            xys.push(xy);
-        }
-    }
-    return xys;
-}
-
 function validate_bounds(argObj) {
     const name = argObj.name ??= 'Sleepymap.validate_bounds';
     const { mapname, columns, maparray, x, y } = argObj;

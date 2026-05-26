@@ -1,10 +1,10 @@
 :: StoryTitle
-Areamap demo -  small house
+Sleepymap Macro Library, Demo
 
-:: StoryCaption
-This is a demo of the Areamap library for SugarCube, part of the Sleepy Macros collection.
 
 :: StoryInit [nobr]
+
+/* define mapnodes */
 <<set _mapnodes = {
     M: {name: 'Master Bedroom'},
     G: {name: 'Guest Bedroom'},
@@ -15,8 +15,10 @@ This is a demo of the Areamap library for SugarCube, part of the Sleepy Macros c
     K: {name: 'Kitchen'},
     P: {name: 'Pantry'},
 }>>
+
+/* new node travel map */
 <<new_map 
-    mapname     'small_house'
+    mapname     'node_house'
     columns     16
     start       'D'
 >>
@@ -31,92 +33,194 @@ This is a demo of the Areamap library for SugarCube, part of the Sleepy Macros c
     .   .   .   .   .   .   .   .    .   .   .   .   .   .    .   .
 <<mapnodes _mapnodes>>
 <</new_map>>
-<<set_mapscripts mapname 'small_house'>>
-    <<onmapend to_x 4 to_y 4>>
-        <<run console.log("x4y4!")>>
-    /* asdfasdf */
-    <<onmapattempt>>
-        <<run $time = 1>>
-<</set_mapscripts>>
 
-/* <<set_entity
-    mapname "small_house"
-    entityname "test"
-    x 7
-    y 7
-    tile 'A'
+/* new grid travel map */
+<<new_map 
+    mapname     'grid_house'
+    columns     16
+    grid_mode   true
+    start_x     4
+    start_y     5
 >>
-<<set_entity
-    mapname "small_house"
-    entityname "test2"
-    x 7
-    y 7
-    tile 'B'
+    .   .   .   .   .   .   .   .    .   .   .   .   .   .    .   .
+    .   .   .   .   K   K   K   K    K   .   L   L   L   L    L   .
+    .   .   .   .   K   K   K   K    K   .   L   L   L   L    L   .
+    .   P   P   P|  K_  K   K_  K_  _K   .   L   L_  L_  L_   L   .
+    .   P   P   P|  D   D   D   D   |S   .   H  |G   G   G   |S   .
+    .   P   P   P|  D   D   D   D   |S   .   H   G_  G_  G_ _|S   .
+    .   P   P   P   D   D   D   D    D   .   H  |M   M   M    M   .
+    .   P   P   P|  D   D   D   D    D   .   H   M   M   M    M   .
+    .   .   .   .   .   .   .   .    .   .   .   .   .   .    .   .
+<<mapnodes _mapnodes>>
+<</new_map>>
+
+/* init vars */
+<<run
+    $energy = 100;
+    $heat = 0;
+    $hunger = 0;
 >>
-<<new_entity 
-    mapname     'small_house' 
-    entityname  'kitty' 
-    x           4
-    y           6
-    tile        '🐱'
->> */
+
+<<for _mapname range ['node_house', 'grid_house']>>
+    /* set scripts */
+    <<set_mapscripts mapname _mapname>>
+        /* decrement energy whenever a mapmove is attempted */
+        <<onmapattempt>>
+            <<set $energy-->>
+        /* increase heat when moving around upstairs */
+        <<onmapattempt to `['L', 'H', 'G', 'M']`>>
+            <<set $heat++>>
+        /* ring a bell when coming down the stairs */
+        <<onmapstart from 'S' to 'D'>>
+            <<run console.log('Ding!')>>
+        /* increase hunger when entering the kitchen or pantry */
+        <<onmapend from 'D' to `['K', 'P']`>>
+            <<set $hunger++>>   
+        <<onmapend>>
+            <<run console.log('moved!')>>
+            <<redo>>
+    <</set_mapscripts>>
+
+    /* place kitty in node house */
+    <<new_entity 
+        mapname     _mapname
+        entityname  'kitty' 
+        x           7
+        y           5
+        tile        '🐱'
+    >>
+<</for>>
+
+
+
 
 :: Start [nobr]
+<style>
+    code {
+        color: orange
+    }
+</style>
+<h2>Sleepymap Macro Library, the <code>mapmove</code> System</h2>
+<div>
+    <div>
+        <code>Sleepymap</code> is a map library for SugarCube which takes a space-separated 2D text grid (<code>maparray</code>) and converts it into a functional map for player movement (<code>mapmove</code>). It has two modes:
+    </div>
+    <ol>
+        <li>
+            <b><code>node travel</code>:</b> Node-to-node movement like <b>Faster Than Light</b> or room-to-room movement like <b>Darkest Dungeon</b>. All grid spaces with the same id will be treated as one big room (<code>mapnode</code>) — regardless of how many grid spaces it occupies or whether it is continuous or not. Adjacent <code>mapnode</code> will be connected by <code>exits</code> that allow navigation between them. Because <code>mapnode</code> size is irrelevant, multiple links to different rooms may appear in the same direction on the <code>rose</code> (default)
+        </li>
+        <li>
+            <b><code>grid travel</code>:</b> Grid movement like <b>Zelda</b> or <b>Final Fantasy Tactics</b>. Adjacent grid spaces with the same id will inherit the same properties, but will need to be traversed through one grid space at a time. Each grid space is connected by <code>exits</code> to adjacent grid spaces it can reach. (set when creating a new map)
+        </li>
+    </ol>
+    <p>
+        <b>Note:</b> <code>mapmove</code> <i><b>DOES NOT</b></i> trigger passage navigation. Authors <b>must</b> navigate to save map changes to <code>State</code>.
+    </p>
+</div>
+<ul>
+    <li>[[View the node travel demo -> node_house]]</li>
+    <li>[[View the grid travel demo -> grid_house]]</li>
+</ul>
+
+
+:: node_house [nobr]
+<<set _mapname = 'node_house'>>
+<h2>Node Travel map</h2>
+<<include 'content'>>
+
+
+:: grid_house [nobr]
+<<set _mapname = 'grid_house'>>
+<h2>Grid Travel map</h2>
+<<include 'content'>>
+
+/* connect stairs */
+<<connect_map
+    mapname     _mapname
+    from_x      8
+    from_y      4
+    to_x        14
+    to_y        5
+    direction   'N'
+>>
+<<connect_map
+    mapname     _mapname
+    from_x      14
+    from_y      5
+    to_x        8
+    to_y        4
+    direction   'N'
+>>
+/* kitchen is unescapable */
+<<disconnect_map
+    mapname     _mapname
+    from_x      5
+    from_y      3
+    to_x        5
+    to_y        4
+    direction   'S'
+>>
+
+
+:: content [nobr]
+<style>
+    #grid {
+        display: grid;
+        grid-template-columns: auto auto;
+        gap: 1rem;
+    }
+    #controls {
+        display:flex;
+        flex-direction:column;
+    }
+</style>
 <<place_mapview
-    mapname     'small_house'
+    mapname     _mapname
     background  '<img src="./assets/small_house.png">'
     autoupdate  true
-    pathing     true
 >>
-<div style='display:grid; grid-template-columns: auto auto; row-gap:1rem;'>
-    <div>
-        This rose automatically updates.
-        <<place_rose
-            mapname     'small_house'
-            background  '<img src="./assets/rose.png">'
-            autoupdate  true
-            keydown     `{N:"w", S:"s", E:"d", W:"a"}`
-        >>
-    </div>
-    <div style='display:flex; flex-direction:column;'>
-        <<link 'go upstairs'>>
-            <<mapmove mapname 'small_house' target_x 14  target_y 5>>
+<div id='grid'>
+    <div id='controls'>
+        <h3>Map Info</h3>
+        <<do>>
+            <div>Energy: $energy</div>
+            <div>Heat: $heat</div>
+            <div>Hunger: $hunger</div>
+        <</do>>
+        <h3>Navigation</h3>
+        [[Return to travel mode selection -> Start]]
+        <<link 'Navigate in place' _mapname>><</link>>
+        <<link 'Back'>>
+            <<run Engine.backward()>>
         <</link>>
-        <<link 'go downstairs'>>
-            <<mapmove mapname 'small_house' target_x 8 target_y 4>>
+        <h3>Map Controls</h3>
+        <<link 'Go upstairs'>>
+            <<mapmove mapname _mapname target_x 14  target_y 5>>
         <</link>>
-        <<link 'go to guest bedroom'>>
-            <<mapmove mapname 'small_house' target_mapnode 'G'>>
+        <<link 'Go downstairs'>>
+            <<mapmove mapname _mapname target_x 8 target_y 4>>
         <</link>>
-        <<link 'update interfaces'>>
+        <<link 'Go to guest bedroom'>>
+            <<mapmove mapname _mapname target_mapnode 'G'>>
+        <</link>>
+        <<link 'Update interfaces'>>
             <<update_interface selector '.macro-Sleepymap-rose'>>
             <<update_interface selector '.macro-Sleepymap-mapview'>>
         <</link>>
     </div>
     <div>
-        This rose doesn't auto-update.
+        <div>This rose automatically updates.</div>
         <<place_rose
-            mapname     'small_house'
+            mapname     _mapname
+            background  '<img src="./assets/rose.png">'
+            autoupdate  true
+            keydown     `{N:"w", S:"s", E:"d", W:"a"}`
+        >>
+        <div>This rose doesn't auto-update.</div>
+        <<place_rose
+            mapname     _mapname
             background  '<img src="./assets/rose.png">'
             autoupdate  false
         >>
     </div>
 </div>
-
-<<connect_map
-    mapname "small_house"
-    from_x 8
-    from_y 4
-    to_x 14
-    to_y 5
-    direction "N"
->>
-<<disconnect_map
-    mapname "small_house"
-    from_x 5
-    from_y 3
-    to_x 5
-    to_y 4
-    direction "N"
->>
-<<set_mapstate mapname 'small_house' hidden `{Y: true}`>>

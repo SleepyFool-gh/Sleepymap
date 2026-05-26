@@ -75,7 +75,7 @@ title: Sleepy Macros — Sleepymap library
 `Sleepymap` is a map library for SugarCube which takes a space-separated 2D text grid (`maparray`) and converts it into a functional map for player movement (`mapmove`). It has two modes:
     1. **`node travel`:** Node-to-node movement like **Faster Than Light** or room-to-room movement like **Darkest Dungeon**. All grid spaces with the same id will be treated as one big room (`mapnode`) — regardless of how many grid spaces it occupies or whether it is continuous or not. Adjacent `mapnode` will be connected by `exits` that allow navigation between them. Because `mapnode` size is irrelevant, multiple links to different rooms may appear in the same direction on the `rose` (default / set by `grid_travel = false`)
     2. **`grid travel`:** Grid movement like **Zelda** or **Final Fantasy Tactics**. Adjacent grid spaces with the same id will inherit the same properties, but will need to be traversed through one grid space at a time. Each grid space is connected by `exits` to adjacent grid spaces it can reach. (set by `grid_travel = true`)
-Note: `mapmove` *DOES NOT* trigger passage navigation. Authors **must** navigate to save map changes to `State`.
+**Note:** `mapmove` *DOES NOT* trigger passage navigation. Authors **must** navigate to save map changes to `State`.
 
 [Get the map library here](https://github.com/SleepyFool-gh/areamap)
 
@@ -474,7 +474,7 @@ Assigns TwineScript logic to run during the `mapmove` process (`mapscript`). Thi
     - TwineScript code to execute when the conditions set in the arguments are met.
 - **Examples:**
     ```js
-    <<set_scripts mapname 'node_house'>>
+    <<set_mapscripts mapname 'node_house'>>
         /* decrement energy whenever a mapmove is attempted */
         <<onmapattempt>>
             <<set $energy-->>
@@ -487,7 +487,7 @@ Assigns TwineScript logic to run during the `mapmove` process (`mapscript`). Thi
         /* increase hunger when entering the kitchen or pantry */
         <<onmapend from 'D' to `['K', 'P']`>>
             <<set $hunger++>>   
-    <</set_scripts>>
+    <</set_mapscripts>>
     ```
 
 
@@ -559,11 +559,11 @@ Creates a new `Sleepymap`. The `<<new_map>>` macro is a wrapper for this method.
         mapname  : 'node_house',
         columns  : 16,
         start    : 'D',
-        maparray : ['.', '.', '.', ...], // etc
+        maparray : ['.', '.', '.', ...], // etc, rest of maparray
         mapnodes : {
             D : { name: 'Dining Room' },
             K : { name: 'Kitchen' },
-            // etc
+            // etc, other mapnodes
         },
     });
 
@@ -574,11 +574,11 @@ Creates a new `Sleepymap`. The `<<new_map>>` macro is a wrapper for this method.
         grid_travel : true,
         start_x     : 4,
         start_y     : 5,
-        maparray    : ['.', '.', '.', ...], // etc
+        maparray    : ['.', '.', '.', ...], // etc, rest of maparray
         mapnodes    : {
             D : { name: 'Dining Room' },
             K : { name: 'Kitchen' },
-            // etc
+            // etc, other mapnodes
         },
     });
     ```
@@ -599,33 +599,74 @@ Retrieves a copy of a map object. Manipulating the returned object *will not* af
     });
     // returns
     {
-        mapname: 'node_house',
-        columns: 16,
-        diagonals: true,
-        grid_travel: false,
-        frozen: false,
-        maparray: ['.', '.', '.', ...], // etc
-        barriers: [
+        mapname     : 'node_house',
+        columns     : 16,
+        diagonals   : false,
+        grid_travel : false,
+        frozen      : false,
+        maparray    : ['.', '.', '.', ...], // etc, rest of maparray
+        barriers    : [
             {N: false, E: false, W: false, S: false, NE: false, NW: false, SE: false, SW: false},
-            {N: false, E: false, W: false, S: false, NE: false, NW: false, SE: false, SW: false},
-            // etc
+            // etc, maps 1:1 to maparray
         ],
         mapnodes: {
-            D: { name: 'Dining Room' },
-            K: { name: 'Kitchen' },
-            // etc
+            D: { 
+                id          : 'D',
+                name        : 'Dining Room',
+                disabled    : false,
+                hidden      : false,
+                blocked     : false,
+                walled      : false,
+            },
+            // etc, other mapnodes
         },
         position: {
-            mapnode: 'D',
-            x: 4,
-            y: 5,
+            mapnode : 'D',
+            x       : 4,    // non-extant on node travel maps
+            y       : 5,    // non-extant on node travel maps
         },
-        exits: {
-            node: {},
-            grid: [],
-            manaul: [],
+        exits: { // both node & grid exits always get generated regardless of travel mode
+            node: {
+                '.' : {},   // walls have no exits
+                D: {
+                    N: Set{'K', 'S'},   // exits point to other mapnode ids
+                    W: Set{'P'},
+                },
+                // etc, other nodes
+            },
+            grid: [
+                {
+                    E: Set{20},     // exits point to other maparray indices
+                    S: Set{36},
+                },
+                // etc, maps 1:1 to maparray
+            ],
+            manaul: [
+                {
+                    removing: false,    // manual connection, (true) for disconnections 
+                    dir: 'N',
+                    ​from_x: 8,
+                    from_y: 4,
+                    to_x: 14,
+                    to_y: 5
+                },
+                // etc, both node & grid manual edits are stored here
+            ],
         },
-        scripts: {},
+        scripts: [
+            {
+                type: 'onmapattempt',
+                triggers: {
+                    to: ['L', 'H', 'G', 'M'],
+                },
+
+        <<onmapattempt to `['L', 'H', 'G', 'M']`>>
+            <<set $heat++>>
+                    
+            },
+            // etc, other mapscripts
+        ],
+        entities: {},
     }
     ```
 
