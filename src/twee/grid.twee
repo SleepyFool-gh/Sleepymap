@@ -55,8 +55,8 @@ This is a demo of the Areamap library for SugarCube, part of the Sleepy Macros c
 <<new_entity 
     mapname     'small_house' 
     entityname  'kitty' 
-    x           7
-    y           5
+    x           4
+    y           6
     tile        '🐱'
 >>
 

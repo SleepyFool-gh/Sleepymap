@@ -1615,6 +1615,11 @@ function set_entity(argObj) {
     }
 
     const entities = this_map.entities;
+    // WARNING: no tile
+    if (entities[entityname]?.tile ?? tile === undefined) {
+        console.warn(`${name} — Sleepymap "${mapname}" — entity "${entityname}" has no tile!`)
+    }
+
     if (removing) {
         delete entities[entityname];
     }

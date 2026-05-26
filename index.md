@@ -395,7 +395,7 @@ Manually triggers an update for a `rose` or `mapview` element. This is useful if
 
 <h3 id="macro-new_entity"><code>&lt;&lt;new_entity&gt;&gt;</code></h3>
 
-Creates a new entity on the map at the specified coordinates.
+Creates a new entity on the map at the specified coordinates. This macro takes `x` and `y` inputs in both `node travel` and `grid travel`.
 
 - **Arguments:** 
     - `mapname`: (string) name of `map`
@@ -410,16 +410,15 @@ Creates a new entity on the map at the specified coordinates.
         mapname     'node_house' 
         entityname  'kitty' 
         x           7
-        y           8
+        y           5
         tile        '🐱'
     >>
     ```
 
-HERE
 
 <h3 id="macro-set_entity"><code>&lt;&lt;set_entity&gt;&gt;</code></h3>
 
-Updates the position or display tile of an existing entity.
+Updates the position or display tile of an existing entity. This macro takes `x` and `y` inputs in both `node travel` and `grid travel`.
 
 - **Arguments:** 
     - `mapname`: (string) name of `map`
@@ -429,11 +428,12 @@ Updates the position or display tile of an existing entity.
     - `tile`: (HTML string) *(optional)* new display tile
 - **Examples:**
     ```js
+    /* move the kitty to the pantry */
     <<set_entity 
-        mapname    'small_house' 
-        entityname 'cat' 
-        x          5 
-        y          2 
+        mapname    'node_house' 
+        entityname 'kitty' 
+        x          2
+        y          6
     >>
     ```
 
@@ -446,9 +446,10 @@ Removes an entity from the map.
     - `entityname`: (string) identifier of the entity to remove
 - **Examples:**
     ```js
+    /* remove the kitty from the map */
     <<delete_entity 
-        mapname    'small_house' 
-        entityname 'cat' 
+        mapname    'node_house' 
+        entityname 'kitty' 
     >>
     ```
 
