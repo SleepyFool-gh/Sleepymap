@@ -454,34 +454,34 @@ Removes an entity from the map.
     ```
 
 
-<h3 id='macro-set_areascripts'><code>&lt;&lt;set_areascripts&gt;&gt;</code></h3>
+<h3 id="macro-set_mapscripts"><code>&lt;&lt;set_mapscripts&gt;&gt;</code></h3>
 
-Assigns TwineScript logic to run during the `mapmove` process (`areascripts`). Arguments can be used to control which `mapareas` trigger the `areascripts`. This macro **must** be called in `StoryInit`. Child tag order is preserved, but `<<onmapattempt>>` tags always run first, followed by:
-    - when `mapmove` succeeds: `<<onmapstart>>` then `<<onmapend>>`
-    - when `mapmove` fails: `<<onmapabort>>`
+Assigns TwineScript logic to run during the `mapmove` process. This macro **must** be called in `StoryInit`. Child tag order is preserved: `<<onmapattempt>>` tags always run first, followed by the others depending on the movement outcome.
 
 - **Arguments:**
-    - `mapname`: (string) name of `areamap`
+    - `mapname`: (string) name of `map`
 - **Child Tags:**
-    - `<<onmapattempt>>`: *(optional)* Always runs, immediately when a mapmove is attempted
-    - `<<onmapstart>>`: *(optional)* Only runs when `mapmove` succeeds, before position is updated
-    - `<<onmapend>>`: *(optional)* Only runs when mapmove succeeds, after position is updated
-    - `<<onmapabort>>`: *(optional)* Only runs when mapmove fails
-    - **Arguments:** All these child tags take the same arguments
-        - `to`: (string\|array\<string\>\|"any") *(optional)* id(s) of the `maparea` the player is moving to; either as a string, an array of strings, or "any"
-        - `from`: (string\|array\<string\>\|"any") *(optional)* id(s) of the `maparea` the player is moving from; either as a string, an array of strings, or "any"
-    - **Contents:**
-        - TwineScript to run when the tag is triggered
+    - `<<onmapattempt>>`: *(optional)* Always runs immediately when a mapmove is attempted.
+    - `<<onmapstart>>`: *(optional)* Only runs when `mapmove` succeeds, before the position is updated.
+    - `<<onmapend>>`: *(optional)* Only runs when `mapmove` succeeds, after the position is updated.
+    - `<<onmapabort>>`: *(optional)* Only runs when `mapmove` fails.
+    - **Arguments for Child Tags:**
+        - `from`: (string|array<string>|"any") *(optional)* ID(s) of the node the player is moving from.
+        - `to`: (string|array<string>|"any") *(optional)* ID(s) of the node the player is moving to.
+        - `from_x`, `from_y`: (number|array<number>|"any") *(optional)* Grid coordinates player is moving from.
+        - `to_x`, `to_y`: (number|array<number>|"any") *(optional)* Grid coordinates player is moving to.
+- **Contents:**
+    - TwineScript code to execute when the condition is met.
 - **Examples:**
     ```js
-    <<set_areascripts mapname 'small_house'>>
+    <<set_scripts mapname 'small_house'>>
         <<onmapattempt>>
             <<run $time++>>
         <<onmapstart from 'ST'>>
             <<run $energy-->>
         <<onmapend to ['KT', 'PT']>>
             <<run $hunger++>>   
-    <</set_areascripts>>
+    <</set_scripts>>
     ```
 
 

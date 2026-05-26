@@ -301,7 +301,7 @@ function new_map(argObj) {
             node    : {},
             grid    : [],
         },                                  // populated in update_exits
-        scripts         : [],               // populated in set_scripts
+        scripts         : [],               // populated in set_mapscripts
         entities        : {},               // populated in set_entities
     };
 
@@ -1615,6 +1615,11 @@ function set_entity(argObj) {
     }
 
     const entities = this_map.entities;
+    // WARNING: no tile
+    if (entities[entityname]?.tile ?? tile === undefined) {
+        console.warn(`${name} — Sleepymap "${mapname}" — entity "${entityname}" has no tile!`)
+    }
+
     if (removing) {
         delete entities[entityname];
     }
@@ -1645,7 +1650,7 @@ function set_entity(argObj) {
 //      when ending, after position updates
 //      when aborting
 
-const SET_SCRIPTS_TEMPLATE = {
+const SET_MAPSCRIPTS_TEMPLATE = {
     mapname: {
         required: true,
         type: 'string',
@@ -1655,7 +1660,7 @@ const SET_SCRIPTS_TEMPLATE = {
         type: 'object',
     },
 };
-// SYNC REMINDER: changing here requires also changing the for loop in set_scripts
+// SYNC REMINDER: changing here requires also changing the for loop in set_mapscripts
 const ONMAP_TRIGGERS_TEMPLATE = {
     to: {
         type: ['string', 'object'],
@@ -1676,8 +1681,8 @@ const ONMAP_TRIGGERS_TEMPLATE = {
         type: ['number', 'object'],
     },
 };
-// macro wrapper for set_scripts
-Macro.add(['set_scripts'], {
+// macro wrapper for set_mapscripts
+Macro.add(['set_mapscripts'], {
 
     tags: ['onmapattempt', 'onmapstart', 'onmapend', 'onmapabort'],
 
@@ -1685,12 +1690,13 @@ Macro.add(['set_scripts'], {
 
         const name = this.name;
 
+        // TODO: add ILIKETOBREAKTHINGS flag
         // ERROR: macro being called outside StoryInit
         if (turns() !== 0) {
             throw new Error(`${name} — Sleepymap — macro must be called during StoryInit!`);
         }
 
-        const argObj = new ArgObj(name, SET_SCRIPTS_TEMPLATE, this.args);
+        const argObj = new ArgObj(name, SET_MAPSCRIPTS_TEMPLATE, this.args);
 
         // parse each payload, push to array, attach to argObj
         argObj.scripts = [];
@@ -1705,16 +1711,16 @@ Macro.add(['set_scripts'], {
         }
 
         argObj.add_metadata('name', name);
-        set_scripts(argObj);
+        set_mapscripts(argObj);
     }
 });
 
 // assigns scripts to map object on new_map macro object
-function set_scripts(argObj) {
-    const name = argObj.name ?? 'Sleepymap.set_scripts';
+function set_mapscripts(argObj) {
+    const name = argObj.name ?? 'Sleepymap.set_mapscripts';
 
     // VALIDATE: required args & types
-    ArgObj.validate(name, SET_SCRIPTS_TEMPLATE, argObj);
+    ArgObj.validate(name, SET_MAPSCRIPTS_TEMPLATE, argObj);
     
     const { mapname, scripts } = argObj;
     const this_map = maps[mapname];
@@ -1733,7 +1739,7 @@ function set_scripts(argObj) {
         // VALIDATE: types
         ArgObj.validate(name, ONMAP_TRIGGERS_TEMPLATE, script.triggers);
         
-        // SYNC REMINDER: changing here also requires changing <<set_scripts>> args
+        // SYNC REMINDER: changing here also requires changing <<set_mapscripts>> args
         for (const arg of Object.keys(ONMAP_TRIGGERS_TEMPLATE)) {
             // arg not defined, continue
             if (! Object.hasOwn(script.triggers, arg)) {
@@ -2110,10 +2116,17 @@ function begin_pathmove(argObj) {
     if (this_map === undefined) {
         throw new Error(`${name} — Sleepymap "${mapname}" not found!`);
     }
-    // WARNING: empty path, exit early
-    else if ((path === null || path === undefined || path?.length === 0)) {
+    // WARNING: empty path, exit
+    else if (path === null || path === undefined) {
         if (! suppress_warnings) {
             console.warn(`${name} — Sleepymap "${mapname}" — path is empty, nothing to do; ABORTED`);
+        }
+        return;
+    }
+    // WARNING: no movement required for path, exit
+    else if (path?.length <= 1) {
+        if (! suppress_warnings) {
+            console.warn(`${name} — Sleepymap "${mapname}" — path is not long enough to require moving, nothing to do; ABORTED`);
         }
         return;
     }
@@ -2496,7 +2509,7 @@ const Sleepymap = {
     update_interface,
 
     set_entity,
-    set_scripts,
+    set_mapscripts,
 
     begin_mapmove,
 
