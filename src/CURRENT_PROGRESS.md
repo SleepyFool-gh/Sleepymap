@@ -37,5 +37,4 @@
 - ? need to add settings to disable automatic disabling and hiding of disabled / hidden maptiles
 
 - started updating documentation
-- fix DOM update bug with <<ddo>> and <<redo>>
 - add ILIKETOBREAKTHINGS flag

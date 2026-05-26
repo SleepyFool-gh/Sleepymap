@@ -177,6 +177,7 @@ Sleepymap Macro Library, Demo
 <<place_mapview
     mapname     _mapname
     background  '<img src="./assets/small_house.png">'
+    clickable   false 
     autoupdate  true
 >>
 <div id='grid'>

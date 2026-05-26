@@ -1234,7 +1234,7 @@ function create_mapview(argObj) {
         const id = maparray[i];
         const mapnode = mapnodes[id];
         // if clickable & valid travel destination --> clickable
-        const link  = ! clickable
+        const link  = ! (clickable || pathing)
                         ? false
                         : !! is_traversable(i);
 
@@ -1284,8 +1284,8 @@ function create_mapview(argObj) {
         $tiles[i] = $tile;
     }
 
-    // attach click listener
-    if (clickable) {
+    // attach click listener, only if not pathing as that will replace click
+    if (clickable && ! pathing) {
         attach_click({ name, mapname, $interface: $mapview });
     }
     // attach keydown listener
@@ -1327,6 +1327,7 @@ function create_mapview(argObj) {
                 begin_pathmove({ mapname, path });
             });
         }
+        
     }
 
     return $mapview;
@@ -1815,6 +1816,7 @@ function run_mapscripts(argObj) {
                 (script.triggers.to_y === undefined || script.triggers.to_y.includes(xy.y))
             )
         ) {
+            console.log(trigger);
             $.wiki(script.contents);
         }
     }
@@ -1961,6 +1963,11 @@ function begin_mapmove(argObj) {
         }
     }
 
+    // check for any scripts to fire when beginning an attempt
+    if (! skip_scripts) {;
+        run_mapscripts({ mapname, origins, targets, trigger: 'onmapattempt' });
+    }
+    
     // fire began event
     $('#passages').trigger('Sleepymap:mapmove_began', { 
         mapname, 
@@ -1969,14 +1976,6 @@ function begin_mapmove(argObj) {
         force_abort,
         skip_scripts,
     });
-
-    // fire entities at this location
-
-    // if skipping scripts, done
-    if (skip_scripts) return;
-
-    // check for any scripts to fire when beginning an attempt
-    run_mapscripts({ mapname, origins, targets, trigger: 'onmapattempt' });
 }
 
 // document listener to catch events and resolve
@@ -2029,12 +2028,13 @@ function resolve_mapmove(argObj) {
     }
     
     // fire resolved event
-    $('#passages').trigger('Sleepymap:mapmove_resolved', { 
+    // setTimeout as safety against race condition for scripts
+    setTimout( () => $('#passages').trigger('Sleepymap:mapmove_resolved', { 
         mapname, 
         origins, 
         targets,
         succeeded,
-    });
+    }), Engine.DOM_DELAY);
 }
 
 let _pathmove_running = false;
