@@ -18,9 +18,7 @@ This is a demo of the Areamap library for SugarCube, part of the Sleepy Macros c
 <<new_map 
     mapname     'small_house'
     columns     16
-    grid_mode   true
-    start_x     4
-    start_y     5
+    start       'D'
 >>
     .   .   .   .   .   .   .   .    .   .   .   .   .   .    .   .
     .   .   .   .   K   K   K   K    K   .   L   L   L   L    L   .
@@ -36,9 +34,12 @@ This is a demo of the Areamap library for SugarCube, part of the Sleepy Macros c
 <<set_mapscripts mapname 'small_house'>>
     <<onmapend to_x 4 to_y 4>>
         <<run console.log("x4y4!")>>
+    /* asdfasdf */
+    <<onmapattempt>>
+        <<run $time = 1>>
 <</set_mapscripts>>
 
-<<set_entity
+/* <<set_entity
     mapname "small_house"
     entityname "test"
     x 7
@@ -58,14 +59,13 @@ This is a demo of the Areamap library for SugarCube, part of the Sleepy Macros c
     x           4
     y           6
     tile        '🐱'
->>
+>> */
 
 :: Start [nobr]
 <<place_mapview
     mapname     'small_house'
     background  '<img src="./assets/small_house.png">'
     autoupdate  true
-    keydown     `{N:"w", S:"s", E:"d", W:"a"}`
     pathing     true
 >>
 <div style='display:grid; grid-template-columns: auto auto; row-gap:1rem;'>
@@ -75,6 +75,7 @@ This is a demo of the Areamap library for SugarCube, part of the Sleepy Macros c
             mapname     'small_house'
             background  '<img src="./assets/rose.png">'
             autoupdate  true
+            keydown     `{N:"w", S:"s", E:"d", W:"a"}`
         >>
     </div>
     <div style='display:flex; flex-direction:column;'>

@@ -1,3 +1,97 @@
+/* <<new_map>> mapview parser */
+const MAPVIEW_TEMPLATE = {
+    columns: {
+        required: true,
+        type: 'number',
+    },
+};
+        // if <<mapview>> exists
+        const mapview_payload = this.payload.find( p => p.name === 'mapview' );
+        if (mapview_payload) {
+            const args = mapview_payload.args;
+            const mapview_argObj = new ArgObj(name, MAPVIEW_TEMPLATE, args);
+            argObj.mapview = {
+                columns: mapview_argObj.columns,
+                array: mapview_payload.contents.trim().split(/\s+/g),
+            };
+        }
+
+/* new_map mapview constructor */
+    // MAPVIEW ERRORS
+    if (mapview !== undefined) {
+        // ERROR: mapview not an object
+        if (typeof mapview !== 'object') {
+            throw new Error(`${name} — Sleepymap — mapview must be an object!`);
+        }
+        // VALIDATE: required args & type
+        ArgObj.validate(name, MAPVIEW_TEMPLATE, mapview);
+        // ERROR: mapview.array not an array (or undefined)
+        if (! Array.isArray(mapview.array)) {
+            throw new Error(`${name} — Sleepymap "${mapname}" — mapview.array must be an array!`);
+        }
+        // ERROR: grid travel is incompatible with separate mapview
+        else if (grid_travel && mapview) {
+            throw new Error(`${name} — Sleepymap "${mapname}" — grid travel is incompatible with a separate mapview!`);
+        }
+        // ERROR: mapview.array not rectangular
+        else if (mapview.array.length % mapview.columns !== 0) {
+            throw new Error(`${name} — Sleepymap "${mapname}" — mapview.array must be rectangular (whole number multiple of mapview.columns)!`);
+        }
+        // WARNING: empty mapview.array
+        if (mapview.array.length === 0) {
+            console.warn(`${name} — Sleepymap "${mapname}" — mapview.array is empty!`);
+        }
+    }
+
+
+/* set_map mapview validator */
+//   ┌┬┐┌─┐┌─┐┬  ┬┬┌─┐┬ ┬
+//   │││├─┤├─┘└┐┌┘│├┤ │││
+//   ┴ ┴┴ ┴┴   └┘ ┴└─┘└┴┘
+//  SECTION: mapview
+    if (argObj.mapview !== undefined) {
+        // ERROR: mapview not an object
+        if (typeof argObj.mapview !== 'object') {
+            throw new Error(`${name} — Sleepymap "${mapname}" — mapview must be an object containing "columns" & "array" properties!`);
+        }
+        // ERROR: incomplete mapview object
+        else if (
+            (argObj.mapview.columns === undefined && this_map.mapview?.columns === undefined) ||
+            (argObj.mapview.array === undefined && this_map.mapview?.array === undefined)
+        ) {
+            throw new Error(`${name} — Sleepymap "${mapname}" — incomplete mapview object, must define both columns and array if not both are previously defined on map!`);
+        }
+        // ERROR: mapview.columns not a number (or undefined)
+        else if (
+            (argObj.mapview.columns !== undefined) &&
+            (typeof argObj.mapview.columns !== 'number')
+        ) {
+            throw new Error(`${name} — Sleepymap "${mapname}" — mapview.columns must be a number!`);
+        }
+        // ERROR: mapview.array not an array (or undefined)
+        else if (
+            (argObj.mapview.array !== undefined) &&
+            ! Array.isArray(argObj.mapview.array)
+        ) {
+            throw new Error(`${name} — Sleepymap "${mapname}" — mapview.array must be an array!`);
+        }
+        // ERROR: mapview.array not rectangular
+        else if (
+            (argObj.mapview.array.length ?? this_map.mapview?.array?.length) %
+            (argObj.mapview.columns ?? this_map.mapview?.columns) !== 0
+        ) {
+            throw new Error(`${name} — Sleepymap "${mapname}" — mapview.array must be rectangular (whole number multiple of mapview.columns)!`);
+        }
+        // WARNING: empty mapview.array
+        if (argObj.mapview.array.length === 0) {
+            console.warn(`${name} — Sleepymap "${mapname}" — mapview.array is empty!`);
+        }
+        this_map.mapview ??= {};
+        this_map.mapview.columns = argObj.mapview.columns ?? this_map.mapview.columns;
+        this_map.mapview.array = argObj.mapview.array ?? this_map.mapview.array;
+    }
+
+
 function find_path_Astar(argObj) {
  
     const name = argObj.name ?? 'Sleepymap.find_path';

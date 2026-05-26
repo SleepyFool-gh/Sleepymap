@@ -73,8 +73,8 @@ title: Sleepy Macros — Sleepymap library
 <h1 id='intro'><code>Sleepymap</code> Library</h1>
 
 `Sleepymap` is a map library for SugarCube which takes a space-separated 2D text grid (`maparray`) and converts it into a functional map for player movement (`mapmove`). It has two modes:
-    1. **`node travel`:** Node-to-node movement like **Faster Than Light** or room-to-room movement like **Darkest Dungeon**. All grid spaces with the same id will be treated as one big room (`mapnode`) — regardless of how many grid spaces it occupies or whether it is continuous or not. Adjacent `mapnode` will be connected by `exits` that allow navigation between them. Because `mapnode` size is irrelevant, multiple links to different rooms may appear in the same direction on the `rose` (default / set by `grid_movement = false`)
-    2. **`grid travel`:** Grid movement like **Zelda** or **Final Fantasy Tactics**. Adjacent grid spaces with the same id will inherit the same properties, but will need to be traversed through one grid space at a time. Each grid space is connected by `exits` to adjacent grid spaces it can reach. (set by `grid_movement = true`)
+    1. **`node travel`:** Node-to-node movement like **Faster Than Light** or room-to-room movement like **Darkest Dungeon**. All grid spaces with the same id will be treated as one big room (`mapnode`) — regardless of how many grid spaces it occupies or whether it is continuous or not. Adjacent `mapnode` will be connected by `exits` that allow navigation between them. Because `mapnode` size is irrelevant, multiple links to different rooms may appear in the same direction on the `rose` (default / set by `grid_travel = false`)
+    2. **`grid travel`:** Grid movement like **Zelda** or **Final Fantasy Tactics**. Adjacent grid spaces with the same id will inherit the same properties, but will need to be traversed through one grid space at a time. Each grid space is connected by `exits` to adjacent grid spaces it can reach. (set by `grid_travel = true`)
 Note: `mapmove` *DOES NOT* trigger passage navigation. Authors **must** navigate to save map changes to `State`.
 
 [Get the map library here](https://github.com/SleepyFool-gh/areamap)
@@ -91,7 +91,6 @@ Note: `mapmove` *DOES NOT* trigger passage navigation. Authors **must** navigate
     - visual map, optionally clickable `mapnodes`, optional pathing (`mapview`)
     - both `interface` items also accept keydown inputs for triggering `mapmove` with the keyboard
 - **TwineScripts payloads:** Scripts can be assigned to run at various stages of the `mapmove` process and conditionally on nodes or grid spaces.
-- **Separation of display & logic for `node travel`:** Since the size of the `mapnode` doesn't matter for `node travel`, the displayed map (`mapview`) can be independently configured from the `maparray`.
 - **Linked `story variables`:** Map states are saved in `State` and survive passage navigations and saves / loads.
 - **Manually adjust exits:** While exits are automatically generated from the provided `maparray`, it can be manually tweaked to create more complex navigation patterns.
 - **`mapnode` behavior manipulation:** 
@@ -100,7 +99,7 @@ Note: `mapmove` *DOES NOT* trigger passage navigation. Authors **must** navigate
     - `blocked` — links & maptiles still available, but movement through it is blocked
     - `walled` — changes the `mapnode` into a wall that blocks movement
 - **Entity placement:** Entities can be set and moved around the `map` — though interactions must be handled by the author
-- **JavaScript methods:** for manipulating maps, `mapnodes`, `mapstates`, `exits`, `mapviews`, `roses`, and `entities`. 
+- **JavaScript methods:** for manipulating maps, `mapnodes`, `mapstates`, `exits`,`roses`, `mapviews`,  and `entities`. 
 - **Configurable defaults:** for various settings
 
 <p align="center">
@@ -127,10 +126,10 @@ Defines a new `Sleepymap`. This macro **must** be called in `StoryInit`. It acce
 
 - **Arguments:** 
     - `mapname`: (string) name of `map`
-    - `grid_movement`: (boolean) *(optional)* whether to use grid-based movement (default: `false`, node-to-node movement)
-    - `start`: (string) starting position in map, must be a valid `mapnode` id (only for node movement mode)
-    - `start_x`: (number) starting x coordinate (only for grid movement mode)
-    - `start_y`: (number) starting y coordinate (only for grid movement mode)
+    - `grid_travel`: (boolean) *(optional)* whether to use grid-based movement (default: `false`, node-to-node movement)
+    - `start`: (string) *(`node travel`)* starting position in map, must be a valid `mapnode` id
+    - `start_x`: (number) *(`grid travel`)* starting x coordinate
+    - `start_y`: (number) *(`grid travel`)* starting y coordinate
     - `columns`: (number) # of columns in the logic representation grid
     - `diagonals`: (boolean) *(optional)* whether diagonal movement is allowed
 - **Contents:** 
@@ -145,11 +144,8 @@ Defines a new `Sleepymap`. This macro **must** be called in `StoryInit`. It acce
         - thin broder to SW of grid cell: `\id`
         - thin border to NW of grid cell: `/id`
 - **Child Tags:**
-    - `<<mapview>>`: *(optional)* Defines a different 2D grid to use for `mapview` instead of the map logic grid, can only be used in `node travel`
-        - **Arguments:** `columns` (number) # of columns in the visual representation grid
-        - **Contents:** 2D space-separated grid, must be rectangular.
-    - `<<mapnodes>>`: *(optional)* Defines additional metadata for each `mapnode`. Partial objects will be filled with default values.
-        - **Arguments:**
+    - `<<mapnodes>>`: (object) *(optional)* Defines additional metadata for each `mapnode`. Partial objects will be filled with default values.
+        - `[mapnode id]`: (object) `mapnode` data object
             - `name`: (string) *(optional)* used for links in `roses` & for the `show_labels` option in `mapviews`, default is the `mapnode` id
             - `tile`: (HTML string) *(optional)* inserted into each space in the `mapview`, default none
             - `disabled`: (boolean) *(optional)* disables `interface` links for this node, default `false`
@@ -158,6 +154,7 @@ Defines a new `Sleepymap`. This macro **must** be called in `StoryInit`. It acce
             - `walled`: (boolean) *(optional)* turns the node into a wall, default `false`
 - **Examples:**
     ```js
+    /* define mapnodes */
     <<set _mapnodes = {
         M: {name: 'Master Bedroom'},
         G: {name: 'Guest Bedroom'},
@@ -169,7 +166,7 @@ Defines a new `Sleepymap`. This macro **must** be called in `StoryInit`. It acce
         P: {name: 'Pantry'},
     }>>
 
-    /* node travel */
+    /* new node travel map */
     <<new_map 
         mapname     'node_house'
         columns     16
@@ -187,7 +184,7 @@ Defines a new `Sleepymap`. This macro **must** be called in `StoryInit`. It acce
     <<mapnodes _mapnodes>>
     <</new_map>>
 
-    /* grid travel */
+    /* new grid travel map */
     <<new_map 
         mapname     'grid_house'
         columns     16
@@ -249,13 +246,13 @@ Updates the operational state (`mapstate`) of a map, such as the current positio
             - `y`: (number) new y position
     - `frozen`: (boolean) *(optional)* disables *all* `interface` interactions if true
     - `disabled`: (object) *(optional)*
-        - [`mapnode` id]: (boolean) whether the `mapnode` is disabled
+        - `[mapnode id]`: (boolean) whether the `mapnode` is disabled
     - `hidden`: (object) *(optional)*
-        - [`mapnode` id]: (boolean) whether the `mapnode` is hidden
+        - `[mapnode id]`: (boolean) whether the `mapnode` is hidden
     - `blocked`: (object) *(optional)*
-        - [`mapnode` id]: (boolean) whether the `mapnode` is blocked
+        - `[mapnode id]`: (boolean) whether the `mapnode` is blocked
     - `walled`: (object) *(optional)*
-        - [`mapnode` id]: (boolean) whether the `mapnode` is walled
+        - `[mapnode id]`: (boolean) whether the `mapnode` is walled
 - **Examples:**
     ```js
     /* move player in grid mode */
@@ -336,7 +333,7 @@ Generates a 3x3 grid of directional links for navigation.
     - `background`: (HTML string) *(optional)* inserted as a background element for the `rose`
     - `autoupdate`: (boolean) *(optional)* whether the `rose` automatically updates after each `mapmove` or when the `map` changes, default set in `options`
     - `keydown`: (object) *(optional)* enables keyboard control, if multiple links are present in a given direction, the first one will be triggered
-        - [direction]: (string\|array\<string\>) keydown identifiers to assign to each direction
+        - `[direction]`: (string\|array\<string\>) keydown identifiers to assign to each direction
 - **Examples:**
     ```js
     /* places a rose with keybinds attached */
@@ -356,7 +353,7 @@ Generates a 3x3 grid of directional links for navigation.
 
 <h3 id="macro-place_mapview"><code>&lt;&lt;place_mapview&gt;&gt;</code></h3>
 
-Renders a visual representation of the `map` with the tiles. For `node travel`, if a `mapview` was configured during map creation, it will be used instead of the `maparray`. Options include clickable nodes, node labels, and path highlighting.
+Renders a visual representation of the `map` with the tiles using the `maparray`. Options include clickable tiles,`mapnode` labels, path highlighting (`grid travel`), and quick moving to distant tiles (`grid travel`).
 
 - **Arguments:** 
     - `mapname`: (string) name of `map`
@@ -367,7 +364,7 @@ Renders a visual representation of the `map` with the tiles. For `node travel`, 
     - `pathing`: (boolean) *(optional)* whether to highlight the path to the hovered tile, default set in `options`
     - `quickmove`: (boolean) *(optional)* whether clicking a distant traversable tile initiates multiple sequential `mapmoves`, default set in `options`, quickmove forces the `mapview` to be clickable
     - `keydown`: (object) *(optional)* enables keyboard control
-        - [direction]: (string\|array\<string\>) keydown identifiers to assign to each direction
+        - `[direction]`: (string\|array&lt;string&gt;) keydown identifiers to assign to each direction
 - **Examples:**
     ```js
     /* places a mapview that has pathing enabled */
@@ -453,49 +450,65 @@ Removes an entity from the map.
     >>
     ```
 
-
 <h3 id="macro-set_mapscripts"><code>&lt;&lt;set_mapscripts&gt;&gt;</code></h3>
 
-Assigns TwineScript logic to run during the `mapmove` process. This macro **must** be called in `StoryInit`. Child tag order is preserved: `<<onmapattempt>>` tags always run first, followed by the others depending on the movement outcome.
+Assigns TwineScript logic to run during the `mapmove` process (`mapscript`). This macro **must** be called in `StoryInit`. Both `node travel` and `grid travel` can use any combination of `from`/`to`/`from_x`/`from_y`/`to_x`/`to_y`.  If multiple arguments are set, *all* must be true for the `mapscript` to fire. The `any` keyword can be used to signal that any value will trigger the `mapscript` (which does the same thing as not setting the argument at all).
+
+ Child tag order is preserved: `<<onmapattempt>>` tags always run first, followed by:
+    - when `mapmove` succeeds: `<<onmapstart>>` then `<<onmapend>>`
+    - when `mapmove` fails: `<<onmapabort>>`
 
 - **Arguments:**
     - `mapname`: (string) name of `map`
 - **Child Tags:**
-    - `<<onmapattempt>>`: *(optional)* Always runs immediately when a mapmove is attempted.
+    - `<<onmapattempt>>`: *(optional)* Always runs immediately when a `mapmove` is attempted.
     - `<<onmapstart>>`: *(optional)* Only runs when `mapmove` succeeds, before the position is updated.
     - `<<onmapend>>`: *(optional)* Only runs when `mapmove` succeeds, after the position is updated.
     - `<<onmapabort>>`: *(optional)* Only runs when `mapmove` fails.
-    - **Arguments for Child Tags:**
-        - `from`: (string|array<string>|"any") *(optional)* ID(s) of the node the player is moving from.
-        - `to`: (string|array<string>|"any") *(optional)* ID(s) of the node the player is moving to.
-        - `from_x`, `from_y`: (number|array<number>|"any") *(optional)* Grid coordinates player is moving from.
-        - `to_x`, `to_y`: (number|array<number>|"any") *(optional)* Grid coordinates player is moving to.
+    - **Arguments for all Child Tags:**
+        - `from`: (string\|array&lt;string&gt;\|"any") *(optional)* ID(s) of the node the player is moving from.
+        - `to`: (string\|array&lt;string&gt;\|"any") *(optional)* ID(s) of the node the player is moving to.
+        - `from_x`, `from_y`: (number\|array&lt;number&gt;\|"any") *(optional)* Grid coordinates player is moving from.
+        - `to_x`, `to_y`: (number\|array&lt;number&gt;\|"any") *(optional)* Grid coordinates player is moving to.
 - **Contents:**
-    - TwineScript code to execute when the condition is met.
+    - TwineScript code to execute when the conditions set in the arguments are met.
 - **Examples:**
     ```js
-    <<set_scripts mapname 'small_house'>>
+    <<set_scripts mapname 'node_house'>>
+        /* decrement energy whenever a mapmove is attempted */
         <<onmapattempt>>
-            <<run $time++>>
-        <<onmapstart from 'ST'>>
-            <<run $energy-->>
-        <<onmapend to ['KT', 'PT']>>
-            <<run $hunger++>>   
+            <<set $energy-->>
+        /* increase heat when moving around upstairs */
+        <<onmapattempt to `['L', 'H', 'G', 'M']`>>
+            <<set $heat++>>
+        /* ring a bell when coming down the stairs */
+        <<onmapstart from 'S' to 'D'>>
+            <<run console.log('Ding!')>>
+        /* increase hunger when entering the kitchen or pantry */
+        <<onmapend from 'D' to `['K', 'P']`>>
+            <<set $hunger++>>   
     <</set_scripts>>
     ```
 
 
-<h3 id='macro-areamapmove'><code>&lt;&lt;areamapmove&gt;&gt;</code></h3>
+<h3 id="macro-mapmove"><code>&lt;&lt;mapmove&gt;&gt;</code></h3>
 
-Manually triggers a `mapmove` attempt. This macro *does not* check `exits` — allowing for more flexible navigation — but `blocked` will still apply and cause the `mapmove` to fail.
+Manually triggers a `mapmove` attempt. This macro *does not* check against exits, allowing for more complex movement control — it *will* however fail if the destination is `blocked` or `walled`. `mapscripts` will be triggered as normal.
 
 - **Arguments:** 
-    - `mapname`: (string) name of `areamap`
-    - `target`: (string) `maparea` to move to
+    - `mapname`: (string) name of `map`
+    - `target_mapnode`: (string) *(`node travel`)* id of the node to move to (node mode)
+    - `target_x`: (number) *(`grid travel`)* target x coordinate (grid mode)
+    - `target_y`: (number) *(`grid travel`)* target y coordinate (grid mode)
     - `force_abort`: (boolean) *(optional)* `true` forces the `mapmove` to fail, default `false`
+    - `skip_scripts`: (boolean) *(optional)* `true` to bypass all `onmap` scripts for this `mapmove`, default `false`
 - **Examples:**
     ```js
-    <<areamapmove mapname 'small_house' target 'MB'>>
+    /* teleport to master bedroom */
+    <<mapmove mapname 'node_house' target_mapnode 'M'>>
+
+    /* teleport to grid position (5, 2) */
+    <<mapmove mapname 'small_house' target_x 5 target_y 2>>
     ```
 
 <p align="center">
@@ -516,50 +529,123 @@ Manually triggers a `mapmove` attempt. This macro *does not* check `exits` — a
 
 <h2 id='javascript'>JavaScript Methods</h2>
 
-Javascript methods are stored on the `Areamap` window object. All methods take an `argObj` argument object.
+Javascript methods are stored on the `Sleepymap` window object. All methods take an `argObj` argument object.
 
-<h3 id='javascript-new_areamap'><code>new_areamap</code></h3>
+<h3 id='javascript-new_map'><code>new_map</code></h3>
 
-Creates a new `areamap`. The `<<new_areamap>>` macro is a wrapper for this method.
+Creates a new `Sleepymap`. The `<<new_map>>` macro is a wrapper for this method.
 
 - **argObj Properties:**
-    - `mapname`: (string) name of `areamap`
-    - `start`: (string) starting position on map, must be a valid `maparea` id
-    - `columns`: (number) number of columns in the map grid
-    - `maparray`: (array\<string\>) 1D array of `maparea` ids representing the map navigation logic, length must be divisible by `columns`
+    - `mapname`: (string) name of `map`
+    - `columns`: (number) number of columns in the logic representation grid
+    - `maparray`: (array&lt;string&gt;) 1D array of `mapnode` ids representing the map navigation logic, length must be divisible by `columns`
+    - `grid_travel`: (boolean) *(optional)* whether to use grid-based movement (default: `false`, node-to-node movement)
+    - `start`: (string) *(`node travel`)* starting position on map, must be a valid `mapnode` id
+    - `start_x`: (number) *(`grid travel`)* starting x coordinate
+    - `start_y`: (number) *(`grid travel`)* starting y coordinate
     - `diagonals`: (boolean) *(optional)* whether diagonal movement is allowed, default set in `options`
-    - `mapview`: (object) *(optional)* data defining a separate grid for the mapview
-        - `mapview.columns`: (number) number of columns in the `mapview` grid
-        - `mapview.array`: (array\<string\>) 1D array of `maparea` ids representing the mapview navigation logic, length must be divisible by `mapview.columns`
-    - `mapareas`: (object) *(optional)* additional metadata for `mapareas`, partial objects will be filled with default values
-        - `mapareas.name`: (string) *(optional)* used for links in `roses` & for the `show_names` option in `mapviews`, default is the `maparea` id
-        - `mapareas.type`: ("floor"\|"wall") *(optional)* `floors` can be occupied by a player, `walls` can't and block movement; default `"floor"`
-        - `mapareas.tile`: (HTML string) *(optional)* inserted into each space in the `mapview`; default `undefined`
-    - `mapvars`: (object) *(optional)* data defining links to `story variables`, `position` will update automatically when `mapmove` succeeds — these must all be `story variables` names starting with `$`
-        - `mapvars.position`: (string) stores current `areamap` position, as a string
-        - `mapvars.disabled`: (string) *(optional)* stores whether `rose` and `mapview` links to each `maparea` are shown but disabled, as an object of booleans
-        - `mapvars.hidden`: (string) *(optional)* stores whether `rose` and `mapview` links to each `mapareea` should be hidden, as an object of booleans
-        - `mapvars.blocked`: (string) *(optional)* stores whether `mapmove` to each `maparea` should fail, as an object of booleans
-        - `mapvars.frozen`: (string) *(optional)* stores whether ALL `rose` and `mapview` links for an `areamap` are `disabled`, as a boolean
+    - `mapnodes`: (object) *(optional)* additional metadata for `mapnodes`, partial objects will be filled with default values
+        - `[mapnode id]`: (object)
+            - `name`: (string) *(optional)* used for links in `roses` & for the `show_labels` option in `mapviews`, default is the `mapnode` id
+            - `tile`: (HTML string) *(optional)* inserted into each space in the `mapview`, default `undefined`
+            - `disabled`: (boolean) *(optional)* disables `interface` links for this node, default `false`
+            - `hidden`: (boolean) *(optional)* hides the node and links by setting opacity to zero, default `false`
+            - `blocked`: (boolean) *(optional)* stops `mapmove` through it, but doesn't prevent attempts, default `false`
+            - `walled`: (boolean) *(optional)* turns the node into a wall, stopping `mapmove` and attempts, default `false`
 - **Examples:**
     ```js
-    Areamap.new_areamap({
-        mapname  : 'small_house',
-        start    : 'ST',
-        columns  : 3,
-        maparray : ['ST', 'KT', 'PT', 'MB', 'GB', 'BB'],
-        mapview  : {
-            columns  : 3,
-            array    : ['ST', 'KT', 'PT', 'MB', 'GB', 'BB']
+    /* create a new node travel map */
+    Sleepymap.new_map({
+        mapname  : 'node_house',
+        columns  : 16,
+        start    : 'D',
+        maparray : ['.', '.', '.', ...], // etc
+        mapnodes : {
+            D : { name: 'Dining Room' },
+            K : { name: 'Kitchen' },
+            // etc
         },
-        mapareas: {
-            ST : {name: 'Starting Room'},
-            KT : {name: 'Kitchen'},
-            PT : {name: 'Pantry'},
-            MB : {name: 'Master Bedroom'},
-            GB : {name: 'Guest Bedroom'},
-            BB : {name: 'Bathroom'},
+    });
+
+    /* create a new grid travel map */
+    Sleepymap.new_map({
+        mapname     : 'grid_house',
+        columns     : 16,
+        grid_travel : true,
+        start_x     : 4,
+        start_y     : 5,
+        maparray    : ['.', '.', '.', ...], // etc
+        mapnodes    : {
+            D : { name: 'Dining Room' },
+            K : { name: 'Kitchen' },
+            // etc
         },
+    });
+    ```
+
+
+<h3 id='javascript-get_map'><code>get_map</code></h3>
+
+Retrieves a copy of a map object. Manipulating the returned object *will not* affect or update the original map. Use `Sleepymap.set_map` to edit `maps`.
+
+- **argObj Properties:**
+    - `mapname`: (string) name of the `map` to retrieve
+- **Returns:** An object containing the map's structure:
+- **Examples:**
+    ```js
+    // get node_house object
+    const node_house = Sleepymap.get_map({
+        mapname: 'node_house',
+    });
+    // returns
+    {
+        mapname: 'node_house',
+        columns: 16,
+        diagonals: true,
+        grid_travel: false,
+        frozen: false,
+        maparray: ['.', '.', '.', ...], // etc
+        barriers: [
+            {N: false, E: false, W: false, S: false, NE: false, NW: false, SE: false, SW: false},
+            {N: false, E: false, W: false, S: false, NE: false, NW: false, SE: false, SW: false},
+            // etc
+        ],
+        mapnodes: {
+            D: { name: 'Dining Room' },
+            K: { name: 'Kitchen' },
+            // etc
+        },
+        position: {
+            mapnode: 'D',
+            x: 4,
+            y: 5,
+        },
+        exits: {
+            node: {},
+            grid: [],
+            manaul: [],
+        },
+        scripts: {},
+    }
+    ```
+
+<h3 id='javascript-set_map'><code>set_map</code></h3>
+
+Allows for dynamic modification of an existing `map`. This method will automatically update the `map`'s `exits` and trigger an update for any `roses` or `mapviews` set to autoupdate.
+
+- **argObj Properties:**
+    - `mapname`: (string) name of the `map` to modify
+    - `diagonals`: (boolean) *(optional)* new diagonal movement state
+    - `columns`: (number) *(optional)* new column count, must form a rectangular grid with `maparray`
+    - `maparray`: (array&lt;string&gt;) *(optional)* new logic grid array, must form a rectangular grid with `columns`
+    - `mapview`: (object) *(optional)* new `mapview` configuration
+        - `mapview.columns`: (number) *(optional)* new column count, must form a rectangular grid with `mapview.array`
+        - `mapview.array`: (array&lt;string&gt;) *(optional)* new `mapview` array, must form a rectangular grid with `mapview.columns`
+- **Examples:**
+    ```js
+    Sleepymap.set_map({
+        mapname   : 'node_house',
+        diagonals : true,
     });
     ```
 
