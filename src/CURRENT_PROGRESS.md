@@ -37,7 +37,10 @@
 - ? need to add settings to disable automatic disabling and hiding of disabled / hidden maptiles
 
 - started updating documentation
+- started wrangling with new keydown controller
 - fix pathing & clickable flags problem
 - fix keydown with no clickable problem
 - implement targeted keydown input
+- fix conflation between quickmove and pathing in create_mapview
+
 - add ILIKETOBREAKTHINGS flag

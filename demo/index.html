@@ -1710,9 +1710,11 @@ function create_mapview(argObj) {
                 }
             }
         });
+        // if quickmove enabled
         if (quickmove) {
             $mapview.on('click', '.macro-Sleepymap-tile', function(ev) {
-                begin_pathmove({ mapname, path });
+                // if valid path
+                if (path?.length > 1) begin_pathmove({ mapname, path });
             });
         }
         
@@ -1924,7 +1926,7 @@ function create_controller(argObj) {
                 keydown2dir[key] = dir;
             }
         }
-        console.log(keydown2dir);
+
         // create listener
         $(document).on(`keydown.${namespace}`, function(ev) {
             // if controller removed, delete listener
