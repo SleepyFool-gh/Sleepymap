@@ -84,7 +84,7 @@ Sleepymap Macro Library, Demo
     /* place kitty in node house */
     <<new_entity 
         mapname     _mapname
-        entityname  'kitty' 
+        entityname  'kitty'
         x           7
         y           5
         tile        '🐱'
@@ -151,14 +151,25 @@ Sleepymap Macro Library, Demo
     to_y        4
     direction   'N'
 >>
-/* kitchen is unescapable */
+/* master bedroom is unescapable */
 <<disconnect_map
     mapname     _mapname
-    from_x      5
-    from_y      3
-    to_x        5
-    to_y        4
-    direction   'S'
+    from_x      11
+    from_y      7
+    to_x        10
+    to_y        7
+    direction   'W'
+>>
+<<set _keys = {
+    N: 'W',
+    E: 'D',
+    S: 'S',
+    W: 'A',
+}>>
+<<place_controller
+    mapname     _mapname
+    adjacent    true
+    keydown     _keys
 >>
 
 
@@ -215,7 +226,6 @@ Sleepymap Macro Library, Demo
             mapname     _mapname
             background  '<img src="./assets/rose.png">'
             autoupdate  true
-            keydown     `{N:"w", S:"s", E:"d", W:"a"}`
         >>
         <div>This rose doesn't auto-update.</div>
         <<place_rose

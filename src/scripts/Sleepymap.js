@@ -76,6 +76,7 @@ const RECIPROCALS = {
     SW: 'NE',
     NW: 'SE',
 };
+// used to check valid_dirs
 // used in update_exits
 // SYNC REMINDER: rose doesn't use this to generate keys
 const is_diagonal = {
@@ -644,19 +645,10 @@ function update_exits(argObj) {
         throw new Error(`${name} — Sleepymap "${mapname}" does not exist!`);
     }
 
-    const { grid_travel, maparray, barriers, mapnodes, columns, diagonals, exits } = this_map;
+    const { maparray, barriers, mapnodes, columns, diagonals, exits } = this_map;
 
     // get offsets
-    const offsets = {
-        N   : -columns,
-        E   : 1,
-        S   : columns,
-        W   : -1,
-        NE  : -columns + 1,
-        SE  : columns + 1,
-        SW  : columns - 1,
-        NW  : -columns - 1,
-    };
+    const offsets = get_offsets({ columns });
 
     // init exits
     exits.node = Object.fromEntries(Object.keys(mapnodes).map(id => [id, {}]));
@@ -927,9 +919,6 @@ const CREATE_ROSE_TEMPLATE = {
         type: 'string',
         aliases: 'bg',
     },
-    keydown: {
-        type: 'object',
-    },
 }
 // macro wrapper, calls the create_rose function (which returns a $rose object)
 // then attaches it to the macro output
@@ -950,7 +939,7 @@ function create_rose(argObj) {
     // VALIDATE: required args & type
     ArgObj.validate(name, CREATE_ROSE_TEMPLATE, argObj);
 
-    const { mapname, background, keydown } = argObj;
+    const { mapname, background } = argObj;
     const autoupdate = argObj.autoupdate ?? options.default.autoupdate_rose;    // default value
     const this_map = maps[mapname];
 
@@ -963,8 +952,7 @@ function create_rose(argObj) {
     const mapnode = mapnodes[position.mapnode];
 
     // create rose
-    const $rose = $(document.createElement('div'));
-    $rose
+    const $rose = $(document.createElement('div'))
         .addClass('macro-Sleepymap-rose')
         .attr('data-maptype', grid_travel ? 'grid' : 'node')
         .attr('data-mapname', mapname)
@@ -998,8 +986,7 @@ function create_rose(argObj) {
     // ordered this way so that grid auto-fills in the correct sequence
     for (const dir of ['NW', 'N', 'NE', 'W', 'E', 'SW', 'S', 'SE']) {
         // create dir container
-        const $dir  = $(document.createElement('div'));
-        $dir
+        const $dir  = $(document.createElement('div'))
             .addClass('macro-Sleepymap-dir')
             .attr('data-dir', dir)
             .appendTo($rose);
@@ -1075,11 +1062,6 @@ function create_rose(argObj) {
     // attach click listener
     attach_click({ name, mapname, $interface: $rose });
 
-    // attach keydown listener
-    if (keydown) {
-        attach_keydown({ name, mapname, keydown, $interface: $rose });
-    }
-
     return $rose;
 }
 
@@ -1111,9 +1093,6 @@ const CREATE_MAPVIEW_TEMPLATE = {
     show_labels: {
         type: 'boolean',
     },
-    keydown: {
-        type: 'object',
-    },
     pathing: {
         type: 'boolean',
     },
@@ -1123,7 +1102,7 @@ const CREATE_MAPVIEW_TEMPLATE = {
 }
 // macro wrapper, creates & places mapview
 Macro.add(['place_mapview'], {
-    handler: function() {
+    handler() {
         const name = this.name;
         const argObj = new ArgObj(name, CREATE_MAPVIEW_TEMPLATE, this.args);
         argObj.add_metadata('name', name);
@@ -1137,12 +1116,11 @@ function create_mapview(argObj) {
     // VALIDATE: required args & type
     ArgObj.validate(name, CREATE_MAPVIEW_TEMPLATE, argObj);
 
-    const { mapname, background, keydown } = argObj;
+    const { mapname, background } = argObj;
     // default values
     const show_labels   = argObj.show_labels ?? options.default.show_labels_on_mapview; 
     const autoupdate    = argObj.autoupdate  ?? options.default.autoupdate_mapview;
     const clickable     = argObj.clickable   ?? options.default.clickable_mapview;
-    const pathing       = argObj.pathing     ?? options.default.pathing_on_mapview;
     const quickmove     = argObj.quickmove   ?? options.default.enable_mapview_quickmove;
     const this_map = maps[mapname];
 
@@ -1150,17 +1128,26 @@ function create_mapview(argObj) {
     if (this_map === undefined) {
         throw new Error(`${name} — Sleepymap "${mapname}" not found!`);
     }
-    // WARNING: quickmove without pathing
-    if (quickmove && (! pathing)) {
-        console.warn(`${name} — Sleepymap "${mapname}" — quickmove without showing pathing isn't sensible!`);
-    }
 
     const { grid_travel, columns, maparray, mapnodes, position, frozen, exits, entities } = this_map;
+
+    // WARNING: quickmove without pathing
+    if (quickmove && (! argObj.pathing)) {
+        console.warn(`${name} — Sleepymap "${mapname}" — quickmove without showing pathing isn't sensible!`);
+    }
+    // WARNING: pathing on node travel map
+    if (argObj.pathing && (! grid_travel)) {
+        console.warn(`${name} — Sleepymap "${mapname}" — pathing on node travel map isn't supported!`);
+    }
+
+    // force disable pathing on node travel maps
+    const pathing = ! grid_travel
+                        ? false
+                        : argObj.pathing ?? options.default.pathing_on_mapview;
     
     // create map object
     // use maparray & columns if no mapview object
-    const $mapview = $(document.createElement('div'));
-    $mapview
+    const $mapview = $(document.createElement('div'))
         .addClass('macro-Sleepymap-mapview')
         .attr('data-maptype', grid_travel ? 'grid' : 'node')
         .attr('data-mapname', mapname)
@@ -1247,8 +1234,7 @@ function create_mapview(argObj) {
                         : (dir !== undefined) && ((position.mapnode === mapnode.id) || (mapnode.name === undefined))
                             ? `<span class='macro-Sleepymap-label'>${options.labels[dir]}</span>`
                         : `<span class='macro-Sleepymap-label'>${mapnode.name}</span>`;
-        const $tile = $(document.createElement(link ? 'a' : 'div'));
-        $tile
+        const $tile = $(document.createElement(link ? 'a' : 'div'))
             .addClass('macro-Sleepymap-tile')
             .addClass(link ? 'macro-Sleepymap-link' : '')
             .attr('data-traversable', is_traversable(i))
@@ -1284,13 +1270,9 @@ function create_mapview(argObj) {
         $tiles[i] = $tile;
     }
 
-    // attach click listener, only if not pathing as that will replace click
+    // attach click listener, only if not pathing as that will replace it
     if (clickable && ! pathing) {
         attach_click({ name, mapname, $interface: $mapview });
-    }
-    // attach keydown listener
-    if (keydown) {
-        attach_keydown({ name, mapname, keydown, $interface: $mapview });
     }
     // pathing always works, but hidden if not shown
     if (grid_travel) {
@@ -1343,7 +1325,10 @@ function create_mapview(argObj) {
 // ████  ███ █   ██   █   █████ █   █ █     █   █  ████ █████
 // SECTION: $interface things, updating
 
-// autoupdate handler
+// ┌─┐┬ ┬┌┬┐┌─┐┬ ┬┌─┐┌┬┐┌─┐┌┬┐┌─┐
+// ├─┤│ │ │ │ ││ │├─┘ ││├─┤ │ ├┤
+// ┴ ┴└─┘ ┴ └─┘└─┘┴  ─┴┘┴ ┴ ┴ └─┘
+// SECTION: autoupdate handler
 $(document).on('Sleepymap:mapmove_resolved Sleepymap:map_edited', function(ev, data) {
     const $roses = $('.macro-Sleepymap-rose[data-autoupdate="true"]');
     $roses.each( function() {
@@ -1363,6 +1348,10 @@ $(document).on('Sleepymap:mapmove_resolved Sleepymap:map_edited', function(ev, d
     });
 });
 
+// ┌┬┐┌─┐┌┐┌┬ ┬┌─┐┬    ┬ ┬┌─┐┌┬┐┌─┐┌┬┐┌─┐
+// │││├─┤││││ │├─┤│    │ │├─┘ ││├─┤ │ ├┤
+// ┴ ┴┴ ┴┘└┘└─┘┴ ┴┴─┘  └─┘┴  ─┴┘┴ ┴ ┴ └─┘
+// SECTION: manual update
 const UPDATE_INTERFACE_TEMPLATE = {
     selector: {
         type: 'string',
@@ -1374,7 +1363,7 @@ const UPDATE_INTERFACE_TEMPLATE = {
 }
 // macro wrapper
 Macro.add(['update_interface'], {
-    handler: function() {
+    handler() {
         const name = this.name;
         const argObj = new ArgObj(name, UPDATE_INTERFACE_TEMPLATE, this.args);
         argObj.$interface = $(argObj.selector);
@@ -1420,12 +1409,10 @@ function update_interface(argObj) {
     });
 }
 
-// ┌─┐┌─┐┌┐┌┌┬┐┬─┐┌─┐┬  ┬  ┌─┐┬─┐┌─┐
-// │  │ ││││ │ ├┬┘│ ││  │  ├┤ ├┬┘└─┐
-// └─┘└─┘┘└┘ ┴ ┴└─└─┘┴─┘┴─┘└─┘┴└─└─┘
-// SECTION: controllers
-
-// helper function to attach clicks
+// ┌─┐┬  ┬┌─┐┬┌─
+// │  │  ││  ├┴┐
+// └─┘┴─┘┴└─┘┴ ┴
+// SECTION: helper function to attach clicks
 function attach_click(argObj) {
     const name = argObj.name ?? 'Sleepymap.attach_click';
     const { mapname, $interface } = argObj;
@@ -1453,58 +1440,168 @@ function attach_click(argObj) {
         begin_mapmove(target_argObj);
     });
 }
+
+// ┬┌─┌─┐┬ ┬┌┬┐┌─┐┬ ┬┌┐┌
+// ├┴┐├┤ └┬┘ │││ │││││││
+// ┴ ┴└─┘ ┴ ─┴┘└─┘└┴┘┘└┘
+// SECTION: keydown controller
+const CREATE_CONTROLLER_TEMPLATE = {
+    mapname: {
+        type: 'string',
+        required: true,
+    },
+    teleport: {
+        type: 'boolean',
+    },
+    adjacent: {
+        type: 'boolean',
+    },
+    keydown: {
+        type: 'object',
+        required: true,
+    },
+};
+Macro.add(['place_controller'], {
+    handler() {
+        const name = this.name;
+        const argObj = new ArgObj(name, CREATE_CONTROLLER_TEMPLATE, this.args);
+        argObj.add_metadata('name', name);
+        create_controller(argObj).appendTo(this.output);
+    }
+});
 // helper function to attach keydown
-function attach_keydown(argObj) {
+function create_controller(argObj) {
     const name = argObj.name ?? 'Sleepymap.attach_keydown';
-    const { mapname, keydown, $interface } = argObj;
-    // build a reverse map: key value → direction
-    const key_to_dir = {};
-    for (const [dir, keys] of Object.entries(keydown)) {
-        // WARNING: dir not a valid direction
-        if (! ['N', 'E', 'S', 'W', 'NE', 'SE', 'SW', 'NW'].includes(dir)) {
-            console.warn(`${name} — Sleepymap "${mapname}" — keydown key "${dir}" is not a valid rose direction; ignored...`);
-            continue;
-        }
-        const key_arr = Array.isArray(keys) ? keys : [keys];
-        for (const k of key_arr) {
-            // WARNING: key is not a string
-            if (typeof k !== 'string') {
-                console.warn(`${name} — Sleepymap "${mapname}" — keydown key "${k}" is not a string; ignored...`);
-                continue;
-            }
-            key_to_dir[k] = dir;
-        }
+
+    // VALIDATE: required args & type
+    ArgObj.validate(name, CREATE_CONTROLLER_TEMPLATE, argObj);
+
+    const { mapname, keydown, frozen, maptiles, exits } = argObj;
+    const adjacent = argObj.adjacent ?? false;  // default value
+    const this_map = maps[mapname];
+
+    // ERROR: non-extant map
+    if (this_map === undefined) {
+        throw new Error(`${name} — Sleepymap "${mapname}" not found!`);
     }
 
-    // unique namespace so teardown only removes this listener
+    const { grid_travel, columns, position } = this_map;
+
+    const $controller = $(document.createElement('div'))
+        .addClass('macro-Sleepymap-controller')
+        .attr('data-maptype', grid_travel ? 'grid' : 'node')
+        .attr('data-mapname', mapname)
+        .attr('data-mapnode', position.mapnode)
+        .attr('data-position-x', position.x)
+        .attr('data-position-y', position.y);
+
     const namespace = `Sleepymap.${crypto.randomUUID()}`;
 
-    $(document).on(`keydown.${namespace}`, function(ev) {
-        // if interface item is no longer in the DOM, remove listener and bail
-        if (! $.contains(document.body, $interface[0])) {
-            $(document).off(`keydown.${namespace}`);
-            return;
+    // adjacent --> keys are dirs
+    if (adjacent) {
+        const keydown2dir = {};
+        for (const dir in keydown) {
+            // WARNING: not a valid dir, skipped
+            if (! Object.hasOwn(is_diagonal, dir)) {
+                console.warn(`${name} — Sleepymap "${mapname}" — keydown key "${dir}" is not a valid adjacent direction; ignored...`);
+                continue;
+            }
+            const keys = [keydown[dir]].flat();
+            console.log(keys);
+            // flip object map
+            for (const key of keys) {
+                // WARNING: keydown key is not a string, skipped
+                if (typeof key !== 'string') {
+                    console.warn(`${name} — Sleepymap "${mapname}" — keydown value "${key}" is not a string; ignored...`);
+                    continue;
+                }
+                keydown2dir[key] = dir;
+            }
         }
-        // pathmove running, do nothing
-        if (_pathmove_running) return;
-        
-        // match by key string first, then keyCode as fallback
-        const dir = key_to_dir[ev.key] ?? key_to_dir[ev.keyCode];
-        // no match, do nothing
-        if (dir === undefined) return;
+        console.log(keydown2dir);
+        // create listener
+        $(document).on(`keydown.${namespace}`, function(ev) {
+            // if controller removed, delete listener
+            if (! $.contains(document.body, $controller[0])) {
+                $(document).off(`keydown.${namespace}`);
+                return;
+            }
 
-        // find the first enabled link in the target direction
-        const $link = $interface
-                        .find(`.macro-Sleepymap-link[data-dir="${dir}"]:not([disabled])`)
-                        .first();
+            const dir = keydown2dir[ev.key] ?? keydown2dir[ev.keyCode];
+            // frozen, do nothing
+            if (frozen) return;
+            // no match, do nothing
+            else if (dir === undefined) return;
+            
+            // fetch first exit
+            if (grid_travel) {
+                const xy = { x: position.x, y: position.y };
+                const mapindex = xy2i({ xy, columns });
+                const exit_set = exits.node[mapindex][dir];
+                const exit = exit = [...exit_set][0];
+                // no exit, do nothing
+                if (exit === undefined) return;
+                const exit_xy = i2xy({ i: exit, columns });
+                begin_mapmove({
+                    mapname,
+                    target_x: exit_xy.x,
+                    target_y: exit_xy.y,
+                    suppress_warnings: true,
+                });Z
+            }
 
-        // if link exists, trigger click
-        if ($link.length) {
-            ev.preventDefault();
-            $link.trigger('click');
-        }
-    });
+        });
+    }
+    return $controller;
 }
+
+
+//     // build a reverse map, key value -> direction
+//     const key_to_dir = {};
+//     for (const [dir, keys] of Object.entries(keydown)) {
+//         // WARNING: dir not a valid direction
+//         if (! ['N', 'E', 'S', 'W', 'NE', 'SE', 'SW', 'NW'].includes(dir)) {
+//             console.warn(`${name} — Sleepymap "${mapname}" — keydown key "${dir}" is not a valid rose direction; ignored...`);
+//             continue;
+//         }
+//         const key_arr = Array.isArray(keys) ? keys : [keys];
+//         for (const k of key_arr) {
+//             // WARNING: key is not a string
+//             if (typeof k !== 'string') {
+//                 console.warn(`${name} — Sleepymap "${mapname}" — keydown key "${k}" is not a string; ignored...`);
+//                 continue;
+//             }
+//             key_to_dir[k] = dir;
+//         }
+//     }
+
+//     // unique namespace so teardown only removes this listener
+
+//     $(document).on(`keydown.${namespace}`, function(ev) {
+//         // if interface item is no longer in the DOM, remove listener and bail
+//         if (! $.contains(document.body, $interface[0])) {
+//             $(document).off(`keydown.${namespace}`);
+//             return;
+//         }
+//         // pathmove running, do nothing
+//         if (_pathmove_running) return;
+        
+//         // match by key string first, then keyCode as fallback
+//         const dir = key_to_dir[ev.key] ?? key_to_dir[ev.keyCode];
+//         // no match, do nothing
+//         if (dir === undefined) return;
+
+//         // find the first enabled link in the target direction
+//         const $link = $interface
+//                         .find(`.macro-Sleepymap-link[data-dir="${dir}"]:not([disabled])`)
+//                         .first();
+
+//         // if link exists, trigger click
+//         if ($link.length) {
+//             ev.preventDefault();
+//             $link.trigger('click');
+//         }
+
 
 
 
@@ -1816,7 +1913,6 @@ function run_mapscripts(argObj) {
                 (script.triggers.to_y === undefined || script.triggers.to_y.includes(xy.y))
             )
         ) {
-            console.log(trigger);
             $.wiki(script.contents);
         }
     }
@@ -2029,7 +2125,7 @@ function resolve_mapmove(argObj) {
     
     // fire resolved event
     // setTimeout as safety against race condition for scripts
-    setTimout( () => $('#passages').trigger('Sleepymap:mapmove_resolved', { 
+    setTimeout( () => $('#passages').trigger('Sleepymap:mapmove_resolved', { 
         mapname, 
         origins, 
         targets,
@@ -2272,6 +2368,19 @@ function validate_bounds(argObj) {
     // ERROR: y out of bounds
     else if (y < 0 || y >= rows) {
         throw new Error(`${name} — Sleepymap "${mapname}" — y coordinate ${y} out of bounds, must be: 0 <= y < ${rows}!`);
+    }
+}
+function get_offsets(argObj) {
+    const { columns } = argObj;
+    return {
+        N   : -columns,
+        E   : 1,
+        S   : columns,
+        W   : -1,
+        NE  : -columns + 1,
+        SE  : columns + 1,
+        SW  : columns - 1,
+        NW  : -columns - 1,
     }
 }
 

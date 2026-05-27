@@ -1,3 +1,73 @@
+
+// half modified old keydown attach function
+// helper function to attach keydown
+function create_controller(argObj) {
+    const name = argObj.name ?? 'Sleepymap.attach_keydown';
+
+    // VALIDATE: required args & type
+    ArgObj.validate(name, CREATE_CONTROLLER_TEMPLATE, argObj);
+
+    const { mapname, keydown } = argObj;
+    const adjacent = argObj.adjacent ?? false;  // default value
+    const teleport = argObj.teleport ?? false;  // default value
+    const this_map = maps[mapname];
+
+    // ERROR: non-extant map
+    if (this_map === undefined) {
+        throw new Error(`${name} — Sleepymap "${mapname}" not found!`);
+    }
+
+    // build a reverse map, key value -> direction
+    const key_to_dir = {};
+    for (const [dir, keys] of Object.entries(keydown)) {
+        // WARNING: dir not a valid direction
+        if (! ['N', 'E', 'S', 'W', 'NE', 'SE', 'SW', 'NW'].includes(dir)) {
+            console.warn(`${name} — Sleepymap "${mapname}" — keydown key "${dir}" is not a valid rose direction; ignored...`);
+            continue;
+        }
+        const key_arr = Array.isArray(keys) ? keys : [keys];
+        for (const k of key_arr) {
+            // WARNING: key is not a string
+            if (typeof k !== 'string') {
+                console.warn(`${name} — Sleepymap "${mapname}" — keydown key "${k}" is not a string; ignored...`);
+                continue;
+            }
+            key_to_dir[k] = dir;
+        }
+    }
+
+    // unique namespace so teardown only removes this listener
+    const namespace = `Sleepymap.${crypto.randomUUID()}`;
+
+    $(document).on(`keydown.${namespace}`, function(ev) {
+        // if interface item is no longer in the DOM, remove listener and bail
+        if (! $.contains(document.body, $interface[0])) {
+            $(document).off(`keydown.${namespace}`);
+            return;
+        }
+        // pathmove running, do nothing
+        if (_pathmove_running) return;
+        
+        // match by key string first, then keyCode as fallback
+        const dir = key_to_dir[ev.key] ?? key_to_dir[ev.keyCode];
+        // no match, do nothing
+        if (dir === undefined) return;
+
+        // find the first enabled link in the target direction
+        const $link = $interface
+                        .find(`.macro-Sleepymap-link[data-dir="${dir}"]:not([disabled])`)
+                        .first();
+
+        // if link exists, trigger click
+        if ($link.length) {
+            ev.preventDefault();
+            $link.trigger('click');
+        }
+    });
+}
+
+
+
 /* <<new_map>> mapview parser */
 const MAPVIEW_TEMPLATE = {
     columns: {

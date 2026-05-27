@@ -52,9 +52,8 @@ class ArgObj {
         else if (! Array.isArray(args_in)) {
             throw new Error(`ArgObj — invalid args_in "${args_in}", should be an array; FAILED`)
         }
-        // WARNING: empty args_in
+        // TRIVIAL: empty args_in
         else if (args_in.length === 0) {
-            console.warn(`${id} — ArgObj "args_in" is empty, no args to parse; ABORTED`);
             return this;
         }
         const keys = Object.keys(template);

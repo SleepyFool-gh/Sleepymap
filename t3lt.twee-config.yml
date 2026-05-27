@@ -3,23 +3,17 @@ sugarcube-2:
     new_map:
       name: new_map
       container: true
-      children: ['mapview', 'mapnodes', 'mapvars']
-    mapview:
-      name: mapview
+      children: ['mapnodes']
     mapnodes:
       name: mapnodes
-    mapvars:
-      name: mapvars
     place_rose:
       name: place_rose
-    update_rose:
-      name: update_rose
     place_mapview:
       name: place_mapview
-    update_mapview:
-      name: update_mapview
-    set_scripts:
-      name: set_scripts
+    update_interface:
+      name: update_interface
+    set_mapscripts:
+      name: set_mapscripts
       container: true
       children: ['onmapattempt', 'onmapstart', 'onmapend', 'onmapabort']
     onmapattempt:
@@ -36,3 +30,9 @@ sugarcube-2:
       name: connect_map
     disconnect_map:
       name: disconnect_map
+    new_entity:
+      name: new_entity
+    set_entity:
+      name: set_entity
+    delete_entity:
+      name: delete_entity

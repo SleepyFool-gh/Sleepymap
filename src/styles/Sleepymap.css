@@ -58,7 +58,9 @@
         backdrop-filter: contrast(1.4) brightness(1.4);
     }
     .macro-Sleepymap-mapview[data-maptype='grid'] .macro-Sleepymap-tile[data-current-position='true'] {
-        border: 0.19rem dashed black;
+        --border-width: 0.17rem;
+        outline: var(--border-width) dashed black;
+        outline-offset: calc(-1 * var(--border-width));
     }
     .macro-Sleepymap-tile[data-traversable='true'] {
         backdrop-filter: brightness(1.23);

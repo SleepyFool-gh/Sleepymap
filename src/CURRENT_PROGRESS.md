@@ -37,4 +37,7 @@
 - ? need to add settings to disable automatic disabling and hiding of disabled / hidden maptiles
 
 - started updating documentation
+- fix pathing & clickable flags problem
+- fix keydown with no clickable problem
+- implement targeted keydown input
 - add ILIKETOBREAKTHINGS flag
