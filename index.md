@@ -89,7 +89,7 @@ title: Sleepy Macros — Sleepymap library
 - **Built-in navigation `interfaces`:**
     - compass rose with directional buttons (`rose`)
     - visual map, optionally clickable `mapnodes`, optional pathing (`mapview`)
-    - both `interface` items also accept keydown inputs for triggering `mapmove` with the keyboard
+    - invisible element for keyboard input (`controller`)
 - **TwineScripts payloads:** Scripts can be assigned to run at various stages of the `mapmove` process and conditionally on nodes or grid spaces.
 - **Linked `story variables`:** Map states are saved in `State` and survive passage navigations and saves / loads.
 - **Manually adjust exits:** While exits are automatically generated from the provided `maparray`, it can be manually tweaked to create more complex navigation patterns.
@@ -332,21 +332,12 @@ Generates a 3x3 grid of directional links for navigation.
     - `mapname`: (string) name of `map`
     - `background`: (HTML string) *(optional)* inserted as a background element for the `rose`
     - `autoupdate`: (boolean) *(optional)* whether the `rose` automatically updates after each `mapmove` or when the `map` changes, default set in `options`
-    - `keydown`: (object) *(optional)* enables keyboard control, if multiple links are present in a given direction, the first one will be triggered
-        - `[direction]`: (string\|array\<string\>) keydown identifiers to assign to each direction
 - **Examples:**
     ```js
-    /* places a rose with keybinds attached */
-    <<set _keys = {
-        N: ["w", "ArrowUp"],
-        S: ["s", "ArrowDown"],
-        E: ["d", "ArrowRight"],
-        W: ["a", "ArrowLeft"]
-    }>>
+    /* places a rose */
     <<place_rose
         mapname     'grid_house'
         background  '<img src="./assets/small_house.png">'
-        keydown     _keys
     >>
     ```
 
@@ -363,8 +354,6 @@ Renders a visual representation of the `map` with the tiles using the `maparray`
     - `show_labels`: (boolean) *(optional)* whether to display labels (names or directional icons) for each node, default set in `options`
     - `pathing`: (boolean) *(optional)* whether to highlight the path to the hovered tile, default set in `options`
     - `quickmove`: (boolean) *(optional)* whether clicking a distant traversable tile initiates multiple sequential `mapmoves`, default set in `options`, quickmove forces the `mapview` to be clickable
-    - `keydown`: (object) *(optional)* enables keyboard control
-        - `[direction]`: (string\|array&lt;string&gt;) keydown identifiers to assign to each direction
 - **Examples:**
     ```js
     /* places a mapview that has pathing enabled */
@@ -374,6 +363,36 @@ Renders a visual representation of the `map` with the tiles using the `maparray`
         clickable   true
         pathing     true
         quickmove   true
+    >>
+    ```
+
+
+<h3 id="macro-place_controller"><code>&lt;&lt;place_controller&gt;&gt;</code></h3>
+
+Creates an invisible element that listens for keyboard input to trigger `mapmove` events. When a specific key is pressed, it attempts to find an exit matching the defined criteria and executes the move.
+
+- **Arguments:** 
+    - `mapname`: (string) name of `map`
+    - `enabled`: (boolean) *(optional)* whether the controller is active, default `true`
+    - `keys`: (object) map of key codes to target movement objects
+        - `[key]`: (object) movement criteria
+            - `dir`: (string) *(optional)* directional exit to follow ("N", "E", "S", "W", "NE", "SE", "SW", "NW")
+            - `mapnode`: (string) *(optional)* target `mapnode` ID
+            - `x`: (number) *(optional)* target x coordinate
+            - `y`: (number) *(optional)* target y coordinate
+- **Examples:**
+    ```js
+    /* Setup arrow keys for a grid map */
+    <<set _keys = {
+        ArrowUp:    { dir: 'N' },
+        ArrowDown:  { dir: 'S' },
+        ArrowLeft:  { dir: 'W' },
+        ArrowRight: { dir: 'E' }
+    }>>
+
+    <<place_controller
+        mapname 'grid_house'
+        keys    _keys
     >>
     ```
 

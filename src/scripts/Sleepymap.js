@@ -1333,27 +1333,30 @@ function create_mapview(argObj) {
 // ████  ███ █   ██   █   █████ █   █ █     █   █  ████ █████
 // SECTION: $interface things, updating
 
+const interfaces = {
+    rose: create_rose,
+    mapview: create_mapview,
+    controller: create_controller,
+};
+
 // ┌─┐┬ ┬┌┬┐┌─┐┬ ┬┌─┐┌┬┐┌─┐┌┬┐┌─┐
 // ├─┤│ │ │ │ ││ │├─┘ ││├─┤ │ ├┤
 // ┴ ┴└─┘ ┴ └─┘└─┘┴  ─┴┘┴ ┴ ┴ └─┘
 // SECTION: autoupdate handler
 $(document).on('Sleepymap:mapmove_resolved Sleepymap:map_edited', function(ev, data) {
-    const $roses = $('.macro-Sleepymap-rose[data-autoupdate="true"]');
-    $roses.each( function() {
-        const $rose = $(this);
-        const argObj = $rose.data('argObj');
-        if (argObj.mapname === data?.mapname) {
-            $rose.replaceWith(create_rose(argObj));
-        }
-    });
-    const $mapviews = $('.macro-Sleepymap-mapview[data-autoupdate="true"]');
-    $mapviews.each( function() {
-        const $mapview = $(this);
-        const argObj = $mapview.data('argObj');
-        if (argObj.mapname === data?.mapname) {
-            $mapview.replaceWith(create_mapview(argObj));
-        }
-    });
+    // for each type
+    for (const interface_type of Object.keys(interfaces)) {
+        // fetch the ones that autoupdate
+        const $interfaces = $(`.macro-Sleepymap-${interface_type}[data-autoupdate="true"]`);
+        // replace with itself
+        $interfaces.each( function() {
+            const $interface = $(this);
+            const argObj = $interface.data('argObj');
+            if (argObj.mapname === data?.mapname) {
+                $interface.replaceWith(interfaces[interface_type](argObj));
+            }
+        });
+    }
 });
 
 // ┌┬┐┌─┐┌┐┌┬ ┬┌─┐┬    ┬ ┬┌─┐┌┬┐┌─┐┌┬┐┌─┐
@@ -1404,13 +1407,16 @@ function update_interface(argObj) {
     
     // update rose using argObj stored on rose
     $interface.each( function() {
-        if ($(this).hasClass('macro-Sleepymap-rose')) {
-            $(this).replaceWith(create_rose($(this).data('argObj')));
+        let updated = false;
+        for (const interface_type of Object.keys(interfaces)) {
+            if ($(this).hasClass(`macro-Sleepymap-${interface_type}`)) {
+                const argObj = $(this).data('argObj');
+                $(this).replaceWith(interfaces[interface_type](argObj));
+                updated = true;
+                break;
+            }
         }
-        else if ($(this).hasClass('macro-Sleepymap-mapview')) {
-            $(this).replaceWith(create_mapview($(this).data('argObj')));
-        }
-        else {
+        if (! updated) {
             console.warn(`${name} — Sleepymap — provided jQuery node isn't a Sleepymap interface item!`);
             console.warn($(this));
         }
@@ -1449,9 +1455,9 @@ function attach_click(argObj) {
     });
 }
 
-// ┬┌─┌─┐┬ ┬┌┬┐┌─┐┬ ┬┌┐┌
-// ├┴┐├┤ └┬┘ │││ │││││││
-// ┴ ┴└─┘ ┴ ─┴┘└─┘└┴┘┘└┘
+// ┬┌─┌─┐┬ ┬┬ ┬┌─┐
+// ├┴┐├┤ └┬┘│ │├─┘
+// ┴ ┴└─┘ ┴ └─┘┴
 // SECTION: keyup controller
 const CREATE_CONTROLLER_TEMPLATE = {
     mapname: {
