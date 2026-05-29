@@ -12,17 +12,20 @@ const options = {
     default: {
         wall_id                  : '.',
         diagonals                : false,
-        position_story_variable  : '$@Sleepymap/position',
+        
+        disabled_stops_pathing   : true,
+        hidden_stops_pathing     : true,
+        blocked_stops_pathing    : false,
+
         autoupdate_rose          : true,
+        clickable_rose           : true,
+
         autoupdate_mapview       : true,
         clickable_mapview        : true,
         show_labels_on_mapview   : true,
         pathing_on_mapview       : true,
         quickmove_on_mapview     : true,
         pathmove_delay           : 250,
-        disabled_stops_pathing   : true,
-        hidden_stops_pathing     : true,
-        blocked_stops_pathing    : false,
     },
     // shows on mapview & rose in grid_travel mode
     labels: {
@@ -915,6 +918,9 @@ const CREATE_ROSE_TEMPLATE = {
     autoupdate: {
         type: 'boolean',
     },
+    clickable: {
+        type: 'boolean',
+    },
     background: {
         type: 'string',
         aliases: 'bg',
@@ -941,6 +947,7 @@ function create_rose(argObj) {
 
     const { mapname, background } = argObj;
     const autoupdate = argObj.autoupdate ?? options.default.autoupdate_rose;    // default value
+    const clickable = argObj.clickable ?? options.default.clickable_rose;       // default value
     const this_map = maps[mapname];
 
     // ERROR: no map found
@@ -1014,8 +1021,8 @@ function create_rose(argObj) {
                 const label = (position.mapnode === exit_mapnode.id) || (exit_mapnode.name === undefined)
                                 ? `<span class='macro-Sleepymap-label'>${options.labels[dir]}</span>`
                                 : `<span class='macro-Sleepymap-label'>${exit_mapnode.name}</span>`;
-                $(document.createElement('a'))
-                    .addClass('macro-Sleepymap-link')
+                $(document.createElement(clickable ? 'a' : 'span'))
+                    .addClass(clickable ? 'macro-Sleepymap-link' : '')
                     .attr('data-dir', dir)
                     .attr('data-mapnode-name', exit_mapnode.name)
                     .attr('data-mapnode', exit_mapnode.id)
@@ -1336,7 +1343,6 @@ function create_mapview(argObj) {
 const interfaces = {
     rose: create_rose,
     mapview: create_mapview,
-    controller: create_controller,
 };
 
 // ┌─┐┬ ┬┌┬┐┌─┐┬ ┬┌─┐┌┬┐┌─┐┌┬┐┌─┐
@@ -1467,9 +1473,6 @@ const CREATE_CONTROLLER_TEMPLATE = {
     teleport: {
         type: 'boolean',
     },
-    adjacent: {
-        type: 'boolean',
-    },
     keys: {
         type: 'object',
         required: true,
@@ -1495,6 +1498,7 @@ function create_controller(argObj) {
 
     const { mapname, keys } = argObj;
     const enabled = argObj.enabled ?? true; // default value
+    const autoupdate = argObj.autoupdate ?? options.default.autoupdate_controller;  // default value
     const this_map = maps[mapname];
 
     // ERROR: non-extant map

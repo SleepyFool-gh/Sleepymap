@@ -222,11 +222,12 @@ Sleepymap Macro Library, Demo
             background  '<img src="./assets/rose.png">'
             autoupdate  true
         >>
-        <div>This rose doesn't autoupdate.</div>
+        <div>This rose isn't clickable and doesn't autoupdate.</div>
         <<place_rose
             mapname     _mapname
             background  '<img src="./assets/rose.png">'
             autoupdate  false
+            clickable   false
         >>
     </div>
 </div>
@@ -239,7 +240,6 @@ Sleepymap Macro Library, Demo
 }>>
 <<place_controller
     mapname     _mapname
-    adjacent    true
     keys        _keys1  
 >>
 <<do>>
@@ -250,7 +250,6 @@ Sleepymap Macro Library, Demo
     >>
     <<place_controller
         mapname     _mapname
-        adjacent    true
         keys        _keys2
         enabled     _enabled
     >>

@@ -86,10 +86,10 @@ title: Sleepy Macros — Sleepymap library
 
 #### Features:
 
-- **Built-in navigation `interfaces`:**
-    - compass rose with directional buttons (`rose`)
+- **Built-in `interfaces`:**
+    - compass rose showing exits in each direction as links (`rose`)
     - visual map, optionally clickable `mapnodes`, optional pathing (`mapview`)
-    - invisible element for keyboard input (`controller`)
+- **Built-in navigation:** Both `interfaces` have navigation options. Keyboard input can also be assigned with an invisible element (`controller`)
 - **TwineScripts payloads:** Scripts can be assigned to run at various stages of the `mapmove` process and conditionally on nodes or grid spaces.
 - **Linked `story variables`:** Map states are saved in `State` and survive passage navigations and saves / loads.
 - **Manually adjust exits:** While exits are automatically generated from the provided `maparray`, it can be manually tweaked to create more complex navigation patterns.
@@ -332,12 +332,14 @@ Generates a 3x3 grid of directional links for navigation.
     - `mapname`: (string) name of `map`
     - `background`: (HTML string) *(optional)* inserted as a background element for the `rose`
     - `autoupdate`: (boolean) *(optional)* whether the `rose` automatically updates after each `mapmove` or when the `map` changes, default set in `options`
+    - `clickable` : (boolean) *(optional)* whether the `rose` items are clickable links, default set in `options`
 - **Examples:**
     ```js
-    /* places a rose */
+    /* places a rose that doesn't autoupdate */
     <<place_rose
         mapname     'grid_house'
         background  '<img src="./assets/small_house.png">'
+        autoupdate  false
     >>
     ```
 
@@ -356,45 +358,15 @@ Renders a visual representation of the `map` with the tiles using the `maparray`
     - `quickmove`: (boolean) *(optional)* whether clicking a distant traversable tile initiates multiple sequential `mapmoves`, default set in `options`, quickmove forces the `mapview` to be clickable
 - **Examples:**
     ```js
-    /* places a mapview that has pathing enabled */
+    /* places a mapview that has quickmove disabled but pathing enabled */
     <<place_mapview
         mapname     'small_house'
         background  '<img src="./assets/small_house.png">'
-        clickable   true
+        quickmove   false
         pathing     true
-        quickmove   true
     >>
     ```
 
-
-<h3 id="macro-place_controller"><code>&lt;&lt;place_controller&gt;&gt;</code></h3>
-
-Creates an invisible element that listens for keyboard input to trigger `mapmove` events. When a specific key is pressed, it attempts to find an exit matching the defined criteria and executes the move.
-
-- **Arguments:** 
-    - `mapname`: (string) name of `map`
-    - `enabled`: (boolean) *(optional)* whether the controller is active, default `true`
-    - `keys`: (object) map of key codes to target movement objects
-        - `[key]`: (object) movement criteria
-            - `dir`: (string) *(optional)* directional exit to follow ("N", "E", "S", "W", "NE", "SE", "SW", "NW")
-            - `mapnode`: (string) *(optional)* target `mapnode` ID
-            - `x`: (number) *(optional)* target x coordinate
-            - `y`: (number) *(optional)* target y coordinate
-- **Examples:**
-    ```js
-    /* Setup arrow keys for a grid map */
-    <<set _keys = {
-        ArrowUp:    { dir: 'N' },
-        ArrowDown:  { dir: 'S' },
-        ArrowLeft:  { dir: 'W' },
-        ArrowRight: { dir: 'E' }
-    }>>
-
-    <<place_controller
-        mapname 'grid_house'
-        keys    _keys
-    >>
-    ```
 
 <h3 id="macro-update_interface"><code>&lt;&lt;update_interface&gt;&gt;</code></h3>
 
@@ -406,6 +378,50 @@ Manually triggers an update for a `rose` or `mapview` element. This is useful if
     ```js
     /* updates all mapviews on the page */
     <<update_interface selector '.macro-Sleepymap-mapview'>>
+    ```
+
+    
+<h3 id="macro-place_controller"><code>&lt;&lt;place_controller&gt;&gt;</code></h3>
+
+Creates an invisible element that controls a listener on `document` for `keyup` events to trigger `mapmoves`. Removing the element removes the listener. Every provided property must match for the `mapmove` to trigger — which means the `controller` only triggers `mapmove` to adjacent `exits` when a `dir` is provided, and teleports when a `dir` is not provided.
+
+- **Arguments:** 
+    - `mapname`: (string) name of `map`
+    - `enabled`: (boolean) *(optional)* whether the controller is active, default `true`
+    - `keys`: (object) map of key codes to target movement objects
+        - `[key]`: (object) `keyup` event `key` value
+            - `dir`: (string) *(optional)* directional exit to follow ("N", "E", "S", "W", "NE", "SE", "SW", "NW")
+            - `mapnode`: (string) *(optional)* target `mapnode` ID
+            - `x`: (number) *(optional)* target x coordinate
+            - `y`: (number) *(optional)* target y coordinate
+- **Examples:**
+    ```js
+    /* set up wasd control for movement to adjacent spaces */
+    <<set _keys = {
+        w: { dir: 'N' },
+        d: { dir: 'E' },
+        s: { dir: 'S' },
+        a: { dir: 'W' },
+    }>>
+    <<place_controller
+        mapname     'grid_house'
+        keys        _keys 
+    >>
+
+    /* set up a dedicated key to teleport to the dining room, but only from the outhousee */
+    /* code to update this by calling <<redo>> not shown */
+    <<do>>
+        <<run
+            _keys = { r: { mapnode: 'D' } };
+            _pos = Sleepymap.get_mapstate({ mapname: _mapname, mapstate: 'position' });
+            _enabled = _pos.mapnode === 'O';
+        >>
+        <<place_controller
+            mapname     _mapname
+            keys        _keys
+            enabled     _enabled
+        >>
+    <</do>>
     ```
 
 
@@ -691,7 +707,7 @@ Retrieves a copy of a map object. Manipulating the returned object *will not* af
 
 <h3 id='javascript-set_map'><code>set_map</code></h3>
 
-Allows for dynamic modification of an existing `map`. This method will automatically update the `map`'s `exits` and trigger an update for any `roses` or `mapviews` set to autoupdate.
+Allows for dynamic modification of an existing `map`. This method will automatically update the `map`'s `exits` and trigger an update for any `interfaces` set to autoupdate.
 
 - **argObj Properties:**
     - `mapname`: (string) name of the `map` to modify
@@ -708,6 +724,8 @@ Allows for dynamic modification of an existing `map`. This method will automatic
         diagonals : true,
     });
     ```
+
+<!-- HERE -->
 
 
 <h3 id='javascript-create_rose'><code>create_rose</code></h3>
