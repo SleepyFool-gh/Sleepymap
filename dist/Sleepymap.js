@@ -1468,6 +1468,9 @@ const CREATE_CONTROLLER_TEMPLATE = {
         type: 'object',
         required: true,
     },
+    enabled: {
+        type: 'boolean',
+    },
 };
 Macro.add(['place_controller'], {
     handler() {
@@ -1485,6 +1488,7 @@ function create_controller(argObj) {
     ArgObj.validate(name, CREATE_CONTROLLER_TEMPLATE, argObj);
 
     const { mapname, keys } = argObj;
+    const enabled = argObj.enabled ?? true; // default value
     const this_map = maps[mapname];
 
     // ERROR: non-extant map
@@ -1501,6 +1505,8 @@ function create_controller(argObj) {
         .attr('data-mapnode', position.mapnode)
         .attr('data-position-x', position.x)
         .attr('data-position-y', position.y);
+
+    if (! enabled) return $controller;
 
     const namespace = `Sleepymap.${crypto.randomUUID()}`;
 
@@ -1522,7 +1528,7 @@ function create_controller(argObj) {
             (target?.dir !== undefined) && 
             (! Object.hasOwn(is_diagonal, target?.dir))
         ) {
-            throw new Error(`${name} — Sleepymap "${mapname}" — keyup key "${dir}" is not a valid adjacent direction!`);
+            throw new Error(`${name} — Sleepymap "${mapname}" — keyup key "${target?.dir}" is not a valid adjacent direction!`);
         }
         // ERROR: non-extant mapnode
         else if (
@@ -1555,21 +1561,24 @@ function create_controller(argObj) {
             console.warn(`${name} — Sleepymap "${mapname}" — "${target?.mapnode}" is an unplaced mapnode, this key will be non-functional!`);
         }
 
+        // assign extant props
         key2target[key] = {};
         if (target.dir) key2target[key].dir = target.dir;
         if (target.mapnode) key2target[key].mapnode = target.mapnode;
         if (target.x) key2target[key].x = target.x;
         if (target.y) key2target[key].y = target.y;
     }
-    console.log(key2target);
 
     // create listener
     $(document).on(`keyup.${namespace}`, function(ev) {
         // if controller removed, delete listener
         if (! $.contains(document.body, $controller[0])) {
+            console.log('removed!');
             $(document).off(`keyup.${namespace}`);
             return;
         }
+        // pathmove running or not enabled, do nothing
+        else if (_pathmove_running) return;
 
         const target = key2target[ev.key];
         // frozen, do nothing
@@ -1579,26 +1588,68 @@ function create_controller(argObj) {
 
         let found = false;
         const current = {};
-        if (grid_travel) {
+
+        // don't need to check anything for teleports
+        if (target.dir === undefined) {
+                found = true;
+                Object.assign(current, target);
+        }
+        // grid travel, find first match
+        else if (grid_travel) {
             const xy = { x: position.x, y: position.y };
             const mapindex = xy2i({ xy, columns });
             const mapindex_exits = exits.grid[mapindex];
 
-            // if dir defined, only check exits
-            if (target.dir !== undefined) {
-                // for every single exit on object
-                // find first to match all
-                check_exits: for (const dir in mapindex_exits) {
-                    current.dir = dir;
+            // for every single exit on object
+            // find first to match all
+            // will run nothing if no exits because empty object
+            check_exits: for (const dir in mapindex_exits) {
+                current.dir = dir;
 
-                    const exit_set = mapindex_exits[dir];
-                    for (const exit of exit_set) {
+                const exit_set = mapindex_exits[dir];
+                for (const exit of exit_set) {
 
-                        current.mapnode = maparray[exit];
+                    current.mapnode = maparray[exit];
 
-                        const exit_xy = i2xy({ i: exit, columns });
-                        current.x = exit_xy.x;
-                        current.y = exit_xy.y;
+                    const exit_xy = i2xy({ i: exit, columns });
+                    current.x = exit_xy.x;
+                    current.y = exit_xy.y;
+
+                    // break if done
+                    if (
+                        (target.dir === undefined     || target.dir === current.dir) &&
+                        (target.mapnode === undefined || target.mapnode === current.mapnode) &&
+                        (target.x === undefined       || target.x === current.x) &&
+                        (target.y === undefined       || target.y === current.y)
+                    ) {
+                        found = true;
+                        break check_exits;
+                    }
+                }
+            }
+            
+        }
+        // node travel
+        else {
+            const mapnode_exits = exits.node[position.mapnode];
+            
+            // for every single exit on object
+            // find first to match all
+            // will run nothing if no exits because empty object
+            check_exits: for (const dir in mapnode_exits) {
+                current.dir = dir;
+
+                const exit_set = mapnode_exits[dir];
+                for (const exit of exit_set) {
+
+                    current.mapnode = exit;
+
+                    // fetch all xys for mapnode, check them all to see if xy is valid
+                    const xys = get_xys({ mapname, mapnode: exit });
+                    for (const xy of xys) {
+                        current.x = xy.x;
+                        current.y = xy.y;
+
                         // break if done
                         if (
                             (target.dir === undefined     || target.dir === current.dir) &&
@@ -1612,13 +1663,9 @@ function create_controller(argObj) {
                     }
                 }
             }
-            // otherwise this is a teleport
-            else {
-                found = true;
-                Object.assign(current, target);
-            }
         }
 
+        // only run begin_mapmove if found a valid target
         if (found) {
             // only assign the values that were defined
             const mapmove_argObj = { mapname, suppress_warnings: true };
@@ -1632,74 +1679,6 @@ function create_controller(argObj) {
     return $controller;
 }
 
-    
-    // // not adjacent --> keys are mapnodes / grid spaces
-    // else {
-    //     const key2target = {};
-    //     // validate keys object
-    //     for (const key in keys) {
-    //         // WARNING: sanity check, keydown key values are usually lower case
-    //         if (key === key.toUpperCase()) {
-    //             console.warn(`${name} — Sleepymap "${mapname}" — keydown key codes are normally lower case, your input was "${key}", did you mean "${key.toLowerCase()}"?`);
-    //         }
-
-    //         // grid --> target is xy coordinate
-    //         if (grid_travel) {
-    //             const xy = keys[key];
-    //             // WARNING: not a valid grid position, skipped
-    //             if (xy?.x === undefined || xy?.y === undefined) {
-    //                 console.warn(`${name} — Sleepymap "${mapname}" — keys should refer to an object with an x & y property! invalid input:`, xy);
-    //                 continue;
-    //             }
-    //             const { x, y } = xy;
-    //             key2target[key] = { x, y };
-    //         }
-    //         // node --> target is mapnode
-    //         else {
-    //             const mapnode = keys[key]
-    //             // WARNING: non-extant mapnode
-    //             if (! Object.hasOwn(maptiles, mapnode)) {
-    //                 console.warn(`${name} — Sleepymap "${mapname}" — the mapnode "${mapnode}" doesn't exist on this map! ignoring...`);
-    //                 continue;
-    //             }
-    //             // WARNING: unplaced mapnode
-    //             if (! maparray.includes(mapnode)) {
-    //                 console.warn(`${name} — Sleepymap "${mapname}" — "${mapnode}" is an unplaced mapnode, this key will be non-functional!`);
-    //             }
-    //             key2target[key] = mapnode;
-    //         }
-    //     }
-
-    //     // create listener
-    //     $(document).on(`keydown.${namespace}`, function(ev) {
-    //         // if controller removed, delete listener
-    //         if (! $.contains(document.body, $controller[0])) {
-    //             $(document).off(`keydown.${namespace}`);
-    //             return;
-    //         }
-
-    //         const target = key2target[ev.key];
-    //         // frozen, do nothing
-    //         if (frozen) return;
-    //         // no match, do nothing
-    //         else if (target === undefined) return;
-            
-    //         // fire mapmove
-    //         if (grid_travel) {
-    //             begin_mapmove({
-    //                 mapname,
-    //                 target_x: target.x,
-    //                 target_y: target.y,
-    //             });
-    //         }
-    //         else {
-    //             begin_mapmove({
-    //                 mapname,
-    //                 target,
-    //             });
-    //         }
-    //     });
-    // }
 
 
 
@@ -2061,52 +2040,23 @@ function begin_mapmove(argObj) {
     ) {
         console.warn(`${name} — Sleepymap "${mapname}" — this map uses node travel, will use "target_mapnode" at xy coordinate!`);
     }
-    // WARNING: extra mapnode args
-    if (
-        (! suppress_warnings) &&
-        grid_travel && 
-        (argObj.target_x !== undefined && argObj.target_y !== undefined) && 
-        (argObj.target_mapnode !== undefined)
-    ) {
-        console.warn(`${name} — Sleepymap "${mapname}" — this map uses grid travel, "target_mapnode" will be ignored...`);
-    }
-    // WARNING: extra xy args
-    if (
-        (! suppress_warnings) &&
-        (! grid_travel) && 
-        (argObj.target_mapnode !== undefined) &&
-        (argObj.target_x !== undefined && argObj.target_y !== undefined)
-    ) {
-        console.warn(`${name} — Sleepymap "${mapname}" — this map uses node travel, "target_x" and "target_y" will be ignored...`);
-    }
 
-    // if grid travel && xy defined, use that to calculate mapnode — else use argObj mapnode
-    // reverse for node travel
-    const target_mapnode  = (
-                                grid_travel && 
-                                (argObj.target_x !== undefined) && (argObj.target_y !== undefined)
-                            ) ||
-                            (
-                                (! grid_travel) &&
-                                (argObj.target_mapnode === undefined)
-                            )
-                                ? maparray[xy2i({ xy: { x:argObj.target_x, y:argObj.target_y }, columns })] 
-                                : argObj.target_mapnode;
-
-    // aux function to fetch all valid xys
-    function get_xys(mapnode) {
-        const this_map = maps[mapname];
-        const { maparray, columns } = this_map;
-        const xys = [];
-        for (let i = 0; i < maparray.length; i++) {
-            if (maparray[i] === mapnode) {
-                const xy = i2xy({ i, columns });
-                xys.push(xy);
-            }
+    // ERROR: mismatched xy & mapnode
+    if (
+        argObj.target_x !== undefined && 
+        argObj.target_y !== undefined && 
+        argObj.target_mapnode !== undefined
+    ) {
+        const xy = { x: argObj.target_x, y: argObj.target_y };
+        const mapnode = maparray[xy2i({ xy, columns})];
+        if (argObj.target_mapnode !== mapnode) {
+            throw new Error(`${name} — Sleepymap "${mapname}" — input mapnode "${mapnode}" doesn't match mapnode at coordinates x: "${argObj.target_x}", y: "${argObj.target_y}"!`);
         }
-        return xys;
     }
-    const target_xys = get_xys(target_mapnode);
+
+    const target_mapnode  = argObj.target_mapnode ?? maparray[xy2i({ xy: { x: argObj.target_x, y: argObj.target_y }, columns })] ;
+
+    const target_xys = get_xys({ mapname, mapnode: target_mapnode});
 
     // WARNING: unplaced mapnode
     if (target_xys.length === 0) {
@@ -2138,7 +2088,7 @@ function begin_mapmove(argObj) {
         mapnode     : origin_mapnode,
         xys         : grid_travel
                         ? [{ x: position.x, y: position.y }]
-                        : get_xys(origin_mapnode),
+                        : get_xys({ mapname, mapnode: origin_mapnode }),
         entities    : [],
     };
 
@@ -2468,6 +2418,7 @@ function validate_bounds(argObj) {
         throw new Error(`${name} — Sleepymap "${mapname}" — y coordinate ${y} out of bounds, must be: 0 <= y < ${rows}!`);
     }
 }
+// aux function to get offsets in each dir from a mapindex
 function get_offsets(argObj) {
     const { columns } = argObj;
     return {
@@ -2480,6 +2431,20 @@ function get_offsets(argObj) {
         SW  : columns - 1,
         NW  : -columns - 1,
     }
+}
+// aux function to fetch all valid xys for a given mapnode
+function get_xys(argObj) {
+    const { mapname, mapnode } = argObj;
+    const this_map = maps[mapname];
+    const { maparray, columns } = this_map;
+    const xys = [];
+    for (let i = 0; i < maparray.length; i++) {
+        if (maparray[i] === mapnode) {
+            const xy = i2xy({ i, columns });
+            xys.push(xy);
+        }
+    }
+    return xys;
 }
 
 // exposed helpers

@@ -14,6 +14,7 @@ Sleepymap Macro Library, Demo
     D: {name: 'Dining Room'},
     K: {name: 'Kitchen'},
     P: {name: 'Pantry'},
+    O: {name: 'Outhouse'},
 }>>
 
 /* new node travel map */
@@ -23,7 +24,7 @@ Sleepymap Macro Library, Demo
     start       'D'
 >>
     .   .   .   .   .   .   .   .    .   .   .   .   .   .    .   .
-    .   .   .   .   K   K   K   K    K   .   L   L   L   L    L   .
+    .   .   O   .   K   K   K   K    K   .   L   L   L   L    L   .
     .   .   .   .   K   K   K   K    K   .   L   L   L   L    L   .
     .   P   P   P|  K_  K   K_  K_  _K   .   L   L_  L_  L_   L   .
     .   P   P   P|  D   D   D   D   |S   .   H  |G   G   G   |S   .
@@ -43,7 +44,7 @@ Sleepymap Macro Library, Demo
     start_y     5
 >>
     .   .   .   .   .   .   .   .    .   .   .   .   .   .    .   .
-    .   .   .   .   K   K   K   K    K   .   L   L   L   L    L   .
+    .   .   O   .   K   K   K   K    K   .   L   L   L   L    L   .
     .   .   .   .   K   K   K   K    K   .   L   L   L   L    L   .
     .   P   P   P|  K_  K   K_  K_  _K   .   L   L_  L_  L_   L   .
     .   P   P   P|  D   D   D   D   |S   .   H  |G   G   G   |S   .
@@ -210,6 +211,9 @@ Sleepymap Macro Library, Demo
             <<update_interface selector '.macro-Sleepymap-rose'>>
             <<update_interface selector '.macro-Sleepymap-mapview'>>
         <</link>>
+        <div>WASD for north, east, south, west respectively.</div>
+        <div>E to teleport to Outhouse</div>
+        <div>R to teleport to Dining Room, only from Outhouse</div>
     </div>
     <div id='roses'>
         <div>This rose autoupdates.</div>
@@ -226,15 +230,28 @@ Sleepymap Macro Library, Demo
         >>
     </div>
 </div>
-<<set _keys = {
+<<set _keys1 = {
     w: { dir: 'N' },
     d: { dir: 'E' },
     s: { dir: 'S' },
     a: { dir: 'W' },
-    f: { dir: 'N', mapnode: 'S' },
+    e: { x: 2, y: 1 },
 }>>
 <<place_controller
     mapname     _mapname
     adjacent    true
-    keys        _keys
+    keys        _keys1  
 >>
+<<do>>
+    <<run
+        _pos = Sleepymap.get_mapstate({ mapname: _mapname, mapstate: 'position' });
+        _enabled = _pos.mapnode === 'O';
+        _keys2 = { r: { mapnode: 'D' } };
+    >>
+    <<place_controller
+        mapname     _mapname
+        adjacent    true
+        keys        _keys2
+        enabled     _enabled
+    >>
+<</do>>
