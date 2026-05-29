@@ -18,7 +18,7 @@ const options = {
         clickable_mapview        : true,
         show_labels_on_mapview   : true,
         pathing_on_mapview       : true,
-        enable_mapview_quickmove : true,
+        quickmove_on_mapview     : true,
         pathmove_delay           : 250,
         disabled_stops_pathing   : true,
         hidden_stops_pathing     : true,
@@ -1121,30 +1121,36 @@ function create_mapview(argObj) {
     const show_labels   = argObj.show_labels ?? options.default.show_labels_on_mapview; 
     const autoupdate    = argObj.autoupdate  ?? options.default.autoupdate_mapview;
     const clickable     = argObj.clickable   ?? options.default.clickable_mapview;
-    const quickmove     = argObj.quickmove   ?? options.default.enable_mapview_quickmove;
     const this_map = maps[mapname];
 
     // ERROR: non-extant map
     if (this_map === undefined) {
         throw new Error(`${name} — Sleepymap "${mapname}" not found!`);
     }
-
+    
     const { grid_travel, columns, maparray, mapnodes, position, frozen, exits, entities } = this_map;
 
-    // WARNING: quickmove without pathing
-    if (quickmove && (! argObj.pathing)) {
-        console.warn(`${name} — Sleepymap "${mapname}" — quickmove without showing pathing isn't sensible!`);
-    }
     // WARNING: pathing on node travel map
-    if (argObj.pathing && (! grid_travel)) {
-        console.warn(`${name} — Sleepymap "${mapname}" — pathing on node travel map isn't supported!`);
+    if ((argObj.pathing || argObj.quickmove) && (! grid_travel)) {
+        console.warn(`${name} — Sleepymap "${mapname}" — pathing & quickmove on node travel map isn't supported!`);
     }
-
-    // force disable pathing on node travel maps
-    const pathing = ! grid_travel
+    // force disable pathing & quickmove on node travel maps
+    const pathing   = ! grid_travel
                         ? false
                         : argObj.pathing ?? options.default.pathing_on_mapview;
-    
+    const quickmove = ! grid_travel
+                        ? false
+                        : argObj.quickmove ?? options.default.quickmove_on_mapview;
+
+    // ERROR: quickmove on non-clickable map
+    if (! clickable && quickmove) {
+        throw new Error(`${name} — Sleepymap "${mapname}" — quickmove can't be enabled on a map that isn't clickable!`);
+    }
+    // WARNING: quickmove without pathing
+    if (quickmove && (! pathing)) {
+        console.warn(`${name} — Sleepymap "${mapname}" — quickmove without showing pathing isn't sensible!`);
+    }
+
     // create map object
     // use maparray & columns if no mapview object
     const $mapview = $(document.createElement('div'))
@@ -1221,7 +1227,7 @@ function create_mapview(argObj) {
         const id = maparray[i];
         const mapnode = mapnodes[id];
         // if clickable & valid travel destination --> clickable
-        const link  = ! (clickable || pathing)
+        const link  = ! (clickable || quickmove)
                         ? false
                         : !! is_traversable(i);
 
@@ -1270,8 +1276,8 @@ function create_mapview(argObj) {
         $tiles[i] = $tile;
     }
 
-    // attach click listener, only if not pathing as that will replace it
-    if (clickable && ! pathing) {
+    // attach click listener, only if not quickmove as that will replace it
+    if (clickable && ! quickmove) {
         attach_click({ name, mapname, $interface: $mapview });
     }
     // pathing always works, but hidden if not shown
@@ -1478,7 +1484,7 @@ function create_controller(argObj) {
     // VALIDATE: required args & type
     ArgObj.validate(name, CREATE_CONTROLLER_TEMPLATE, argObj);
 
-    const { mapname, keydown, frozen, maptiles, exits } = argObj;
+    const { mapname, keydown } = argObj;
     const adjacent = argObj.adjacent ?? false;  // default value
     const this_map = maps[mapname];
 
@@ -1487,7 +1493,7 @@ function create_controller(argObj) {
         throw new Error(`${name} — Sleepymap "${mapname}" not found!`);
     }
 
-    const { grid_travel, columns, position } = this_map;
+    const { grid_travel, columns, position, frozen, maptiles, exits } = this_map;
 
     const $controller = $(document.createElement('div'))
         .addClass('macro-Sleepymap-controller')
@@ -1509,7 +1515,6 @@ function create_controller(argObj) {
                 continue;
             }
             const keys = [keydown[dir]].flat();
-            console.log(keys);
             // flip object map
             for (const key of keys) {
                 // WARNING: keydown key is not a string, skipped
@@ -1529,7 +1534,7 @@ function create_controller(argObj) {
                 return;
             }
 
-            const dir = keydown2dir[ev.key] ?? keydown2dir[ev.keyCode];
+            const dir = keydown2dir[ev.key];
             // frozen, do nothing
             if (frozen) return;
             // no match, do nothing
@@ -1539,17 +1544,33 @@ function create_controller(argObj) {
             if (grid_travel) {
                 const xy = { x: position.x, y: position.y };
                 const mapindex = xy2i({ xy, columns });
-                const exit_set = exits.node[mapindex][dir];
-                const exit = exit = [...exit_set][0];
+                const exit_set = exits.grid[mapindex][dir];
+
                 // no exit, do nothing
-                if (exit === undefined) return;
+                if (exit_set === undefined) return;
+                
+                // get first
+                const exit = [...exit_set][0];
                 const exit_xy = i2xy({ i: exit, columns });
+
+                // fire mapmove
                 begin_mapmove({
                     mapname,
                     target_x: exit_xy.x,
                     target_y: exit_xy.y,
-                    suppress_warnings: true,
-                });Z
+                });
+            }
+            else {
+                const exit_set = exits.node[position.mapnode][dir];
+
+                // no exit, do nothing
+                if (exit_set === undefined) return;
+
+                const exit = [...exit_set][0];
+                begin_mapmove({
+                    mapname,
+                    target_mapnode: exit,
+                });
             }
 
         });

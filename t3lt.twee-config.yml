@@ -12,6 +12,8 @@ sugarcube-2:
       name: place_mapview
     update_interface:
       name: update_interface
+    place_controller:
+      name: place_controller
     set_mapscripts:
       name: set_mapscripts
       container: true

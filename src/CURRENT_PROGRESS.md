@@ -32,6 +32,7 @@
 - adding get / set mapnodes
 - tweaked pathing so that disabled / hidden / blocked mapstates are accounted for and can be conditionally pathed through or not
 - fixed pathing breaking from clicking on position cell
+- fix conflation between quickmove and pathing in create_mapview
 
 - ? need to add some way to remove manual exits
 - ? need to add settings to disable automatic disabling and hiding of disabled / hidden maptiles
@@ -41,6 +42,5 @@
 - fix pathing & clickable flags problem
 - fix keydown with no clickable problem
 - implement targeted keydown input
-- fix conflation between quickmove and pathing in create_mapview
 
 - add ILIKETOBREAKTHINGS flag

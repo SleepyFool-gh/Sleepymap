@@ -160,17 +160,6 @@ Sleepymap Macro Library, Demo
     to_y        7
     direction   'W'
 >>
-<<set _keys = {
-    N: 'W',
-    E: 'D',
-    S: 'S',
-    W: 'A',
-}>>
-<<place_controller
-    mapname     _mapname
-    adjacent    true
-    keydown     _keys
->>
 
 
 :: content [nobr]
@@ -188,8 +177,8 @@ Sleepymap Macro Library, Demo
 <<place_mapview
     mapname     _mapname
     background  '<img src="./assets/small_house.png">'
-    clickable   false 
-    autoupdate  true
+    clickable   true 
+    quickmove   true
 >>
 <div id='grid'>
     <div id='controls'>
@@ -235,3 +224,14 @@ Sleepymap Macro Library, Demo
         >>
     </div>
 </div>
+<<set _keys = {
+    N: 'w',
+    E: 'd',
+    S: 's',
+    W: 'a',
+}>>
+<<place_controller
+    mapname     _mapname
+    adjacent    true
+    keydown     _keys
+>>
