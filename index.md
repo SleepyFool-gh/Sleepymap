@@ -730,11 +730,11 @@ Allows for dynamic modification of an existing `map`. This method will automatic
 
 <h3 id='javascript-edit_exits'><code>edit_exits</code></h3>
 
-Manually creates or removes an exit between two `mapnodes` or grid coordinates. The `<<connect_map>>` and `<<disconnect_map>>` macros are both wrappers for this method — the only difference is that `<<disconnect_map>>` has the `removing` argument set to `true`.
+Manually creates or removes an exit between two `mapnodes` or grid coordinates. Using `from/to` on a `grid travel` map will not throw an error, but it will be non-functional — and vice versa. Connections are *one-directional* — the reciprocal connection going the other way *will not* be automatically generated. The `<<connect_map>>` and `<<disconnect_map>>` macros are both wrappers for this method — the only difference is that `<<disconnect_map>>` has the `removing` argument set to `true`.
 
 - **argObj Properties:**
     - `mapname`: (string) name of the `map`
-    - `dir`: (string) the direction of the connection ("N", "E", "S", "W", "NE", "SE", "SW", "NW")
+    - `dir`: (string) the direction of the connection ("N", "E", "S", "W", "NE", "SE", "SW", "NW"); must be provided when adding a connection; if undefined when removing, connections betweeen the origin and target will be removed in *all* directions
     - `from`: (string) *(optional)* node ID to connect from (`node travel`)
     - `to`: (string) *(optional)* node ID to connect to (`node travel`)
     - `from_x`: (number) *(optional)* start x coordinate (`grid travel`)
@@ -744,23 +744,30 @@ Manually creates or removes an exit between two `mapnodes` or grid coordinates. 
     - `removing`: (boolean) *(optional)* `true` to remove an existing connection, `false` to create one, default `false`
 - **Examples:**
     ```js
-    /* create a connection in node mode */
+    /* connect the stairs */
     Sleepymap.edit_exits({
-        mapname : 'node_house',
-        from    : 'M',
-        to      : 'P',
-        dir     : 'S'
+        mapname : 'grid_house',
+        from_x  : 8,
+        from_y  : 4,
+        to_x    : 14,
+        to_y    : 5,
+        dir     : 'N',
+    });
+    Sleepymap.edit_exits({
+        mapname : 'grid_house',
+        from_x  : 14,
+        from_y  : 5,
+        to_x    : 8,
+        to_y    : 4,
+        dir     : 'S',
     });
 
-    /* remove a connection in grid mode */
+    /* master bedroom can be entered but not left */
     Sleepymap.edit_exits({
-        mapname  : 'grid_house',
-        from_x   : 8,
-        from_y   : 4,
-        to_x     : 14,
-        to_y     : 5,
-        dir      : 'N',
-        removing : true
+        mapname  : 'node_house',
+        from     : 'M',
+        to       : 'H',
+        removing : true,
     });
     ```
     

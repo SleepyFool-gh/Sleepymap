@@ -924,7 +924,10 @@ function edit_exits(argObj) {
                             : { removing, dir, from, to };
     // store into exits object
     exits.manual.push(manual_exit);
+
+    // update exits and interfaces
     update_exits({ mapname });
+    setTimeout( () => $('#passages').trigger('Sleepymap:map_edited', { mapname }), Engine.DOM_DELAY);
 }
 
 
@@ -1819,7 +1822,7 @@ function set_entity(argObj) {
     }
 
     // update maps
-    $('#passages').trigger('Sleepymap:map_edited', { mapname })
+    setTimeout( () => $('#passages').trigger('Sleepymap:map_edited', { mapname }), Engine.DOM_DELAY);
 }
 
 
