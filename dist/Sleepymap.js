@@ -716,14 +716,25 @@ function update_exits(argObj) {
         // node travel
         if (Object.hasOwn(exit, 'from')) {
             const { from, to, dir } = exit;
-            if (exit.removing) {
-                // remove
+            // remove from all dirs if no dir specified
+            if (exit.removing && dir === undefined) {
+                for (const dir of Object.keys(exits.node[from])) {
+                    exits.node[from][dir]?.delete(to);
+                    // clean up empty sets
+                    if (! exits.node[from][dir]?.size) {
+                        delete exits.node[from][dir];
+                    }
+                }
+            }
+            // else remove from just the one
+            else if (exit.removing) {
                 exits.node[from][dir]?.delete(to);
                 // clean up empty sets
                 if (! exits.node[from][dir]?.size) {
                     delete exits.node[from][dir];
                 }
             }
+            // else
             else {
                 exits.node[from][dir] ??= new Set();
                 exits.node[from][dir].add(to);
@@ -738,8 +749,19 @@ function update_exits(argObj) {
             const from_i    = xy2i({ xy: { x: exit.from_x, y: exit.from_y }, columns });
             const to_i      = xy2i({ xy: { x: exit.to_x, y: exit.to_y }, columns });
             const dir       = exit.dir;
-            if (exit.removing) {
-                // remove
+            // remove from all exits if no dir specified
+            if (exit.removing && dir === undefined) {
+                console.log("AAAA");
+                for (const dir of Object.keys(exits.grid[from_i])) {
+                    exits.grid[from_i][dir]?.delete(to_i);
+                    // clean up empty sets
+                    if (! exits.grid[from_i][dir]?.size) {
+                        delete exits.grid[from_i][dir];
+                    }
+                }
+            }
+            // else remove from just the one
+            else if (exit.removing) {
                 exits.grid[from_i][dir]?.delete(to_i);
                 // clean up empty sets
                 if (! exits.grid[from_i][dir]?.size) {
@@ -778,7 +800,6 @@ const EDIT_EXITS_TEMPLATE = {
         type: 'number',
     },
     dir: {
-        required: true,
         type: 'string',
         aliases: 'direction',
     },
@@ -814,8 +835,14 @@ function edit_exits(argObj) {
         throw new Error(`${name} — Sleepymap — couldn't find map with name "${mapname}"!`);
     }
     // ERROR: invalid dir
-    else if (! Object.hasOwn(is_diagonal, dir)) {
+    else if (
+        dir !== undefined &&
+        ! Object.hasOwn(is_diagonal, dir)
+    ) {
         throw new Error(`${name} — Sleepymap "${mapname}" — invalid dir "${dir}", must be one of "N", "E", "S", "W", "NE", "SE", "SW", "NW"!`);
+    }
+    else if (! removing && dir === undefined) {
+        throw new Error(`${name} — Sleepymap "${mapname}" — must specify dir when adding a connection!`);
     }
 
     const { grid_travel, mapnodes, maparray, columns } = this_map;
@@ -1394,6 +1421,10 @@ function update_interface(argObj) {
 
     // VALIDATE: required args & type
     ArgObj.validate(name, UPDATE_INTERFACE_TEMPLATE, argObj);
+    // WARNING: unused selector
+    if (argObj.$interface !== undefined && argObj.selector !== undefined) {
+        console.warn(`${name} — Sleepymap — both $interface and selector provided, using $interface; selector will be ignored...`);
+    }
     // if $rose undefined, check for selector
     const $interface = argObj.$interface ?? (argObj.selector ? $(argObj.selector) : undefined);
 
@@ -2550,19 +2581,18 @@ function get_map(argObj) {
 const Sleepymap = {
     new_map,
 
-    set_map,
     get_map,
+    set_map,
 
     edit_exits,
 
-    set_mapstate,
     get_mapstate,
-    set_mapnode,
+    set_mapstate,
     get_mapnode,
+    set_mapnode,
 
     set_entity,
     set_mapscripts,
-
 
     begin_mapmove,
 

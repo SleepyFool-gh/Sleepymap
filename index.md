@@ -412,9 +412,11 @@ Creates an invisible element that controls a listener on `document` for `keyup` 
     /* code to update this by calling <<redo>> not shown */
     <<do>>
         <<run
-            _keys = { r: { mapnode: 'D' } };
             _pos = Sleepymap.get_mapstate({ mapname: _mapname, mapstate: 'position' });
             _enabled = _pos.mapnode === 'O';
+            _keys = { 
+                r: { mapnode: 'D' },
+            };
         >>
         <<place_controller
             mapname     _mapname
@@ -725,73 +727,101 @@ Allows for dynamic modification of an existing `map`. This method will automatic
     });
     ```
 
-<!-- HERE -->
 
+<h3 id='javascript-edit_exits'><code>edit_exits</code></h3>
+
+Manually creates or removes an exit between two `mapnodes` or grid coordinates. The `<<connect_map>>` and `<<disconnect_map>>` macros are both wrappers for this method — the only difference is that `<<disconnect_map>>` has the `removing` argument set to `true`.
+
+- **argObj Properties:**
+    - `mapname`: (string) name of the `map`
+    - `dir`: (string) the direction of the connection ("N", "E", "S", "W", "NE", "SE", "SW", "NW")
+    - `from`: (string) *(optional)* node ID to connect from (`node travel`)
+    - `to`: (string) *(optional)* node ID to connect to (`node travel`)
+    - `from_x`: (number) *(optional)* start x coordinate (`grid travel`)
+    - `from_y`: (number) *(optional)* start y coordinate (`grid travel`)
+    - `to_x`: (number) *(optional)* target x coordinate (`grid travel`)
+    - `to_y`: (number) *(optional)* target y coordinate (`grid travel`)
+    - `removing`: (boolean) *(optional)* `true` to remove an existing connection, `false` to create one, default `false`
+- **Examples:**
+    ```js
+    /* create a connection in node mode */
+    Sleepymap.edit_exits({
+        mapname : 'node_house',
+        from    : 'M',
+        to      : 'P',
+        dir     : 'S'
+    });
+
+    /* remove a connection in grid mode */
+    Sleepymap.edit_exits({
+        mapname  : 'grid_house',
+        from_x   : 8,
+        from_y   : 4,
+        to_x     : 14,
+        to_y     : 5,
+        dir      : 'N',
+        removing : true
+    });
+    ```
+    
 
 <h3 id='javascript-create_rose'><code>create_rose</code></h3>
 
-Creates a jQuery `rose` element. The `<<place_arearose>>` macro calls this method and appends the result to the macro output.
+Creates a jQuery `rose` element, which provides a 3x3 grid of `exits` from the current position in each direction. The `<<place_rose>>` macro calls this method and appends the result to the macro output.
 
 - **argObj Properties:**
-    - `mapname`: (string) name of the `areamap`
+    - `mapname`: (string) name of the `map`
     - `autoupdate`: (boolean) *(optional)* whether the `rose` automatically updates, default set in `options`
+    - `clickable` : (boolean) *(optional)* whether the `exits` are navgiation links, default set in `options`
     - `background`: (HTML string) *(optional)* inserted as a background element
 - **Returns:** (jQuery object) the created `$rose` element
 - **Examples:**
     ```js
-    Areamap.create_rose({
+    // returns a $rose jQuery element that doesn't autoupdate
+    Sleepymap.create_rose({
         mapname    : 'small_house',
-        autoupdate : true,
         background : '<div>Background</div>',
-    });
-    ```
-
-
-<h3 id='javascript-update_rose'><code>update_rose</code></h3>
-
-Manually updates `rose` elements in the DOM. If the jQuery object passed to this method references multiple `roses`, all of them will update. Non-`rose` elements will be ignored. The `<<update_arearose>>` macro is a wrapper for this method. 
-
-- **argObj Properties:**
-    - `rose`: (jQuery object) the specific `$rose` element to refresh
-- **Examples:**
-    ```js
-    Areamap.update_rose({
-        rose: $('#rose-element'),
+        autoupdate : false
     });
     ```
 
 
 <h3 id='javascript-create_mapview'><code>create_mapview</code></h3>
 
-Creates a jQuery `mapview` element. The `<<place_areamapview>>` macro calls this method and appends the result to the macro output.
+Creates a jQuery `mapview` element, providing a visual representation of the map using the `maparray`. The `<<place_mapview>>` macro calls this method and appends the result to the macro output. 
 
 - **argObj Properties:**
-    - `mapname`: (string) name of the `areamap`
+    - `mapname`: (string) name of the `map`
     - `autoupdate`: (boolean) *(optional)* whether the `mapview` automatically updates, default set in `options`
-    - `clickable`: (boolean) *(optional)* whether `mapareas` can be clicked to navigate, default set in `options`
-    - `show_names`: (boolean) *(optional)* whether to display names for each `maparea`, default set in `options`
+    - `clickable`: (boolean) *(optional)* whether nodes can be clicked to navigate, default set in `options`
+    - `show_labels`: (boolean) *(optional)* whether to display labels (names or directional icons) for each node, default set in `options`
+    - `pathing`: (boolean) *(optional)* whether to highlight the path to the hovered tile; highlighted path is generated by adding the `.macro-Sleepymap-path` class to each `tile` along the path; default set in `options`
+    - `quickmove`: (boolean) *(optional)* whether clicking a distant traversable tile initiates multiple sequential `mapmoves`; `clickable` *must* be `true` for `quickmove` to function; default set in `options`
     - `background`: (HTML string) *(optional)* inserted as a background element
 - **Returns:** (jQuery object) the created `$mapview` element
 - **Examples:**
     ```js
-    Areamap.create_mapview({
+    // places a mapview that has quickmove disabled but pathing enabled
+    Sleepymap.create_mapview({
         mapname    : 'small_house',
-        clickable  : true,
+        pathing    : true,
+        quickmove  : false,
         background : '<div>Background</div>',
     });
     ```
 
 
-<h3 id='javascript-update_mapview'><code>update_mapview</code></h3>
+<h3 id='javascript-update_interface'><code>update_interface</code></h3>
 
-Manually updates `mapview` elements in the DOM. If the jQuery object passed to this method references multiple `mapviews`, all of them will update. Non-`mapview` elements will be ignored. The `<<update_areamapview>>` macro is a wrapper for this method.
+Manually triggers an update for an `interface` element. One of either `$interface` or `selector` *must* be provided; if both are provided `selector` will be ignored. This is useful if the author has manually modified `interface` items or has disabled autoupdate. The `<<update_interface>>` macro is a wrapper for this method.
 
 - **argObj Properties:**
-    - `mapview`: (jQuery object) the specific `$mapview` element to refresh
+    - `$interface`: (jQuery object) the specific `$rose` or `$mapview` element to refresh
+    - `selector`: (string) jQuery selector string used to find the interface element if `$interface` is not provided
 - **Examples:**
     ```js
-    Areamap.update_mapview({
-        mapview: $('#mapview-element'),
+    Sleepymap.update_interface({
+        $interface: $('#rose-element'),
     });
     ```
 
