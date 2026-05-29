@@ -1,3 +1,185 @@
+// passed controller
+
+        
+        let passed_dir      = target.dir === undefined
+                                ? true
+                                : false;
+        let passed_xy       = target.x === undefined
+                                ? true
+                                : false;
+        let passed_mapnode  = target.mapnode === undefined
+                                ? true
+                                : false;
+
+        if (grid_travel) {
+            const xy = { x: position.x, y: position.y };
+            const mapindex = xy2i({ xy, columns });
+            const mapindex_exits = exits.grid[mapindex];
+
+            // check exits has dir
+            if (! passed_dir) {
+                passed_dir = Object.hasOwn(mapindex_exits, target.dir);
+            }
+
+            // for every single exit on object
+            check_exits: for (const dir in mapindex_exits) {
+                const exit_set = mapindex_exits[dir];
+                for (const exit of exit_set) {
+                    // check xy
+                    if (! passed_xy) {
+                        const exit_xy = i2xy({ i: exit, columns });
+                        if (target.x === exit_xy.x && target_y === exit_xy.y) passed_xy = true;
+                    }
+                    // check mapnode
+                    if (! passed_mapnode) {
+                        const exit_mapnode = maparray[exit];
+                        if (target.mapnode === exit_mapnode) passed_mapnode = true;
+                    }
+
+                    // break if done
+                    if (passed_xy && passed_mapnode) break check_exits;
+                }
+            }
+        }
+
+
+
+// adjacency controller
+// adjacent --> keys are dirs
+    if (adjacent) {
+        const key2dir = {};
+        // validate keys object
+        for (const key in keys) {
+            // WARNING: sanity check, keydown key values are usually lower case
+            if (key === key.toUpperCase()) {
+                console.warn(`${name} — Sleepymap "${mapname}" — keydown key codes are normally lower case, your input was "${key}", did you mean "${key.toLowerCase()}"?`);
+            }
+            const dir = keys[key];
+            // WARNING: not a valid dir, skipped
+            if (! Object.hasOwn(is_diagonal, dir)) {
+                console.warn(`${name} — Sleepymap "${mapname}" — keydown key "${dir}" is not a valid adjacent direction; ignored...`);
+                continue;
+            }
+            key2dir[key] = dir;
+        }
+
+        // create listener
+        $(document).on(`keydown.${namespace}`, function(ev) {
+            // if controller removed, delete listener
+            if (! $.contains(document.body, $controller[0])) {
+                $(document).off(`keydown.${namespace}`);
+                return;
+            }
+
+            const dir = key2dir[ev.key];
+            // frozen, do nothing
+            if (frozen) return;
+            // no match, do nothing
+            else if (dir === undefined) return;
+            
+            // fetch first exit
+            if (grid_travel) {
+                const xy = { x: position.x, y: position.y };
+                const mapindex = xy2i({ xy, columns });
+                const exit_set = exits.grid[mapindex][dir];
+
+                // no exit, do nothing
+                if (exit_set === undefined) return;
+                
+                // get first
+                const exit = [...exit_set][0];
+                const exit_xy = i2xy({ i: exit, columns });
+
+                // fire mapmove
+                begin_mapmove({
+                    mapname,
+                    target_x: exit_xy.x,
+                    target_y: exit_xy.y,
+                });
+            }
+            else {
+                const exit_set = exits.node[position.mapnode][dir];
+
+                // no exit, do nothing
+                if (exit_set === undefined) return;
+
+                const exit = [...exit_set][0];
+                begin_mapmove({
+                    mapname,
+                    target_mapnode: exit,
+                });
+            }
+
+        });
+    }
+    // not adjacent --> keys are mapnodes / grid spaces
+    else {
+        const key2target = {};
+        // validate keys object
+        for (const key in keys) {
+            // WARNING: sanity check, keydown key values are usually lower case
+            if (key === key.toUpperCase()) {
+                console.warn(`${name} — Sleepymap "${mapname}" — keydown key codes are normally lower case, your input was "${key}", did you mean "${key.toLowerCase()}"?`);
+            }
+
+            // grid --> target is xy coordinate
+            if (grid_travel) {
+                const xy = keys[key];
+                // WARNING: not a valid grid position, skipped
+                if (xy?.x === undefined || xy?.y === undefined) {
+                    console.warn(`${name} — Sleepymap "${mapname}" — keys should refer to an object with an x & y property! invalid input:`, xy);
+                    continue;
+                }
+                const { x, y } = xy;
+                key2target[key] = { x, y };
+            }
+            // node --> target is mapnode
+            else {
+                const mapnode = keys[key]
+                // WARNING: non-extant mapnode
+                if (! Object.hasOwn(maptiles, mapnode)) {
+                    console.warn(`${name} — Sleepymap "${mapname}" — the mapnode "${mapnode}" doesn't exist on this map! ignoring...`);
+                    continue;
+                }
+                // WARNING: unplaced mapnode
+                if (! maparray.includes(mapnode)) {
+                    console.warn(`${name} — Sleepymap "${mapname}" — "${mapnode}" is an unplaced mapnode, this key will be non-functional!`);
+                }
+                key2target[key] = mapnode;
+            }
+        }
+
+        // create listener
+        $(document).on(`keydown.${namespace}`, function(ev) {
+            // if controller removed, delete listener
+            if (! $.contains(document.body, $controller[0])) {
+                $(document).off(`keydown.${namespace}`);
+                return;
+            }
+
+            const target = key2target[ev.key];
+            // frozen, do nothing
+            if (frozen) return;
+            // no match, do nothing
+            else if (target === undefined) return;
+            
+            // fire mapmove
+            if (grid_travel) {
+                begin_mapmove({
+                    mapname,
+                    target_x: target.x,
+                    target_y: target.y,
+                });
+            }
+            else {
+                begin_mapmove({
+                    mapname,
+                    target,
+                });
+            }
+        });
+    }
+
 
 // half modified old keydown attach function
 // helper function to attach keydown

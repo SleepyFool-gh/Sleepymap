@@ -149,7 +149,7 @@ Sleepymap Macro Library, Demo
     from_y      5
     to_x        8
     to_y        4
-    direction   'N'
+    direction   'S'
 >>
 /* master bedroom is unescapable */
 <<disconnect_map
@@ -173,7 +173,11 @@ Sleepymap Macro Library, Demo
         display:flex;
         flex-direction:column;
     }
+    #roses {
+        margin-top: 0.5rem;
+    }
 </style>
+<div>This map autoupdates.</div>
 <<place_mapview
     mapname     _mapname
     background  '<img src="./assets/small_house.png">'
@@ -191,9 +195,7 @@ Sleepymap Macro Library, Demo
         <h3>Navigation</h3>
         [[Return to travel mode selection -> Start]]
         <<link 'Navigate in place' _mapname>><</link>>
-        <<link 'Back'>>
-            <<run Engine.backward()>>
-        <</link>>
+        <div>Use sidebar to navigate backwards or forwards.</div>
         <h3>Map Controls</h3>
         <<link 'Go upstairs'>>
             <<mapmove mapname _mapname target_x 14  target_y 5>>
@@ -209,14 +211,14 @@ Sleepymap Macro Library, Demo
             <<update_interface selector '.macro-Sleepymap-mapview'>>
         <</link>>
     </div>
-    <div>
-        <div>This rose automatically updates.</div>
+    <div id='roses'>
+        <div>This rose autoupdates.</div>
         <<place_rose
             mapname     _mapname
             background  '<img src="./assets/rose.png">'
             autoupdate  true
         >>
-        <div>This rose doesn't auto-update.</div>
+        <div>This rose doesn't autoupdate.</div>
         <<place_rose
             mapname     _mapname
             background  '<img src="./assets/rose.png">'
@@ -225,13 +227,14 @@ Sleepymap Macro Library, Demo
     </div>
 </div>
 <<set _keys = {
-    N: 'w',
-    E: 'd',
-    S: 's',
-    W: 'a',
+    w: { dir: 'N' },
+    d: { dir: 'E' },
+    s: { dir: 'S' },
+    a: { dir: 'W' },
+    f: { dir: 'N', mapnode: 'S' },
 }>>
 <<place_controller
     mapname     _mapname
     adjacent    true
-    keydown     _keys
+    keys        _keys
 >>
