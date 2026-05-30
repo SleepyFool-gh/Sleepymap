@@ -1,6 +1,6 @@
 .macro-Sleepymap-rose {
-    width: 30rem;
-    height: 20rem;
+    width: 100%;
+    aspect-ratio: 3 / 1;
     display: inline-grid;
     grid-template-columns: repeat(3, 1fr);
     grid-template-rows: repeat(3, 1fr);
@@ -23,7 +23,8 @@
         align-items: center;
         justify-content: center;
         flex-direction: column;
-        min-height: 3em;
+        min-height: 3rem;
+        padding: 1rem;
     }
         .macro-Sleepymap-dir[data-dir='C'] {
             font-weight: bold;
@@ -31,13 +32,14 @@
             grid-row: 2;
         }
 .macro-Sleepymap-mapview {
-    width: 64rem;
-    height: 36rem;
+    width: 100%;
+    aspect-ratio: 16 / 9;
     display: inline-grid;
     grid-template-columns: repeat(var(--columns), 1fr);
     position: relative;
 }
     .macro-Sleepymap-tile {
+        --border-width: 0.17rem;
         height: 100%;
         width: 100%;
         display: grid;
@@ -58,7 +60,6 @@
         backdrop-filter: contrast(1.4) brightness(1.4);
     }
     .macro-Sleepymap-mapview[data-maptype='grid'] .macro-Sleepymap-tile[data-current-position='true'] {
-        --border-width: 0.17rem;
         outline: var(--border-width) dashed black;
         outline-offset: calc(-1 * var(--border-width));
     }

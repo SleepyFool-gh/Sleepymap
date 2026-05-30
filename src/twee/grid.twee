@@ -88,7 +88,7 @@ Sleepymap Macro Library, Demo
         entityname  'kitty'
         x           7
         y           5
-        tile        '🐱'
+        tile        '<div id="kitty">🐱</div>'
     >>
 <</for>>
 
@@ -221,6 +221,23 @@ Sleepymap Macro Library, Demo
     }
     #passages {
         margin-left: 0 !important;
+    }
+    #kitty {
+        font-size: 1rem;
+    }
+    @media (max-width: 768px) {
+        #grid {
+            grid-template-columns: 1fr;
+        }
+        #controls {
+            grid-row: 2;
+        }
+        #kitty {
+            font-size: 0.7rem;
+        }
+        .macro-Sleepymap-tile { 
+            --border-width: 0.1rem;
+        }
     }
 </style>
 <div id='grid'>

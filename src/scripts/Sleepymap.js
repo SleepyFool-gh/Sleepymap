@@ -33,14 +33,14 @@ const options = {
     wall_id                     : '.',
     // shows on mapview & rose in grid_travel mode
     labels: {
-        N                       : "🡱",
-        E                       : "🡲",
-        S                       : "🡳",
-        W                       : "🡰",
-        NE                      : "🡵",
-        SE                      : "🡶",
-        SW                      : "🡷",
-        NW                      : "🡴",
+        N       : '\u2191',
+        E       : '\u2192',
+        S       : '\u2193',
+        W       : '\u2190',
+        NE      : '\u2197',
+        SE      : '\u2198',
+        SW      : '\u2199',
+        NW      : '\u2196',
     },
 
     // EDIT THESE AT YOUR OWN RISK
@@ -57,8 +57,8 @@ const options = {
         SW      : /(?<![a-zA-Z0-9])\\(?=[^\s]*[a-zA-Z0-9])/,    // match \ character on <-- left side
         NW      : /(?<![a-zA-Z0-9])\/(?=[^\s]*[a-zA-Z0-9])/,    // match / character on <-- left side
         replace : /[\/\\|_"]/g,                                 // remove " | _ \ / characters to get node id
-    }
-}
+    },
+};
 setup['@Sleepymap/options'] = options;
 
 // maps container

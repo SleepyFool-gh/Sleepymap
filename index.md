@@ -90,22 +90,20 @@ title: Sleepy Macros — Sleepymap library
     2. **`grid travel`:** Grid movement like **Zelda** or **Final Fantasy Tactics**. Adjacent grid spaces with the same id will inherit the same properties, but will need to be traversed through one grid space at a time. Each grid space is connected by `exits` to adjacent grid spaces it can reach. (set by `grid_travel = true`)
 **Note:** `mapmove` *DOES NOT* trigger passage navigation. Authors **must** navigate to save map changes to `State`.
 
-[Check out the demo here](./demo/index.html)
-[Get the map library here](https://github.com/SleepyFool-gh/areamap)
+<div><a href='./demo/index.html'>Check out the demo here</a></div>
+<div><a href='https://github.com/SleepyFool-gh/areamap'>Get the map library here</a></div>
 
-<h3>Node Travel</h3>
-<video width="635" height="558" controls>
+### Videos
+<video width="640" height="480" controls>
   <source src="./demo/node_house.mp4" type="video/mp4">
   Your browser does not support the video tag.
 </video>
-
-<h3>Grid Travel</h3>
-<video width="640" height="486" controls>
+<video width="640" height="480" controls>
   <source src="./demo/grid_house.mp4" type="video/mp4">
   Your browser does not support the video tag.
 </video>
 
-#### Features:
+### Features:
 
 - **Built-in `interfaces`:**
     - compass rose showing exits in each direction as links (`rose`)

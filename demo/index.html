@@ -105,8 +105,8 @@ var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZa
 		<div id="init-loading"><div>Loading&hellip;</div></div>
 	</div>
 	<!-- UUID://B61B7BF9-BD48-4140-8DFC-9AF87D83CDF0// --><tw-storydata name="Sleepymap Macro Library, Demo" startnode="2" creator="Tweego" creator-version="2.1.1+81d1d71" ifid="B61B7BF9-BD48-4140-8DFC-9AF87D83CDF0" zoom="1" format="SugarCube" format-version="2.37.3" options="" hidden><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css">.macro-Sleepymap-rose {
-    width: 30rem;
-    height: 20rem;
+    width: 100%;
+    aspect-ratio: 3 / 1;
     display: inline-grid;
     grid-template-columns: repeat(3, 1fr);
     grid-template-rows: repeat(3, 1fr);
@@ -129,7 +129,8 @@ var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZa
         align-items: center;
         justify-content: center;
         flex-direction: column;
-        min-height: 3em;
+        min-height: 3rem;
+        padding: 1rem;
     }
         .macro-Sleepymap-dir[data-dir='C'] {
             font-weight: bold;
@@ -137,13 +138,14 @@ var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZa
             grid-row: 2;
         }
 .macro-Sleepymap-mapview {
-    width: 64rem;
-    height: 36rem;
+    width: 100%;
+    aspect-ratio: 16 / 9;
     display: inline-grid;
     grid-template-columns: repeat(var(--columns), 1fr);
     position: relative;
 }
     .macro-Sleepymap-tile {
+        --border-width: 0.17rem;
         height: 100%;
         width: 100%;
         display: grid;
@@ -164,7 +166,6 @@ var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZa
         backdrop-filter: contrast(1.4) brightness(1.4);
     }
     .macro-Sleepymap-mapview[data-maptype='grid'] .macro-Sleepymap-tile[data-current-position='true'] {
-        --border-width: 0.17rem;
         outline: var(--border-width) dashed black;
         outline-offset: calc(-1 * var(--border-width));
     }
@@ -439,14 +440,14 @@ const options = {
     wall_id                     : '.',
     // shows on mapview & rose in grid_travel mode
     labels: {
-        N                       : "🡱",
-        E                       : "🡲",
-        S                       : "🡳",
-        W                       : "🡰",
-        NE                      : "🡵",
-        SE                      : "🡶",
-        SW                      : "🡷",
-        NW                      : "🡴",
+        N       : '\u2191',
+        E       : '\u2192',
+        S       : '\u2193',
+        W       : '\u2190',
+        NE      : '\u2197',
+        SE      : '\u2198',
+        SW      : '\u2199',
+        NW      : '\u2196',
     },
 
     // EDIT THESE AT YOUR OWN RISK
@@ -463,8 +464,8 @@ const options = {
         SW      : /(?<![a-zA-Z0-9])\\(?=[^\s]*[a-zA-Z0-9])/,    // match \ character on <-- left side
         NW      : /(?<![a-zA-Z0-9])\/(?=[^\s]*[a-zA-Z0-9])/,    // match / character on <-- left side
         replace : /[\/\\|_"]/g,                                 // remove " | _ \ / characters to get node id
-    }
-}
+    },
+};
 setup['@Sleepymap/options'] = options;
 
 // maps container
@@ -3115,7 +3116,7 @@ window.Sleepymap = Sleepymap;
         entityname  &#39;kitty&#39;
         x           7
         y           5
-        tile        &#39;🐱&#39;
+        tile        &#39;&lt;div id=&quot;kitty&quot;&gt;🐱&lt;/div&gt;&#39;
     &gt;&gt;
 &lt;&lt;/for&gt;&gt;</tw-passagedata><tw-passagedata pid="2" name="Start" tags="nobr" position="225,100" size="100,100">&lt;style&gt;
     code {
@@ -3230,6 +3231,23 @@ window.Sleepymap = Sleepymap;
     }
     #passages {
         margin-left: 0 !important;
+    }
+    #kitty {
+        font-size: 1rem;
+    }
+    @media (max-width: 768px) {
+        #grid {
+            grid-template-columns: 1fr;
+        }
+        #controls {
+            grid-row: 2;
+        }
+        #kitty {
+            font-size: 0.7rem;
+        }
+        .macro-Sleepymap-tile { 
+            --border-width: 0.1rem;
+        }
     }
 &lt;/style&gt;
 &lt;div id=&#39;grid&#39;&gt;
