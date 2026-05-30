@@ -79,7 +79,7 @@ Sleepymap Macro Library, Demo
             <<set $hunger++>>
         /* tell <<redo>> to run any time mapmove succeeds */
         <<onmapend>>
-            <<redo 'controller'>>
+            <<redo 'controller stats'>>
     <</set_mapscripts>>
 
     /* place a kitty in dining room */
@@ -256,7 +256,7 @@ Sleepymap Macro Library, Demo
 <div id='grid'>
     <div id='controls'>
         <h3>Map Info</h3>
-        <<do>>
+        <<do tag 'stats'>>
             <div>Energy: $energy</div>
             <div>Heat: $heat</div>
             <div>Hunger: $hunger</div>

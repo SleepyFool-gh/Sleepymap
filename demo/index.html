@@ -1393,7 +1393,6 @@ function create_rose(argObj) {
     const autoupdate = argObj.autoupdate ?? options.default.autoupdate_rose;    // default value
     const clickable = argObj.clickable ?? options.default.clickable_rose;       // default value
     const this_map = maps[mapname];
-    console.log(autoupdate);
 
     // ERROR: no map found
     if (this_map === undefined) {
@@ -3106,7 +3105,7 @@ window.Sleepymap = Sleepymap;
             &lt;&lt;set $hunger++&gt;&gt;
         /* tell &lt;&lt;redo&gt;&gt; to run any time mapmove succeeds */
         &lt;&lt;onmapend&gt;&gt;
-            &lt;&lt;redo &#39;controller&#39;&gt;&gt;
+            &lt;&lt;redo &#39;controller stats&#39;&gt;&gt;
     &lt;&lt;/set_mapscripts&gt;&gt;
 
     /* place a kitty in dining room */
@@ -3265,7 +3264,7 @@ window.Sleepymap = Sleepymap;
 &lt;div id=&#39;grid&#39;&gt;
     &lt;div id=&#39;controls&#39;&gt;
         &lt;h3&gt;Map Info&lt;/h3&gt;
-        &lt;&lt;do&gt;&gt;
+        &lt;&lt;do tag &#39;stats&#39;&gt;&gt;
             &lt;div&gt;Energy: $energy&lt;/div&gt;
             &lt;div&gt;Heat: $heat&lt;/div&gt;
             &lt;div&gt;Hunger: $hunger&lt;/div&gt;
