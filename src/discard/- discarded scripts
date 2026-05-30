@@ -1,3 +1,40 @@
+// unused documentation tips
+
+
+// <!--
+//  █████ ███ ████   ████
+//    █    █  █   █ █
+//    █    █  ████   ███
+//    █    █  █         █
+//    █   ███ █     ████
+//  SECTION: tips
+// -->
+// <h2 id='tips'>Usage Tips & Styling</h2>
+
+// - The algorithm that checks `exits` out of each `maparea` *will not* remove duplicates say if `maparea-A` has two `exits` to `maparea-B` in two different directions. This is especially important when using the `diagonals` option. Authors will need to shape their navigation map accordingly.
+// - Changing `disabled` or `frozen` values to `true` *will not* prevent a `mapmove` — it only disables the link generated in `roses` and `mapviews`.
+// - Changing `blocked` values to `true` inside an `areascript` *will* prevent a `mapmove` **only** if done inside `onmapattempt`.
+// - `<<areamapmove>>` and `Areamap.begin_mapmove` don't check against valid `exits` — this is useful for moving the player to areas normally inaccessible to their current location or to disconnected parts of the map (eg. if an author chooses to implement stairs manually).
+// - Clickable links have the `.macro-areamap-link` class.
+// - `hidden` `mapareas` still generate tiles and links, but with `visibility: hidden`.
+// - `mapview` tiles have the `data-traversable` HTML attribute that indicates whether it is traversable, or the current position
+//     - `true`: available for `mapmove` via clicking on the `mapview`
+//     - `false`: not available for `mapmove`
+//     - `current`: current map position
+// - `mapview` tiles have the `data-type` HTML attribute that indicates their type
+//     - `wall`: wall tile
+//     - `floor`: floor tile
+// - Each grid cell on `roses` has the `data-dir` HTML attribute which indicates its direction
+//     - `N`, `E`, `S`, `W`: cardinal directions
+//     - `NE`, `NW`, `SW`, `SE`: ordinal directions
+//     - `C`: center
+// - Several HTML string arguments accept TwineScript instead of raw HTML — but authors use this feature at their own discretion. These include:
+//     - `background` argument in `<<place_arearose>>` and `Areamap.create_rose`
+//     - `background` argument in `<<place_areamapview>>` and `Areamap.create_mapview`
+//     - `tile` argument in `<<place_areamapview>>` and `Areamap.create_mapview`
+// - If an author chooses to intercept the `areamap:mapmove_began` event, `mapmove` will not resolve unless they allow the event to propagate to `document` or fire another `areamap:mapmove_began` event.
+
+
 // passed controller
 
         

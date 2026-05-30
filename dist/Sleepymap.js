@@ -8,39 +8,45 @@
 // SECTION: options & other global constants
 
 const options = {
-    // various config settings which can all also be set when calling the macro / JS function
+
+    // default values that can be changed when used
     default: {
-        wall_id                  : '.',
-        diagonals                : false,
+        diagonals               : false,
+
+        autoupdate_rose         : true,
+        clickable_rose          : true,
+
+        autoupdate_mapview      : true,
+        clickable_mapview       : true,
+        show_labels_on_mapview  : true,
+
+        pathing_on_mapview      : true,
+        quickmove_on_mapview    : true,
+        pathmove_delay          : 250,
         
-        disabled_stops_pathing   : true,
-        hidden_stops_pathing     : true,
-        blocked_stops_pathing    : false,
-
-        autoupdate_rose          : true,
-        clickable_rose           : true,
-
-        autoupdate_mapview       : true,
-        clickable_mapview        : true,
-        show_labels_on_mapview   : true,
-        pathing_on_mapview       : true,
-        quickmove_on_mapview     : true,
-        pathmove_delay           : 250,
+        disabled_stops_pathing  : true,
+        hidden_stops_pathing    : true,
+        blocked_stops_pathing   : false,
     },
+
+    // default wall id
+    wall_id                     : '.',
     // shows on mapview & rose in grid_travel mode
     labels: {
-        N   : "🡱",
-        E   : "🡲",
-        S   : "🡳",
-        W   : "🡰",
-        NE  : "🡵",
-        SE  : "🡶",
-        SW  : "🡷",
-        NW  : "🡴",
+        N                       : "🡱",
+        E                       : "🡲",
+        S                       : "🡳",
+        W                       : "🡰",
+        NE                      : "🡵",
+        SE                      : "🡶",
+        SW                      : "🡷",
+        NW                      : "🡴",
     },
+
+    // EDIT THESE AT YOUR OWN RISK
     // State variable which holds the map data
     map_storage_story_variable  : '$@Sleepymap/maps',
-    // regex magic for detecting barriers / thin walls. MANIPULTE AT YOUR OWN RISK.
+    // regex magic for detecting barriers / thin walls. 
     barriers: {
         N       : /"/,                                          // match " character somewhere
         E       : /(?<=[a-zA-Z0-9][^\s]*)\|(?![a-zA-Z0-9])/,    // match | character on right side -->
@@ -317,7 +323,7 @@ function new_map(argObj) {
             walled      : argObj.mapnodes?.[id]?.walled     ?? false,       // becomes wall
         };
     });
-    mapnodes[options.default.wall_id].walled = true;
+    mapnodes[options.wall_id].walled = true;
 
 
 //     ████   ████   ████ ███ █████ ███  ████  █    █
@@ -586,7 +592,8 @@ function set_mapstate(argObj) {
 }
 function get_mapstate(argObj) {
     const name = argObj.name ?? 'Sleepymap.get_mapstate';
-    const { mapname, mapstate } = argObj;
+    const { mapname } = argObj;
+    const mapstate = argObj.mapstate ?? 'position'; // default value, assumed
 
     const this_map = maps[mapname];
 
@@ -751,7 +758,6 @@ function update_exits(argObj) {
             const dir       = exit.dir;
             // remove from all exits if no dir specified
             if (exit.removing && dir === undefined) {
-                console.log("AAAA");
                 for (const dir of Object.keys(exits.grid[from_i])) {
                     exits.grid[from_i][dir]?.delete(to_i);
                     // clean up empty sets
@@ -1925,6 +1931,8 @@ function set_mapscripts(argObj) {
 
     // error checking & object shaping
     for (const script of scripts) {
+        // safety, in case no triggers set
+        script.triggers ??= {};
         // VALIDATE: types
         ArgObj.validate(name, ONMAP_TRIGGERS_TEMPLATE, script.triggers);
         
@@ -2347,7 +2355,14 @@ function find_path(argObj) {
         throw new Error(`${name} — Sleepymap "${mapname}" — insufficient inputs, need both from_i/to_i or, all of from_x/from_y/to_x/to_y!`);
     }
  
-    const { exits, maparray, columns, mapnodes } = this_map;
+    const { grid_travel, exits, maparray, columns, mapnodes } = this_map;
+    
+    // WARNING: unsupported on node travel map
+    if (! grid_travel) {
+        console.warn(`${name} — Sleepymap "${mapname}" — find path isn't supported on a node travel map!`);
+        return null
+    }
+
     const start_i   = from_i ?? xy2i({ xy: { x: from_x, y: from_y }, columns });
     const end_i     = to_i   ?? xy2i({ xy: { x: to_x, y: to_y }, columns });
  
@@ -2589,10 +2604,10 @@ const Sleepymap = {
 
     edit_exits,
 
-    get_mapstate,
-    set_mapstate,
     get_mapnode,
     set_mapnode,
+    get_mapstate,
+    set_mapstate,
 
     set_entity,
     set_mapscripts,

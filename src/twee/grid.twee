@@ -76,13 +76,13 @@ Sleepymap Macro Library, Demo
             <<run console.log('Ding!')>>
         /* increase hunger when entering the kitchen or pantry */
         <<onmapend from 'D' to `['K', 'P']`>>
-            <<set $hunger++>>   
+            <<set $hunger++>>
+        /* tell <<redo>> to run any time mapmove succeeds */
         <<onmapend>>
-            <<run console.log('moved!')>>
             <<redo>>
     <</set_mapscripts>>
 
-    /* place kitty in node house */
+    /* place a kitty in dining room */
     <<new_entity 
         mapname     _mapname
         entityname  'kitty'
@@ -117,6 +117,12 @@ Sleepymap Macro Library, Demo
     <p>
         <b>Note:</b> <code>mapmove</code> <i><b>DOES NOT</b></i> trigger passage navigation. Authors <b>must</b> navigate to save map changes to <code>State</code>.
     </p>
+    <div>
+        <a href='https://sleepyfool-gh.github.io/Sleepymap/'>Read the documentation here</a>
+    </div>
+    <div>
+        <a href='https://github.com/SleepyFool-gh/areamap'>Get the map library here</a>
+    </div>
 </div>
 <ul>
     <li>[[View the node travel demo -> node_house]]</li>
@@ -209,6 +215,12 @@ Sleepymap Macro Library, Demo
     }
     #roses {
         margin-top: 0.5rem;
+    }
+    #story {
+        margin-top: 0 !important;
+    }
+    #passages {
+        margin-left: 0 !important;
     }
 </style>
 <div id='grid'>
