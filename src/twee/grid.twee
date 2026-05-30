@@ -79,7 +79,7 @@ Sleepymap Macro Library, Demo
             <<set $hunger++>>
         /* tell <<redo>> to run any time mapmove succeeds */
         <<onmapend>>
-            <<redo>>
+            <<redo 'controller'>>
     <</set_mapscripts>>
 
     /* place a kitty in dining room */
@@ -131,13 +131,13 @@ Sleepymap Macro Library, Demo
 
 
 :: node_house [nobr]
-<<set _mapname = 'node_house'>>
-<h2>Node Travel map</h2>
-<div>This map autoupdates.</div>
-<<place_mapview
-    mapname     _mapname
-    background  '<img src="./assets/small_house.png">'
+<<set 
+    _mapname = 'node_house';
+    _quickmove = false;
+    _rose_autoupdate = true;
+    _mapview_autoupdate = true;
 >>
+<h2>Node Travel map</h2>
 <<include 'content'>>
 
 /* master bedroom can be entered but not left */
@@ -172,15 +172,13 @@ Sleepymap Macro Library, Demo
 
 
 :: grid_house [nobr]
-<<set _mapname = 'grid_house'>>
-<h2>Grid Travel map</h2>
-<div>This map autoupdates.</div>
-<<place_mapview
-    mapname     _mapname
-    background  '<img src="./assets/small_house.png">'
-    clickable   true 
-    quickmove   true
+<<set 
+    _mapname = 'grid_house';
+    _quickmove = true;
+    _rose_autoupdate = true;
+    _mapview_autoupdate = true;
 >>
+<h2>Grid Travel map</h2>
 <<include 'content'>>
 
 /* connect stairs */
@@ -206,12 +204,15 @@ Sleepymap Macro Library, Demo
 <style>
     #grid {
         display: grid;
-        grid-template-columns: auto auto;
+        grid-template-columns: 1fr minmax(0, 60%);
         gap: 1rem;
     }
     #controls {
+        --indent: 0.5rem;
         display:flex;
         flex-direction:column;
+        text-indent: calc(-1 * var(--indent));
+        margin-left: var(--indent);
     }
     #roses {
         margin-top: 0.5rem;
@@ -240,6 +241,18 @@ Sleepymap Macro Library, Demo
         }
     }
 </style>
+<<do tag 'mapview'>>
+    <<if _mapview_autoupdate>>
+        <div>This map autoupdates.</div>
+    <<else>>
+        <div>This map doesn't autoupdate.</div>
+    <</if>>
+    <<place_mapview
+        mapname     _mapname
+        background  '<img src="./assets/small_house.png">'
+        autoupdate  _mapview_autoupdate
+    >>
+<</do>>
 <div id='grid'>
     <div id='controls'>
         <h3>Map Info</h3>
@@ -262,6 +275,20 @@ Sleepymap Macro Library, Demo
         <<link 'Go to guest bedroom'>>
             <<mapmove mapname _mapname target_mapnode 'G'>>
         <</link>>
+        <<do tag 'mapview'>>
+            <<set _text = _mapview_autoupdate ? "Disable mapview autoupdate" : "Enable mapview autoupdate">>
+            <<link _text>>
+                <<set _mapview_autoupdate = ! _mapview_autoupdate>>
+                <<redo 'mapview'>>
+            <</link>>
+        <</do>>
+        <<do tag 'rose'>>
+            <<set _text = _rose_autoupdate ? "Disable rose autoupdate" : "Enable rose autoupdate">>
+            <<link _text>>
+                <<set _rose_autoupdate = ! _rose_autoupdate>>
+                <<redo 'rose'>>
+            <</link>>
+        <</do>>
         <<link 'Update interfaces'>>
             <<update_interface selector '.macro-Sleepymap-rose'>>
             <<update_interface selector '.macro-Sleepymap-mapview'>>
@@ -270,20 +297,20 @@ Sleepymap Macro Library, Demo
         <div>E to teleport to Outhouse</div>
         <div>R to teleport to Dining Room, only from Outhouse</div>
     </div>
-    <div id='roses'>
-        <div>This rose autoupdates.</div>
-        <<place_rose
-            mapname     _mapname
-            background  '<img src="./assets/rose.png">'
-            autoupdate  true
-        >>
-        <div>This rose isn't clickable and doesn't autoupdate.</div>
-        <<place_rose
-            mapname     _mapname
-            background  '<img src="./assets/rose.png">'
-            autoupdate  false
-            clickable   false
-        >>
+    <div id='rose'>
+        <<do tag 'rose'>>
+            <<run console.log('rose redone!')>>
+            <<if _rose_autoupdate>>
+                <div>This rose autoupdates.</div>
+            <<else>>
+                <div>This rose doesn't autoupdate.</div>
+            <</if>>
+            <<place_rose
+                mapname     _mapname
+                background  '<img src="./assets/rose.png">'
+                autoupdate  _rose_autoupdate
+            >>
+        <</do>>
     </div>
 </div>
 <<set _keys1 = {
@@ -297,7 +324,7 @@ Sleepymap Macro Library, Demo
     mapname     _mapname
     keys        _keys1  
 >>
-<<do>>
+<<do tag 'controller'>>
     <<run
         _pos = Sleepymap.get_mapstate({ mapname: _mapname, mapstate: 'position' });
         _enabled = _pos.mapnode === 'O';

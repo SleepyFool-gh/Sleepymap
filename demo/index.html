@@ -106,7 +106,7 @@ var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZa
 	</div>
 	<!-- UUID://B61B7BF9-BD48-4140-8DFC-9AF87D83CDF0// --><tw-storydata name="Sleepymap Macro Library, Demo" startnode="2" creator="Tweego" creator-version="2.1.1+81d1d71" ifid="B61B7BF9-BD48-4140-8DFC-9AF87D83CDF0" zoom="1" format="SugarCube" format-version="2.37.3" options="" hidden><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css">.macro-Sleepymap-rose {
     width: 100%;
-    aspect-ratio: 3 / 1;
+    aspect-ratio: 3 / 2;
     display: inline-grid;
     grid-template-columns: repeat(3, 1fr);
     grid-template-rows: repeat(3, 1fr);
@@ -1393,6 +1393,7 @@ function create_rose(argObj) {
     const autoupdate = argObj.autoupdate ?? options.default.autoupdate_rose;    // default value
     const clickable = argObj.clickable ?? options.default.clickable_rose;       // default value
     const this_map = maps[mapname];
+    console.log(autoupdate);
 
     // ERROR: no map found
     if (this_map === undefined) {
@@ -1688,10 +1689,6 @@ function create_mapview(argObj) {
         const label     = (! show_labels) || (! grid_travel) || (! is_traversable(i))
                             ? ''
                             : `<span class='macro-Sleepymap-label'>${options.labels[dir]}</span>`;
-                        // // use labels if same room or if room name is non-extant
-                        // : (dir !== undefined) && ((position.mapnode === mapnode.id) || (mapnode.name === undefined))
-                        //     ? `<span class='macro-Sleepymap-label'>${options.labels[dir]}</span>`
-                        // : `<span class='macro-Sleepymap-label'>${mapnode.name}</span>`;
         const $tile = $(document.createElement(link ? 'a' : 'div'))
             .addClass('macro-Sleepymap-tile')
             .addClass(link ? 'macro-Sleepymap-link' : '')
@@ -1799,6 +1796,7 @@ $(document).on('Sleepymap:mapmove_resolved Sleepymap:map_edited', function(ev, d
     for (const interface_type of Object.keys(interfaces)) {
         // fetch the ones that autoupdate
         const $interfaces = $(`.macro-Sleepymap-${interface_type}[data-autoupdate="true"]`);
+        console.log($interfaces);
         // replace with itself
         $interfaces.each( function() {
             const $interface = $(this);
@@ -3109,7 +3107,7 @@ window.Sleepymap = Sleepymap;
             &lt;&lt;set $hunger++&gt;&gt;
         /* tell &lt;&lt;redo&gt;&gt; to run any time mapmove succeeds */
         &lt;&lt;onmapend&gt;&gt;
-            &lt;&lt;redo&gt;&gt;
+            &lt;&lt;redo &#39;controller&#39;&gt;&gt;
     &lt;&lt;/set_mapscripts&gt;&gt;
 
     /* place a kitty in dining room */
@@ -3151,13 +3149,13 @@ window.Sleepymap = Sleepymap;
 &lt;ul&gt;
     &lt;li&gt;[[View the node travel demo -&gt; node_house]]&lt;/li&gt;
     &lt;li&gt;[[View the grid travel demo -&gt; grid_house]]&lt;/li&gt;
-&lt;/ul&gt;</tw-passagedata><tw-passagedata pid="3" name="node_house" tags="nobr" position="350,100" size="100,100">&lt;&lt;set _mapname = &#39;node_house&#39;&gt;&gt;
-&lt;h2&gt;Node Travel map&lt;/h2&gt;
-&lt;div&gt;This map autoupdates.&lt;/div&gt;
-&lt;&lt;place_mapview
-    mapname     _mapname
-    background  &#39;&lt;img src=&quot;./assets/small_house.png&quot;&gt;&#39;
+&lt;/ul&gt;</tw-passagedata><tw-passagedata pid="3" name="node_house" tags="nobr" position="350,100" size="100,100">&lt;&lt;set 
+    _mapname = &#39;node_house&#39;;
+    _quickmove = false;
+    _rose_autoupdate = true;
+    _mapview_autoupdate = true;
 &gt;&gt;
+&lt;h2&gt;Node Travel map&lt;/h2&gt;
 &lt;&lt;include &#39;content&#39;&gt;&gt;
 
 /* master bedroom can be entered but not left */
@@ -3188,15 +3186,13 @@ window.Sleepymap = Sleepymap;
     from        &#39;S&#39;
     to          &#39;D&#39;
     direction   &#39;W&#39;
-&gt;&gt;</tw-passagedata><tw-passagedata pid="4" name="grid_house" tags="nobr" position="475,100" size="100,100">&lt;&lt;set _mapname = &#39;grid_house&#39;&gt;&gt;
-&lt;h2&gt;Grid Travel map&lt;/h2&gt;
-&lt;div&gt;This map autoupdates.&lt;/div&gt;
-&lt;&lt;place_mapview
-    mapname     _mapname
-    background  &#39;&lt;img src=&quot;./assets/small_house.png&quot;&gt;&#39;
-    clickable   true 
-    quickmove   true
+&gt;&gt;</tw-passagedata><tw-passagedata pid="4" name="grid_house" tags="nobr" position="475,100" size="100,100">&lt;&lt;set 
+    _mapname = &#39;grid_house&#39;;
+    _quickmove = true;
+    _rose_autoupdate = true;
+    _mapview_autoupdate = true;
 &gt;&gt;
+&lt;h2&gt;Grid Travel map&lt;/h2&gt;
 &lt;&lt;include &#39;content&#39;&gt;&gt;
 
 /* connect stairs */
@@ -3218,12 +3214,15 @@ window.Sleepymap = Sleepymap;
 &gt;&gt;</tw-passagedata><tw-passagedata pid="5" name="content" tags="nobr" position="600,100" size="100,100">&lt;style&gt;
     #grid {
         display: grid;
-        grid-template-columns: auto auto;
+        grid-template-columns: 1fr minmax(0, 60%);
         gap: 1rem;
     }
     #controls {
+        --indent: 0.5rem;
         display:flex;
         flex-direction:column;
+        text-indent: calc(-1 * var(--indent));
+        margin-left: var(--indent);
     }
     #roses {
         margin-top: 0.5rem;
@@ -3252,6 +3251,18 @@ window.Sleepymap = Sleepymap;
         }
     }
 &lt;/style&gt;
+&lt;&lt;do tag &#39;mapview&#39;&gt;&gt;
+    &lt;&lt;if _mapview_autoupdate&gt;&gt;
+        &lt;div&gt;This map autoupdates.&lt;/div&gt;
+    &lt;&lt;else&gt;&gt;
+        &lt;div&gt;This map doesn&#39;t autoupdate.&lt;/div&gt;
+    &lt;&lt;/if&gt;&gt;
+    &lt;&lt;place_mapview
+        mapname     _mapname
+        background  &#39;&lt;img src=&quot;./assets/small_house.png&quot;&gt;&#39;
+        autoupdate  _mapview_autoupdate
+    &gt;&gt;
+&lt;&lt;/do&gt;&gt;
 &lt;div id=&#39;grid&#39;&gt;
     &lt;div id=&#39;controls&#39;&gt;
         &lt;h3&gt;Map Info&lt;/h3&gt;
@@ -3274,6 +3285,20 @@ window.Sleepymap = Sleepymap;
         &lt;&lt;link &#39;Go to guest bedroom&#39;&gt;&gt;
             &lt;&lt;mapmove mapname _mapname target_mapnode &#39;G&#39;&gt;&gt;
         &lt;&lt;/link&gt;&gt;
+        &lt;&lt;do tag &#39;mapview&#39;&gt;&gt;
+            &lt;&lt;set _text = _mapview_autoupdate ? &quot;Disable mapview autoupdate&quot; : &quot;Enable mapview autoupdate&quot;&gt;&gt;
+            &lt;&lt;link _text&gt;&gt;
+                &lt;&lt;set _mapview_autoupdate = ! _mapview_autoupdate&gt;&gt;
+                &lt;&lt;redo &#39;mapview&#39;&gt;&gt;
+            &lt;&lt;/link&gt;&gt;
+        &lt;&lt;/do&gt;&gt;
+        &lt;&lt;do tag &#39;rose&#39;&gt;&gt;
+            &lt;&lt;set _text = _rose_autoupdate ? &quot;Disable rose autoupdate&quot; : &quot;Enable rose autoupdate&quot;&gt;&gt;
+            &lt;&lt;link _text&gt;&gt;
+                &lt;&lt;set _rose_autoupdate = ! _rose_autoupdate&gt;&gt;
+                &lt;&lt;redo &#39;rose&#39;&gt;&gt;
+            &lt;&lt;/link&gt;&gt;
+        &lt;&lt;/do&gt;&gt;
         &lt;&lt;link &#39;Update interfaces&#39;&gt;&gt;
             &lt;&lt;update_interface selector &#39;.macro-Sleepymap-rose&#39;&gt;&gt;
             &lt;&lt;update_interface selector &#39;.macro-Sleepymap-mapview&#39;&gt;&gt;
@@ -3282,20 +3307,20 @@ window.Sleepymap = Sleepymap;
         &lt;div&gt;E to teleport to Outhouse&lt;/div&gt;
         &lt;div&gt;R to teleport to Dining Room, only from Outhouse&lt;/div&gt;
     &lt;/div&gt;
-    &lt;div id=&#39;roses&#39;&gt;
-        &lt;div&gt;This rose autoupdates.&lt;/div&gt;
-        &lt;&lt;place_rose
-            mapname     _mapname
-            background  &#39;&lt;img src=&quot;./assets/rose.png&quot;&gt;&#39;
-            autoupdate  true
-        &gt;&gt;
-        &lt;div&gt;This rose isn&#39;t clickable and doesn&#39;t autoupdate.&lt;/div&gt;
-        &lt;&lt;place_rose
-            mapname     _mapname
-            background  &#39;&lt;img src=&quot;./assets/rose.png&quot;&gt;&#39;
-            autoupdate  false
-            clickable   false
-        &gt;&gt;
+    &lt;div id=&#39;rose&#39;&gt;
+        &lt;&lt;do tag &#39;rose&#39;&gt;&gt;
+            &lt;&lt;run console.log(&#39;rose redone!&#39;)&gt;&gt;
+            &lt;&lt;if _rose_autoupdate&gt;&gt;
+                &lt;div&gt;This rose autoupdates.&lt;/div&gt;
+            &lt;&lt;else&gt;&gt;
+                &lt;div&gt;This rose doesn&#39;t autoupdate.&lt;/div&gt;
+            &lt;&lt;/if&gt;&gt;
+            &lt;&lt;place_rose
+                mapname     _mapname
+                background  &#39;&lt;img src=&quot;./assets/rose.png&quot;&gt;&#39;
+                autoupdate  _rose_autoupdate
+            &gt;&gt;
+        &lt;&lt;/do&gt;&gt;
     &lt;/div&gt;
 &lt;/div&gt;
 &lt;&lt;set _keys1 = {
@@ -3309,7 +3334,7 @@ window.Sleepymap = Sleepymap;
     mapname     _mapname
     keys        _keys1  
 &gt;&gt;
-&lt;&lt;do&gt;&gt;
+&lt;&lt;do tag &#39;controller&#39;&gt;&gt;
     &lt;&lt;run
         _pos = Sleepymap.get_mapstate({ mapname: _mapname, mapstate: &#39;position&#39; });
         _enabled = _pos.mapnode === &#39;O&#39;;
