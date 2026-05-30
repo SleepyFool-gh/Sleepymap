@@ -112,10 +112,10 @@ title: Sleepy Macros — Sleepymap library
 - **Linked `story variables`:** Map states are saved in `State` and survive passage navigations and saves/loads.
 - **Manually adjust exits:** While exits are automatically generated from the provided `maparray`, it can be manually tweaked to create more complex navigation patterns.
 - **`mapnode` behavior manipulation:** 
-    - `hidden` — links & maptiles hidden, but navigation still works
-    - `disabled` — links & maptiles disabled, but navigation still works if triggered manually
-    - `blocked` — links & maptiles still available, but movement through it is blocked
-    - `walled` — changes the `mapnode` into a wall that blocks movement
+    - `hidden` — `interface` elements hidden, but navigation still works
+    - `disabled` — `interface` elements disabled, but navigation still works if triggered manually
+    - `blocked` — blocks movement through it but won't stop *attempts*
+    - `walled` — changes the `mapnode` into a wall that prevents any movement attempts
 - **Entity placement:** Entities can be set and moved around the `map` — though interactions must be handled by the author
 - **JavaScript methods:** for manipulating maps, `mapnodes`, `mapstates`, `exits`,`roses`, `mapviews`,  and `entities`. 
 - **Configurable defaults:** for various settings
@@ -143,7 +143,7 @@ Macro arguments *must* be keyed, but can be supplied in any order. Some settings
 
 <h3 id="macro-new_map"><code>&lt;&lt;new_map&gt;&gt;</code></h3>
 
-Defines a new `Sleepymap`. This macro **must** be called in `StoryInit`. It accepts a 2D grid layout via its contents and supports optional child tags for advanced configuration.
+Defines a new `Sleepymap`. It accepts a 2D grid layout via its contents and supports optional child tags for advanced configuration.
 
 - **Arguments:** 
     - `mapname`: (string) name of `map`
@@ -154,12 +154,12 @@ Defines a new `Sleepymap`. This macro **must** be called in `StoryInit`. It acce
     - `columns`: (number) # of columns in the logic representation grid
     - `diagonals`: (boolean) *(optional)* whether diagonal movement is allowed
 - **Contents:** 
-    - 2D space-separated text grid representing map logic, must be rectangular. By default, several wall and border options are available. These can be changed via `options`, but thin borders requires Regex. For a mapnode with id `id`, the defaults are:
+    - 2D space-separated text grid representing map logic, must be rectangular. By default, several wall and border options are available. These can be changed via `options`, but thin borders (`barriers`) requires Regex. For a mapnode with id `id`, the defaults are:
         - thick wall which occupies its own grid cell: `.`
         - thin border to N of grid cell: `"id` or `id"`
         - thin border to E of grid cell: `id|`
         - thin border to S of grid cell: `_id` or `id_`
-        - thin border to W of grid cell: `id\`
+        - thin border to W of grid cell: `|id`
         - thin border to NE of grid cell: `id\`
         - thin border to SE of grid cell: `id/`
         - thin broder to SW of grid cell: `\id`
@@ -513,7 +513,7 @@ Removes an entity from the map.
 
 <h3 id="macro-set_mapscripts"><code>&lt;&lt;set_mapscripts&gt;&gt;</code></h3>
 
-Assigns TwineScript logic to run during the `mapmove` process (`mapscript`). This macro **must** be called in `StoryInit`. Both `node travel` and `grid travel` can use any combination of `from`/`to`/`from_x`/`from_y`/`to_x`/`to_y`.  If multiple arguments are set, *all* must be true for the `mapscript` to fire. The `any` keyword can be used to signal that any value will trigger the `mapscript` (which does the same thing as not setting the argument at all).
+Assigns TwineScript logic to run during the `mapmove` process (`mapscript`). Both `node travel` and `grid travel` can use any combination of `from`/`to`/`from_x`/`from_y`/`to_x`/`to_y`.  If multiple arguments are set, *all* must be true for the `mapscript` to fire. The `any` keyword can be used to signal that any value will trigger the `mapscript` (which does the same thing as not setting the argument at all).
 
 Child tags of the samee type will execute in the order they are defined — but`<<onmapattempt>>` tags will always run first, followed by:
     - `<<onmapstart>>` then `<<onmapend>>` if `mapmove` succeeds

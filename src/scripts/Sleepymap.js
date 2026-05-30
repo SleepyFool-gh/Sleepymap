@@ -158,11 +158,6 @@ Macro.add(['new_map'], {
 
         const name = this.name;
 
-        // ERROR: macro being called outside StoryInit
-        if (turns() !== 0) {
-            throw new Error(`${name} — Sleepymap — macro must be called during StoryInit!`);
-        }
-
         // create argObj from NEW_MAP_TEMPLATE
         const argObj = new ArgObj(name, NEW_MAP_TEMPLATE, this.args);
 
@@ -1881,15 +1876,7 @@ Macro.add(['set_mapscripts'], {
     tags: ['onmapattempt', 'onmapstart', 'onmapend', 'onmapabort', 'onmapresolve'],
 
     handler() {
-
         const name = this.name;
-
-        // TODO: add ILIKETOBREAKTHINGS flag
-        // ERROR: macro being called outside StoryInit
-        if (turns() !== 0) {
-            throw new Error(`${name} — Sleepymap — macro must be called during StoryInit!`);
-        }
-
         const argObj = new ArgObj(name, SET_MAPSCRIPTS_TEMPLATE, this.args);
 
         // parse each payload, push to array, attach to argObj

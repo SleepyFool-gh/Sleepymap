@@ -466,6 +466,8 @@ const options = {
         NW      : /(?<![a-zA-Z0-9])\/(?=[^\s]*[a-zA-Z0-9])/,    // match / character on <-- left side
         replace : /[\/\\|_"]/g,                                 // remove " | _ \ / characters to get node id
     },
+    // regex for splitting the maparray provided in <<new_map>>
+    maparray_splitter: /\s+/g,
 };
 setup['@Sleepymap/options'] = options;
 
@@ -564,16 +566,11 @@ Macro.add(['new_map'], {
 
         const name = this.name;
 
-        // ERROR: macro being called outside StoryInit
-        if (turns() !== 0) {
-            throw new Error(`${name} — Sleepymap — macro must be called during StoryInit!`);
-        }
-
         // create argObj from NEW_MAP_TEMPLATE
         const argObj = new ArgObj(name, NEW_MAP_TEMPLATE, this.args);
 
         // create map array from payload
-        argObj.maparray = this.payload[0].contents.trim().split(/\s+/g);
+        argObj.maparray = this.payload[0].contents.trim().split(options.maparray_splitter);
 
         // if <<mapnodes>> exists
         // should be an object of values to write into the node data when nodes are being generated
@@ -2287,15 +2284,7 @@ Macro.add(['set_mapscripts'], {
     tags: ['onmapattempt', 'onmapstart', 'onmapend', 'onmapabort', 'onmapresolve'],
 
     handler() {
-
         const name = this.name;
-
-        // TODO: add ILIKETOBREAKTHINGS flag
-        // ERROR: macro being called outside StoryInit
-        if (turns() !== 0) {
-            throw new Error(`${name} — Sleepymap — macro must be called during StoryInit!`);
-        }
-
         const argObj = new ArgObj(name, SET_MAPSCRIPTS_TEMPLATE, this.args);
 
         // parse each payload, push to array, attach to argObj
