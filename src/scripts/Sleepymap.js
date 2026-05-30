@@ -58,6 +58,8 @@ const options = {
         NW      : /(?<![a-zA-Z0-9])\/(?=[^\s]*[a-zA-Z0-9])/,    // match / character on <-- left side
         replace : /[\/\\|_"]/g,                                 // remove " | _ \ / characters to get node id
     },
+    // regex for splitting the maparray provided in <<new_map>>
+    maparray_splitter: /\s+/g,
 };
 setup['@Sleepymap/options'] = options;
 
@@ -165,7 +167,7 @@ Macro.add(['new_map'], {
         const argObj = new ArgObj(name, NEW_MAP_TEMPLATE, this.args);
 
         // create map array from payload
-        argObj.maparray = this.payload[0].contents.trim().split(/\s+/g);
+        argObj.maparray = this.payload[0].contents.trim().split(options.maparray_splitter);
 
         // if <<mapnodes>> exists
         // should be an object of values to write into the node data when nodes are being generated
