@@ -33,14 +33,14 @@ const options = {
     wall_id                     : '.',
     // shows on mapview & rose in grid_travel mode
     labels: {
-        N       : '\u2191',
-        E       : '\u2192',
-        S       : '\u2193',
-        W       : '\u2190',
-        NE      : '\u2197',
-        SE      : '\u2198',
-        SW      : '\u2199',
-        NW      : '\u2196',
+        N                       : '\u2191',
+        E                       : '\u2192',
+        S                       : '\u2193',
+        W                       : '\u2190',
+        NE                      : '\u2197',
+        SE                      : '\u2198',
+        SW                      : '\u2199',
+        NW                      : '\u2196',
     },
 
     // EDIT THESE AT YOUR OWN RISK
@@ -1279,10 +1279,7 @@ function create_mapview(argObj) {
         const dir = i2dir[i];
         const label     = (! show_labels) || (! grid_travel) || (! is_traversable(i))
                             ? ''
-                        // use labels if same room or if room name is non-extant
-                        : (dir !== undefined) && ((position.mapnode === mapnode.id) || (mapnode.name === undefined))
-                            ? `<span class='macro-Sleepymap-label'>${options.labels[dir]}</span>`
-                        : `<span class='macro-Sleepymap-label'>${mapnode.name}</span>`;
+                            : `<span class='macro-Sleepymap-label'>${options.labels[dir]}</span>`;
         const $tile = $(document.createElement(link ? 'a' : 'div'))
             .addClass('macro-Sleepymap-tile')
             .addClass(link ? 'macro-Sleepymap-link' : '')

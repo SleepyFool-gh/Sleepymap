@@ -25,6 +25,7 @@
         flex-direction: column;
         min-height: 3rem;
         padding: 1rem;
+        text-align: center;
     }
         .macro-Sleepymap-dir[data-dir='C'] {
             font-weight: bold;
