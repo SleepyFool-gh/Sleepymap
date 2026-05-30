@@ -1387,6 +1387,7 @@ $(document).on('Sleepymap:mapmove_resolved Sleepymap:map_edited', function(ev, d
     for (const interface_type of Object.keys(interfaces)) {
         // fetch the ones that autoupdate
         const $interfaces = $(`.macro-Sleepymap-${interface_type}[data-autoupdate="true"]`);
+        console.log($interfaces);
         // replace with itself
         $interfaces.each( function() {
             const $interface = $(this);
@@ -1416,7 +1417,6 @@ Macro.add(['update_interface'], {
     handler() {
         const name = this.name;
         const argObj = new ArgObj(name, UPDATE_INTERFACE_TEMPLATE, this.args);
-        argObj.$interface = $(argObj.selector);
         argObj.add_metadata('name', name);
         update_interface(argObj);
     }

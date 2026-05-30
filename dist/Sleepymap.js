@@ -1280,10 +1280,6 @@ function create_mapview(argObj) {
         const label     = (! show_labels) || (! grid_travel) || (! is_traversable(i))
                             ? ''
                             : `<span class='macro-Sleepymap-label'>${options.labels[dir]}</span>`;
-                        // // use labels if same room or if room name is non-extant
-                        // : (dir !== undefined) && ((position.mapnode === mapnode.id) || (mapnode.name === undefined))
-                        //     ? `<span class='macro-Sleepymap-label'>${options.labels[dir]}</span>`
-                        // : `<span class='macro-Sleepymap-label'>${mapnode.name}</span>`;
         const $tile = $(document.createElement(link ? 'a' : 'div'))
             .addClass('macro-Sleepymap-tile')
             .addClass(link ? 'macro-Sleepymap-link' : '')
@@ -1391,6 +1387,7 @@ $(document).on('Sleepymap:mapmove_resolved Sleepymap:map_edited', function(ev, d
     for (const interface_type of Object.keys(interfaces)) {
         // fetch the ones that autoupdate
         const $interfaces = $(`.macro-Sleepymap-${interface_type}[data-autoupdate="true"]`);
+        console.log($interfaces);
         // replace with itself
         $interfaces.each( function() {
             const $interface = $(this);
@@ -1420,7 +1417,6 @@ Macro.add(['update_interface'], {
     handler() {
         const name = this.name;
         const argObj = new ArgObj(name, UPDATE_INTERFACE_TEMPLATE, this.args);
-        argObj.$interface = $(argObj.selector);
         argObj.add_metadata('name', name);
         update_interface(argObj);
     }

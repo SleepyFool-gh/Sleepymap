@@ -1,6 +1,6 @@
 .macro-Sleepymap-rose {
     width: 100%;
-    aspect-ratio: 3 / 1;
+    aspect-ratio: 3 / 2;
     display: inline-grid;
     grid-template-columns: repeat(3, 1fr);
     grid-template-rows: repeat(3, 1fr);
