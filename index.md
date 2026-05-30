@@ -82,7 +82,6 @@ title: Sleepy Macros — Sleepymap library
  ███ █   ██   █   █   █  ████
  SECTION: intro
 -->
-
 <h1 id='intro'><code>Sleepymap</code> Library</h1>
 
 `Sleepymap` is a map library for SugarCube which takes a space-separated 2D text grid (`maparray`) and converts it into a functional map for player movement (`mapmove`). It has two modes:
