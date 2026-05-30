@@ -1393,6 +1393,7 @@ function create_rose(argObj) {
     const autoupdate = argObj.autoupdate ?? options.default.autoupdate_rose;    // default value
     const clickable = argObj.clickable ?? options.default.clickable_rose;       // default value
     const this_map = maps[mapname];
+    console.log(autoupdate);
 
     // ERROR: no map found
     if (this_map === undefined) {
