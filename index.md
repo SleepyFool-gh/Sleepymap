@@ -18,59 +18,74 @@ title: Sleepy Macros — Sleepymap library
     <h1>Sleepy Macros</h1>
 </a>
 <aside id='toc' markdown='1'>
-<h2>Table of Contents</h2>
+<h1>Table of Contents</h1>
 
 - **[Intro](#intro)**
 - **[Macros](#macros)**
-    - *Initialization*
-        - [`<<new_map>>`](#macro-new_map)
-    - *Interface Items*
-        - [`<<place_rose>>`](#macro-place_rose)
-        - [`<<place_mapview>>`](#macro-place_mapview)
-        - [`<<place_controller>>`](#macro-place_controller)
-        - [`<<update_interface>>`](#macro-update_interface)
-    - *Scripts*
-        - [`<<set_mapscripts>>`](#macro-set_mapscripts)
-    - *Movement & Entities*
-        - [`<<mapmove>>`](#macro-mapmove)
-        - [`<<new_entity>>`](#macro-new_entity)
-        - [`<<set_entity>>`](#macro-set_entity)
-        - [`<<delete_entity>>`](#macro-delete_entity)
-        - [`<<connect_map>>`](#macro-connect_map)
-        - [`<<disconnect_map>>`](#macro-disconnect_map)
-        - [`<<set_mapnode>>`](#macro-set_mapnode)
-        - [`<<set_mapstate>>`](#macro-set_mapstate)
+    - [*Initialization & Manipulation*](#macros-initialization)
+        - [`<<new_map>>`](#macros-new_map)
+        - [`<<set_mapnode>>`](#macros-set_mapnode)
+        - [`<<set_mapstate>>`](#macros-set_mapstate)
+        - [`<<connect_map>>`](#macros-connect_map)
+        - [`<<disconnect_map>>`](#macros-disconnect_map)
+    - [*Interface Items*](#macros-interface)
+        - [`<<place_rose>>`](#macros-place_rose)
+        - [`<<place_mapview>>`](#macros-place_mapview)
+        - [`<<place_controller>>`](#macros-place_controller)
+        - [`<<update_interface>>`](#macros-update_interface)
+    - [*Movement & Entities*](#macros-movement)
+        - [`<<mapmove>>`](#macros-mapmove)
+        - [`<<set_mapscripts>>`](#macros-set_mapscripts)
+        - [`<<new_entity>>`](#macros-new_entity)
+        - [`<<set_entity>>`](#macros-set_entity)
+        - [`<<delete_entity>>`](#macros-delete_entity)
 - **[JavaScript Methods](#javascript)**
-    - *Initialization*
+    - [*Initialization & Manipulation*](#javascript-initialization)
         - [`new_map`](#javascript-new_map)
-    - *Interface Items*
+        - [`get_map`](#javascript-get_map)
+        - [`set_map`](#javascript-set_map)
+        - [`edit_exits`](#javascript-edit_exits)
+        - [`set_mapnode`](#javascript-set_mapnode)
+        - [`get_mapnode`](#javascript-get_mapnode)
+        - [`get_mapstate`](#javascript-get_mapstate)
+        - [`set_mapstate`](#javascript-set_mapstate)
+    - [*Interface Items*](#javascript-interface)
         - [`create_rose`](#javascript-create_rose)
         - [`create_mapview`](#javascript-create_mapview)
         - [`create_controller`](#javascript-create_controller)
         - [`update_interface`](#javascript-update_interface)
-    - *Mapstate & Metadata*
-        - [`get_map`](#javascript-get_map)
-        - [`set_map`](#javascript-set_map)
-        - [`set_mapstate`](#javascript-set_mapstate)
-        - [`get_mapstate`](#javascript-get_mapstate)
-        - [`set_mapnode`](#javascript-set_mapnode)
-        - [`get_mapnode`](#javascript-get_mapnode)
-        - [`set_entity`](#javascript-set_entity)
-    - *Movement & Utilities*
-        - [`set_mapscripts`](#javascript-set_mapscripts)
+    - [*Movement & Entities*](#javascript-movement)
         - [`begin_mapmove`](#javascript-begin_mapmove)
         - [`find_path`](#javascript-find_path)
-        - [`edit_exits`](#javascript-edit_exits)
+        - [`set_mapscripts`](#javascript-set_mapscripts)
+        - [`set_entity`](#javascript-set_entity)
 - **[Events](#events)**
     - [`mapmove_began`](#events-mapmove_began)
     - [`mapmove_resolved`](#events-mapmove_resolved)
     - [`map_edited`](#events-map_edited)
 - **[Options](#options)**
-- **[Usage Tips & Styling](#tips)**
 </aside>
+
+
+<button id='dark-toggle' aria-label='Toggle dark mode'>☀︎</button>
+<script>
+(function () {
+    const btn = document.getElementById('dark-toggle');
+    const key = 'sleepymap-dark';
+    function apply(dark) {
+        document.documentElement.classList.toggle('dark', dark);
+        btn.textContent = dark ? '☀︎' : '☾';
+    }
+    apply(localStorage.getItem(key) === '1');
+    btn.addEventListener('click', function () {
+        const dark = !document.documentElement.classList.contains('dark');
+        localStorage.setItem(key, dark ? '1' : '0');
+        apply(dark);
+    });
+})();
+</script>
+
 </div>
-
-
 
 
 <section id='main' markdown='1'>
@@ -113,13 +128,14 @@ title: Sleepy Macros — Sleepymap library
 - **Linked `story variables`:** Map states are saved in `State` and survive passage navigations and saves/loads.
 - **Manually adjust exits:** While exits are automatically generated from the provided `maparray`, it can be manually tweaked to create more complex navigation patterns.
 - **`mapnode` behavior manipulation:** 
-    - `hidden` — `interface` elements hidden, but navigation still works
-    - `disabled` — `interface` elements disabled, but navigation still works if triggered manually
-    - `blocked` — blocks movement through it but won't stop *attempts*
-    - `walled` — changes the `mapnode` into a wall that prevents any movement attempts
+    - `hidden`: hides the `mapnode` on `interface` with opacity zero, but navigation still works
+    - `disabled`: disables the `mapnode` on `interface`, but navigation still works if triggered manually
+    - `blocked`: causes `mapmoves` through it to fail
+    - `walled`: turns the `mapnode` into a wall, which prevents any movement attempts
 - **Entity placement:** Entities can be set and moved around the `map` — though interactions must be handled by the author
 - **JavaScript methods:** for manipulating maps, `mapnodes`, `mapstates`, `exits`,`roses`, `mapviews`,  and `entities`. 
 - **Configurable defaults:** for various settings
+
 
 <p align="center">
     &bull; &bull; &bull;
@@ -137,12 +153,15 @@ title: Sleepy Macros — Sleepymap library
  SECTION: macros
 -->
 
-<h2 id="macros">Macros</h2>
+<h1 id='macros'>Macros</h1>
 
 Macro arguments *must* be keyed, but can be supplied in any order. Some macros arguments have aliases, or alternate accepted names. Some settings/arguments only work in `node travel` mode or only in `grid travel` mode.
 
 
-<h3 id="macro-new_map"><code>&lt;&lt;new_map&gt;&gt;</code></h3>
+<h2 id='macros-initialization'>Initialization & Manipulation</h2>
+
+
+<h3 id='macros-new_map'><code>&lt;&lt;new_map&gt;&gt;</code></h3>
 
 Defines a new `Sleepymap`. It accepts a 2D grid layout via its contents and supports optional child tags for advanced configuration.
 
@@ -172,7 +191,7 @@ Defines a new `Sleepymap`. It accepts a 2D grid layout via its contents and supp
             - `tile`: (HTML string) *(optional)* inserted into each space in the `mapview`, default none
             - `disabled`: (boolean) *(optional)* disables the `mapnode` on `interfaces`, default `false`
             - `hidden`: (boolean) *(optional)* hides the node and links on `interfaces` by setting opacity to zero, default `false`
-            - `blocked`: (boolean) *(optional)* stops `mapmoves` through this `mapnode` from `interfaces` but will not stop the player from *attempting*, default `false`
+            - `blocked`: (boolean) *(optional)* causes `mapmoves` through it to fail, default `false`
             - `walled`: (boolean) *(optional)* turns the node into a wall, default `false`
 - **Examples:**
     ```js
@@ -210,7 +229,7 @@ Defines a new `Sleepymap`. It accepts a 2D grid layout via its contents and supp
     <<new_map 
         mapname     'grid_house'
         columns     16
-        grid_mode   true
+        grid_travel true
         start_x     4
         start_y     5
     >>
@@ -228,7 +247,7 @@ Defines a new `Sleepymap`. It accepts a 2D grid layout via its contents and supp
     ```
 
 
-<h3 id="macro-set_mapnode"><code>&lt;&lt;set_mapnode&gt;&gt;</code></h3>
+<h3 id='macros-set_mapnode'><code>&lt;&lt;set_mapnode&gt;&gt;</code></h3>
 
 Updates the metadata for a specific `mapnode` in an existing `map`. Incomplete objects are accepted, only the specified properties will be updated. `mapnode` ids *cannot* be changed. `node travel` and `grid travel` maps use the same syntax.
 
@@ -238,10 +257,10 @@ Updates the metadata for a specific `mapnode` in an existing `map`. Incomplete o
     - `data`: (object) object containing properties to update
         - `name`: (string) *(optional)* display name
         - `tile`: (HTML string) *(optional)* display tile to be printed in `mapview`
-        - `disabled`: (boolean) *(optional)* stops `interface` interactions
+        - `disabled`: (boolean) *(optional)* disables the `mapnode` on `interfaces`
         - `hidden`: (boolean) *(optional)* hides the `mapnode` on `interfaces` by setting opacity to zero
-        - `blocked`: (boolean) *(optional)* stops `mapmoves` through it from `interfaces`, but doesn't prevent attempts
-        - `walled`: (boolean) *(optional)* turns the `mapnode` into a wall, stopping `mapmoves` and attempts
+        - `blocked`: (boolean) *(optional)* causes `mapmoves` through it to fail
+        - `walled`: (boolean) *(optional)* turns the `mapnode` into a wall
 - **Examples:**
     ```js
     /* lock the pantry */
@@ -254,7 +273,7 @@ Updates the metadata for a specific `mapnode` in an existing `map`. Incomplete o
     ```
 
 
-<h3 id="macro-set_mapstate"><code>&lt;&lt;set_mapstate&gt;&gt;</code></h3>
+<h3 id='macros-set_mapstate'><code>&lt;&lt;set_mapstate&gt;&gt;</code></h3>
 
 Updates the operational state (`mapstate`) of a map, such as the current position, or toggles states like `blocked` or `hidden` for multiple mapnodes at once. `node travel` and `grid travel` maps use the same syntax. This macro will update `interface` items set to autoupdate.
 
@@ -272,7 +291,7 @@ Updates the operational state (`mapstate`) of a map, such as the current positio
     - `hidden`: (object) *(optional)*
         - `[mapnode id]`: (boolean) whether the `mapnode` is hidden on `interfaces`
     - `blocked`: (object) *(optional)*
-        - `[mapnode id]`: (boolean) whether the `mapnode` blocks `mapmoves` from `interfaces`
+        - `[mapnode id]`: (boolean) whether the `mapnode` causes `mapmoves` through it to fail
     - `walled`: (object) *(optional)*
         - `[mapnode id]`: (boolean) whether the `mapnode` is a wall
 - **Examples:**
@@ -295,7 +314,7 @@ Updates the operational state (`mapstate`) of a map, such as the current positio
     ```
 
 
-<h3 id="macro-connect_map"><code>&lt;&lt;connect_map&gt;&gt;</code></h3>
+<h3 id='macros-connect_map'><code>&lt;&lt;connect_map&gt;&gt;</code></h3>
 
 Manually creates a new exit between two `mapnodes` or two grid coordinates. If this is a `node travel` map, specify `from`/`to`. If this is a `grid travel` map, specify `from_x`/`from_y`/`to_x`/`to_y`. This macro does *not* automatically add the reciprocal exit from the provided inputs and can create one-way exits.
 
@@ -327,9 +346,9 @@ Manually creates a new exit between two `mapnodes` or two grid coordinates. If t
     ```
 
 
-<h3 id="macro-disconnect_map"><code>&lt;&lt;disconnect_map&gt;&gt;</code></h3>
+<h3 id='macros-disconnect_map'><code>&lt;&lt;disconnect_map&gt;&gt;</code></h3>
 
-Removes an exit that was automatically created between two `mapnodes` or grid coordinates from the `maparray`. If this is a `node travel` map, specify `from` and `to`. If this is a `grid travel` map, specify `from_x`, `from_y`, `to_x`, and `to_y`. If no `dir` is specified, it will be removed from *all* direcitons. This macro does *not* automatically remove the reciprocal exit from the provided inputs and can create one-way exits.
+Removes an exit that was automatically created between two `mapnodes` or grid coordinates from the `maparray`. If this is a `node travel` map, specify `from` and `to`. If this is a `grid travel` map, specify `from_x`, `from_y`, `to_x`, and `to_y`. If no `dir` is specified, it will be removed from *all* directions. This macro does *not* automatically remove the reciprocal exit from the provided inputs and can create one-way exits.
 
 - **Arguments:** 
     - `mapname`: (string) name of `map`
@@ -349,7 +368,10 @@ Removes an exit that was automatically created between two `mapnodes` or grid co
     ```
 
 
-<h3 id="macro-place_rose"><code>&lt;&lt;place_rose&gt;&gt;</code></h3>
+<h2 id='macros-interface'>Interface Items</h2>
+
+
+<h3 id='macros-place_rose'><code>&lt;&lt;place_rose&gt;&gt;</code></h3>
 
 Generates a 3x3 grid of directional links for navigation.
 
@@ -370,7 +392,7 @@ Generates a 3x3 grid of directional links for navigation.
     ```
 
 
-<h3 id="macro-place_mapview"><code>&lt;&lt;place_mapview&gt;&gt;</code></h3>
+<h3 id='macros-place_mapview'><code>&lt;&lt;place_mapview&gt;&gt;</code></h3>
 
 Renders a visual representation of the `map` with the tiles using the `maparray`. Options include clickable tiles, `mapnode` labels, path highlighting (`grid travel` only), and quick moving to distant tiles (`grid travel` only).
 
@@ -394,21 +416,8 @@ Renders a visual representation of the `map` with the tiles using the `maparray`
     >>
     ```
 
-
-<h3 id="macro-update_interface"><code>&lt;&lt;update_interface&gt;&gt;</code></h3>
-
-Manually triggers an update for a `rose` or `mapview` element. This is useful if the author has manually modified `interface` items or turned off autoupdate.
-
-- **Arguments:** 
-    - `selector`: (selector string) jQuery selector for the interface element(s) to update
-- **Examples:**
-    ```js
-    /* updates all mapviews on the page */
-    <<update_interface selector '.macro-Sleepymap-mapview'>>
-    ```
-
     
-<h3 id="macro-place_controller"><code>&lt;&lt;place_controller&gt;&gt;</code></h3>
+<h3 id='macros-place_controller'><code>&lt;&lt;place_controller&gt;&gt;</code></h3>
 
 Creates an invisible element that controls a listener on `document` for `keyup` events to trigger `mapmoves`. Removing the element removes the listener. Every provided property must match for the `mapmove` to trigger — which means the `controller` only triggers `mapmove` to adjacent `exits` when a `dir` is provided, and teleports when a `dir` is not provided.
 
@@ -455,73 +464,51 @@ Creates an invisible element that controls a listener on `document` for `keyup` 
     ```
 
 
-<h3 id="macro-new_entity"><code>&lt;&lt;new_entity&gt;&gt;</code></h3>
+<h3 id='macros-update_interface'><code>&lt;&lt;update_interface&gt;&gt;</code></h3>
 
-Creates a new entity on the map at the specified coordinates. This macro takes `x` and `y` inputs in both `node travel` and `grid travel`.
+Manually triggers an update for a `rose` or `mapview` element. This is useful if the author has manually modified `interface` items or turned off autoupdate.
 
 - **Arguments:** 
-    - `mapname`: (string) name of `map`
-    - `entityname`: (string) unique identifier for the entity
-    - `x`: (number) x coordinate
-    - `y`: (number) y coordinate
-    - `tile`: (HTML string) *(optional)* display tile for the entity
+    - `selector`: (selector string) jQuery selector for the interface element(s) to update
 - **Examples:**
     ```js
-    /* places a kitty in the dining room */
-    <<new_entity 
-        mapname     'node_house' 
-        entityname  'kitty' 
-        x           7
-        y           5
-        tile        '🐱'
-    >>
+    /* updates all mapviews on the page */
+    <<update_interface selector '.macro-Sleepymap-mapview'>>
     ```
 
 
-<h3 id="macro-set_entity"><code>&lt;&lt;set_entity&gt;&gt;</code></h3>
-
-Updates the position or display tile of an existing entity. This macro takes `x` and `y` inputs in both `node travel` and `grid travel`.
-
-- **Arguments:** 
-    - `mapname`: (string) name of `map`
-    - `entityname`: (string) identifier of the entity to modify
-    - `x`: (number) new x coordinate
-    - `y`: (number) new y coordinate
-    - `tile`: (HTML string) *(optional)* new display tile
-- **Examples:**
-    ```js
-    /* move the kitty to the pantry */
-    <<set_entity 
-        mapname    'node_house' 
-        entityname 'kitty' 
-        x          2
-        y          6
-    >>
-    ```
+<h2 id='macros-movement'>Movement & Entities</h2>
 
 
-<h3 id="macro-delete_entity"><code>&lt;&lt;delete_entity&gt;&gt;</code></h3>
+<h3 id='macros-mapmove'><code>&lt;&lt;mapmove&gt;&gt;</code></h3>
 
-Removes an entity from the map.
+Manually triggers a `mapmove` attempt. This macro *does not* check against exits — it will *teleport* the player regardless of distance or any `blocked` or `walled` `mapnodes` inbetween — but will fail if the *destination* is `blocked` or `walled`. `mapscripts` will be triggered as normal.
+
+`target_mapnode`, `target_x`/`target_y` can both be used in either `node travel` or `grid travel` modes.  `node travel` will fetch the `mapnode` at the targeted xy coordinate, and `grid travel` will fetch the first xy coordinate with the targeted `mapnode`.
 
 - **Arguments:** 
     - `mapname`: (string) name of `map`
-    - `entityname`: (string) identifier of the entity to remove
+    - `target_mapnode`: (string) id of the node to move to
+        - aliases: `mapnode`
+    - `target_x`/`target_y`: (number) target x/y coordinates
+        - aliases: `x`/`y`
+    - `force_abort`: (boolean) *(optional)* `true` forces the `mapmove` to fail, default `false`
+    - `skip_scripts`: (boolean) *(optional)* `true` to bypass all `onmap` scripts for this `mapmove`, default `false`
 - **Examples:**
     ```js
-    /* remove the kitty from the map */
-    <<delete_entity 
-        mapname    'node_house' 
-        entityname 'kitty' 
-    >>
+    /* teleport to master bedroom */
+    <<mapmove mapname 'node_house' target_mapnode 'M'>>
+
+    /* teleport to first grid cell of dining room */
+    <<mapmove mapname 'grid_house' target_mapnode 'D'>>
     ```
 
 
-<h3 id="macro-set_mapscripts"><code>&lt;&lt;set_mapscripts&gt;&gt;</code></h3>
+<h3 id='macros-set_mapscripts'><code>&lt;&lt;set_mapscripts&gt;&gt;</code></h3>
 
 Assigns TwineScript logic to run during the `mapmove` process (`mapscript`). Both `node travel` and `grid travel` can use any combination of `from`/`to`/`from_x`/`from_y`/`to_x`/`to_y`.  If multiple arguments are set, *all* must be true for the `mapscript` to fire. The `any` keyword can be used to signal that any value will trigger the `mapscript` (which does the same thing as not setting the argument at all).
 
-Child tags of the same type will execute in the order they are defined — but`<<onmapattempt>>` tags will always run first, followed by:
+Child tags of the same type will execute in the order they are defined — but `<<onmapattempt>>` tags will always run first, followed by:
     - `<<onmapstart>>` then `<<onmapend>>` if `mapmove` succeeds
     - `<<onmapabort>>` if `mapmove` fails
 
@@ -561,28 +548,67 @@ Child tags of the same type will execute in the order they are defined — but`<
     ```
 
 
-<h3 id="macro-mapmove"><code>&lt;&lt;mapmove&gt;&gt;</code></h3>
+<h3 id='macros-new_entity'><code>&lt;&lt;new_entity&gt;&gt;</code></h3>
 
-Manually triggers a `mapmove` attempt. This macro *does not* check against exits — it will *teleport* the player regardless of distance or any `blocked` or `walled` `mapnodes` inbetween — but will fail if the *destination* is `blocked` or `walled`. `mapscripts` will be triggered as normal.
-
-`target_mapnode`, `target_x`/`target_y` can both be used in either `node travel` or `grid travel` modes.  `node travel` will fetch the `mapnode` at the targeted xy coordinate, and `grid travel` will fetch the first xy coordinate with the targeted `mapnode`.
+Creates a new entity on the map at the specified coordinates. This macro takes `x` and `y` inputs in both `node travel` and `grid travel`.
 
 - **Arguments:** 
     - `mapname`: (string) name of `map`
-    - `target_mapnode`: (string) id of the node to move to
-        - aliases: `mapnode`
-    - `target_x`/`target_y`: (number) target x/y coordinates
-        - aliases: `x`/`y`
-    - `force_abort`: (boolean) *(optional)* `true` forces the `mapmove` to fail, default `false`
-    - `skip_scripts`: (boolean) *(optional)* `true` to bypass all `onmap` scripts for this `mapmove`, default `false`
+    - `entityname`: (string) unique identifier for the entity
+    - `x`: (number) x coordinate
+    - `y`: (number) y coordinate
+    - `tile`: (HTML string) *(optional)* display tile for the entity
 - **Examples:**
     ```js
-    /* teleport to master bedroom */
-    <<mapmove mapname 'node_house' target_mapnode 'M'>>
-
-    /* teleport to first grid cell of dining room */
-    <<mapmove mapname 'grid_house' target_mapnode 'D'>>
+    /* places a kitty in the dining room */
+    <<new_entity 
+        mapname     'node_house' 
+        entityname  'kitty' 
+        x           7
+        y           5
+        tile        '🐱'
+    >>
     ```
+
+
+<h3 id='macros-set_entity'><code>&lt;&lt;set_entity&gt;&gt;</code></h3>
+
+Updates the position or display tile of an existing entity. This macro takes `x` and `y` inputs in both `node travel` and `grid travel`.
+
+- **Arguments:** 
+    - `mapname`: (string) name of `map`
+    - `entityname`: (string) identifier of the entity to modify
+    - `x`: (number) new x coordinate
+    - `y`: (number) new y coordinate
+    - `tile`: (HTML string) *(optional)* new display tile
+- **Examples:**
+    ```js
+    /* move the kitty to the pantry */
+    <<set_entity 
+        mapname    'node_house' 
+        entityname 'kitty' 
+        x          2
+        y          6
+    >>
+    ```
+
+
+<h3 id='macros-delete_entity'><code>&lt;&lt;delete_entity&gt;&gt;</code></h3>
+
+Removes an entity from the map.
+
+- **Arguments:** 
+    - `mapname`: (string) name of `map`
+    - `entityname`: (string) identifier of the entity to remove
+- **Examples:**
+    ```js
+    /* remove the kitty from the map */
+    <<delete_entity 
+        mapname    'node_house' 
+        entityname 'kitty' 
+    >>
+    ```
+
 
 <p align="center">
     &bull; &bull; &bull;
@@ -600,9 +626,12 @@ Manually triggers a `mapmove` attempt. This macro *does not* check against exits
  SECTION: methods
 -->
 
-<h2 id='javascript'>JavaScript Methods</h2>
+<h1 id='javascript'>JavaScript Methods</h1>
 
 Javascript methods are stored on the `Sleepymap` window object. All methods take an `argObj` argument object.
+
+
+<h2 id='javascript-initialization'>Initialization & Manipulation</h2>
 
 
 <h3 id='javascript-new_map'><code>new_map</code></h3>
@@ -622,10 +651,10 @@ Creates a new `Sleepymap`. The `<<new_map>>` macro is a wrapper for this method.
         - `[mapnode id]`: (object)
             - `name`: (string) *(optional)* used for links in `roses` & for the `show_labels` option in `mapviews`, default is the `mapnode` id
             - `tile`: (HTML string) *(optional)* inserted into each space in the `mapview`, default `undefined`
-            - `disabled`: (boolean) *(optional)* disables `interface` links for this node, default `false`
-            - `hidden`: (boolean) *(optional)* hides the node and links by setting opacity to zero, default `false`
-            - `blocked`: (boolean) *(optional)* stops `mapmove` through it, but doesn't prevent attempts, default `false`
-            - `walled`: (boolean) *(optional)* turns the node into a wall, stopping `mapmove` and attempts, default `false`
+            - `disabled`: (boolean) *(optional)* disables the `mapnode` on `interfaces`, default `false`
+            - `hidden`: (boolean) *(optional)* hides the `mapnode` by setting opacity to zero on `interfaces`, default `false`
+            - `blocked`: (boolean) *(optional)* causes `mapmoves` through it to fail, default `false`
+            - `walled`: (boolean) *(optional)* turns the node into a wall, default `false`
 - **Examples:**
     ```js
     /* create a new node travel map */
@@ -664,7 +693,7 @@ Retrieves a copy of a map object. Manipulating the returned object *will not* af
 
 - **argObj Properties:**
     - `mapname`: (string) name of the `map` to retrieve
-- **Returns:** An object containing the map's structure:
+- **Returns:** An object containing the map's structure (see example below)
 - **Examples:**
     ```js
     // get node_house object
@@ -835,8 +864,8 @@ The `<<set_mapnode>>` macro is a wrapper for this method.
         - `name`: (string) *(optional)* new name for the `mapnode`
         - `tile`: (HTML string) *(optional)* new tile for the `mapnode`
         - `disabled`: (boolean) *(optional)* whether the `mapnode` is disabled on `interfaces`
-        - `hidden`: (boolean) *(optional)* whether the `mapnode` is hidden on `interfaces`
-        - `blocked`: (boolean) *(optional)* whether the `mapnode` blocks `mapmove` attempts
+        - `hidden`: (boolean) *(optional)* whether the `mapnode` is hidden on `interfaces` with opacity zero
+        - `blocked`: (boolean) *(optional)* whether the `mapnode` causes `mapmoves` through it to fail
         - `walled`: (boolean) *(optional)* whether the `mapnode` is a wall
 - **Examples:**
     ```js
@@ -902,28 +931,162 @@ The `<<set_mapstate>>` macro is a wrapper for this method.
     ```
 
 
-<h3 id='javascript-set_entity'><code>set_entity</code></h3>
+<h2 id='javascript-interface'>Interface Items</h2>
 
-Creates, updates, or removes an entity on the map. 
 
-The `<<new_entity>>`, `<<set_entity>>`, and `<<delete_entity>>` macros are all wrappers for this method. `<<delete_entity>>` has `removing` set to true. `<<new_entity>>` and `<<set_entity>>` are identical.
+<h3 id='javascript-create_rose'><code>create_rose</code></h3>
+
+Creates a jQuery `rose` element, which provides a 3x3 grid of `exits` from the current position in each direction. 
+
+The `<<place_rose>>` macro calls this method and appends the result to the macro output.
 
 - **argObj Properties:**
     - `mapname`: (string) name of the `map`
-    - `entityname`: (string) unique identifier for the entity
-    - `x`: (number) x coordinate
-    - `y`: (number) y coordinate
-    - `tile`: (HTML string) *(optional)* display tile for the entity
-    - `removing`: (boolean) *(optional)* `true` to delete the entity, default `false`
+    - `autoupdate`: (boolean) *(optional)* whether the `rose` automatically updates, default set in `options`
+    - `clickable` : (boolean) *(optional)* whether the `exits` are navigation links, default set in `options`
+    - `background`: (HTML string) *(optional)* inserted as a background element
+- **Returns:** (jQuery object) the created `$rose` element
 - **Examples:**
     ```js
-    // place a kitty in the dining room
-    Sleepymap.set_entity({
+    // returns a $rose jQuery element that doesn't autoupdate
+    Sleepymap.create_rose({
         mapname    : 'node_house',
-        entityname : 'kitty',
-        x          : 7,
-        y          : 5,
-        tile       : '🐱',
+        background : '<img src="./assets/small_house.png">',
+        autoupdate : false
+    });
+    ```
+
+
+<h3 id='javascript-create_mapview'><code>create_mapview</code></h3>
+
+Creates a jQuery `mapview` element, providing a visual representation of the map using the `maparray`.  Options include clickable tiles, `mapnode` labels, path highlighting (`grid travel` only), and quick moving to distant tiles (`grid travel` only).
+
+The `<<place_mapview>>` macro calls this method and appends the result to the macro output. 
+
+- **argObj Properties:**
+    - `mapname`: (string) name of the `map`
+    - `autoupdate`: (boolean) *(optional)* whether the `mapview` automatically updates, default set in `options`
+    - `clickable`: (boolean) *(optional)* whether nodes can be clicked to navigate, default set in `options`
+    - `show_labels`: (boolean) *(optional)* whether to display labels (names or directional icons) for each node, default set in `options`
+    - `pathing`: (boolean) *(optional)* whether to highlight the path to the hovered tile; highlighted path is generated by adding the `.macro-Sleepymap-path` class to each `tile` along the path; default set in `options`
+    - `quickmove`: (boolean) *(optional)* whether clicking a distant traversable tile initiates multiple sequential `mapmoves`; `clickable` *must* be `true` for `quickmove` to function; default set in `options`
+    - `background`: (HTML string) *(optional)* inserted as a background element
+- **Returns:** (jQuery object) the created `$mapview` element
+- **Examples:**
+    ```js
+    // places a mapview that has quickmove disabled but pathing enabled
+    Sleepymap.create_mapview({
+        mapname    : 'grid_house',
+        pathing    : true,
+        quickmove  : false,
+        background : '<img src="./assets/small_house.png">',
+    });
+    ```
+
+
+<h3 id='javascript-create_controller'><code>create_controller</code></h3>
+
+Creates a controller that controls a listener for keyboard input to trigger `mapmove` events. Removing the controller deletes the listener. Every provided property must match for the `mapmove` to trigger — which means the `controller` only triggers `mapmove` to adjacent `exits` when a `dir` is provided, and teleports when a `dir` is not provided.
+
+The `<<place_controller>>` macro is a wrapper for this method.
+
+- **argObj Properties:**
+    - `mapname`: (string) name of the `map`
+    - `enabled`: (boolean) *(optional)* whether the controller is active, default `true`
+    - `keys`: (object) map of key codes to target movement objects
+        - `[key]`: (string) `keyup` event `key` value
+            - `dir`: (string) *(optional)* directional exit to follow ("N", "E", "S", "W", "NE", "SE", "SW", "NW")
+            - `mapnode`: (string) *(optional)* target `mapnode` ID
+            - `x`: (number) *(optional)* target x coordinate
+            - `y`: (number) *(optional)* target y coordinate
+- **Examples:**
+    ```js
+    // set up wasd control for movement to adjacent spaces
+    Sleepymap.create_controller({
+        mapname : 'grid_house',
+        keys    : {
+            w   : { dir: 'N' },
+            d   : { dir: 'E' },
+            s   : { dir: 'S' },
+            a   : { dir: 'W' },
+        }
+    });
+    ```
+    
+    
+<h3 id='javascript-update_interface'><code>update_interface</code></h3>
+
+Manually triggers an update for an `interface` element. One of either `$interface` or `selector` *must* be provided; if both are provided `selector` will be ignored. This is useful if the author has manually modified `interface` items or has disabled autoupdate. 
+
+The `<<update_interface>>` macro is a wrapper for this method.
+
+- **argObj Properties:**
+    - `selector`: (string) jQuery selector string used to find the interface element if `$interface` is not provided
+    - `$interface`: (jQuery object) the specific `$rose` or `$mapview` element to refresh
+        - aliases: `interface`, `$rose`, `$mapview`
+- **Examples:**
+    ```js
+    Sleepymap.update_interface({
+        $interface: $('#rose-element'),
+    });
+    ```
+
+
+<h2 id='javascript-movement'>Movement & Entities</h2>
+
+
+<h3 id='javascript-begin_mapmove'><code>begin_mapmove</code></h3>
+
+Begins the `mapmove` procedure and fires the `Sleepymap:mapmove_began` event. This method does not check against automatically generated exits and will *teleport* the player regardless of distance or any `blocked` or `walled` mapnodes inbetween — but will fail if the destination is `blocked` or `walled`. `mapscripts` trigger as normal.
+
+`target_mapnode`, `target_x`/`target_y` can both be used in either `node travel` or `grid travel` modes.  `node travel` will fetch the `mapnode` at the targeted xy coordinate, and `grid travel` will fetch the first xy coordinate with the targeted `mapnode`.
+
+The `<<mapmove>>` macro is a wrapper for this method.
+
+- **argObj Properties:**
+    - `mapname`: (string) name of the `map`
+    - `target_mapnode`: (string) *(optional)* ID of the `mapnode` to move to (`node travel`)
+    - `target_x`: (number) *(optional)* target x coordinate (`grid travel`)
+    - `target_y`: (number) *(optional)* target y coordinate (`grid travel`)
+    - `force_abort`: (boolean) *(optional)* `true` to force the move to fail, default `false`
+    - `skip_scripts`: (boolean) *(optional)* `true` to bypass `onmap` scripts for this move, default `false`
+- **Examples:**
+    ```js
+    // teleport to the master bedroom
+    Sleepymap.begin_mapmove({
+        mapname        : 'node_house',
+        target_mapnode : 'M',
+    });
+
+    // teleport to first grid cell of dining room
+    Sleepymap.begin_mapmove({
+        mapname        : 'grid_house',
+        target_mapnode : 'D',
+    });
+    ```
+
+
+<h3 id='javascript-find_path'><code>find_path</code></h3>
+
+Calculates the shortest path between two points on a `grid travel` map using a Breadth-First Search (BFS) algorithm. `node travel` maps aren't supported and will always return `null`.
+
+- **argObj Properties:**
+    - `mapname`: (string) name of the `map`
+    - `from_i`: (number) *(optional)* starting index in the `maparray`
+    - `to_i`: (number) *(optional)* target index in the `maparray`
+    - `from_x` / `from_y`: (number) *(optional)* starting coordinates
+    - `to_x` / `to_y`: (number) *(optional)* target coordinates
+    - `stopped_by_disabled`: (boolean) *(optional)* whether disabled nodes stop pathing, default set in `options`
+    - `stopped_by_hidden`: (boolean) *(optional)* whether hidden nodes stop pathing, default set in `options`
+    - `stopped_by_blocked`: (boolean) *(optional)* whether blocked nodes stop pathing, default set in `options`
+- **Returns:** An array of indices (if `from_i`/`to_i` used) or coordinate objects (if `from_x`/`from_y`/`to_x`/`to_y` used) representing the path, or `null` if no path is found.
+- **Examples:**
+    ```js
+    // find path using indices
+    const path = Sleepymap.find_path({
+        mapname : 'grid_house',
+        from_i  : 5,
+        to_i    : 20
     });
     ```
 
@@ -994,155 +1157,28 @@ Scripts of the same type will triggered by their position in the `scripts` array
     ```
 
 
-<h3 id='javascript-begin_mapmove'><code>begin_mapmove</code></h3>
+<h3 id='javascript-set_entity'><code>set_entity</code></h3>
 
-Begins the `mapmove` procedure and fires the `Sleepymap:mapmove_began` event. This method does not check against automatically generated exits and will *teleport* the player regardless of distance or any `blocked` or `walled` mapnodes inbetween — but will fail if the destination is `blocked` or `walled`. `mapscripts` trigger as normal.
+Creates, updates, or removes an entity on the map. 
 
-`target_mapnode`, `target_x`/`target_y` can both be used in either `node travel` or `grid travel` modes.  `node travel` will fetch the `mapnode` at the targeted xy coordinate, and `grid travel` will fetch the first xy coordinate with the targeted `mapnode`.
-
-The `<<mapmove>>` macro is a wrapper for this method.
+The `<<new_entity>>`, `<<set_entity>>`, and `<<delete_entity>>` macros are all wrappers for this method. `<<delete_entity>>` has `removing` set to true. `<<new_entity>>` and `<<set_entity>>` are identical.
 
 - **argObj Properties:**
     - `mapname`: (string) name of the `map`
-    - `target_mapnode`: (string) *(optional)* ID of the `mapnode` to move to (`node travel`)
-    - `target_x`: (number) *(optional)* target x coordinate (`grid travel`)
-    - `target_y`: (number) *(optional)* target y coordinate (`grid travel`)
-    - `force_abort`: (boolean) *(optional)* `true` to force the move to fail, default `false`
-    - `skip_scripts`: (boolean) *(optional)* `true` to bypass `onmap` scripts for this move, default `false`
+    - `entityname`: (string) unique identifier for the entity
+    - `x`: (number) x coordinate
+    - `y`: (number) y coordinate
+    - `tile`: (HTML string) *(optional)* display tile for the entity
+    - `removing`: (boolean) *(optional)* `true` to delete the entity, default `false`
 - **Examples:**
     ```js
-    // teleport to the master bedroom
-    Sleepymap.begin_mapmove({
-        mapname        : 'node_house',
-        target_mapnode : 'M',
-    });
-
-    // teleport to first grid cell of dining room
-    Sleepymap.begin_mapmove({
-        mapname        : 'grid_house',
-        target_mapnode : 'D',
-    });
-    ```
-
-
-<h3 id='javascript-create_rose'><code>create_rose</code></h3>
-
-Creates a jQuery `rose` element, which provides a 3x3 grid of `exits` from the current position in each direction. 
-
-The `<<place_rose>>` macro calls this method and appends the result to the macro output.
-
-- **argObj Properties:**
-    - `mapname`: (string) name of the `map`
-    - `autoupdate`: (boolean) *(optional)* whether the `rose` automatically updates, default set in `options`
-    - `clickable` : (boolean) *(optional)* whether the `exits` are navigation links, default set in `options`
-    - `background`: (HTML string) *(optional)* inserted as a background element
-- **Returns:** (jQuery object) the created `$rose` element
-- **Examples:**
-    ```js
-    // returns a $rose jQuery element that doesn't autoupdate
-    Sleepymap.create_rose({
+    // place a kitty in the dining room
+    Sleepymap.set_entity({
         mapname    : 'node_house',
-        background : '<img src="./assets/small_house.png">',
-        autoupdate : false
-    });
-    ```
-
-
-<h3 id='javascript-create_mapview'><code>create_mapview</code></h3>
-
-Creates a jQuery `mapview` element, providing a visual representation of the map using the `maparray`.  Options include clickable tiles, `mapnode` labels, path highlighting (`grid travel` only), and quick moving to distant tiles (`grid travel` only).
-
-The `<<place_mapview>>` macro calls this method and appends the result to the macro output. 
-
-- **argObj Properties:**
-    - `mapname`: (string) name of the `map`
-    - `autoupdate`: (boolean) *(optional)* whether the `mapview` automatically updates, default set in `options`
-    - `clickable`: (boolean) *(optional)* whether nodes can be clicked to navigate, default set in `options`
-    - `show_labels`: (boolean) *(optional)* whether to display labels (names or directional icons) for each node, default set in `options`
-    - `pathing`: (boolean) *(optional)* whether to highlight the path to the hovered tile; highlighted path is generated by adding the `.macro-Sleepymap-path` class to each `tile` along the path; default set in `options`
-    - `quickmove`: (boolean) *(optional)* whether clicking a distant traversable tile initiates multiple sequential `mapmoves`; `clickable` *must* be `true` for `quickmove` to function; default set in `options`
-    - `background`: (HTML string) *(optional)* inserted as a background element
-- **Returns:** (jQuery object) the created `$mapview` element
-- **Examples:**
-    ```js
-    // places a mapview that has quickmove disabled but pathing enabled
-    Sleepymap.create_mapview({
-        mapname    : 'grid_house',
-        pathing    : true,
-        quickmove  : false,
-        background : '<img src="./assets/small_house.png">',
-    });
-    ```
-
-
-<h3 id='javascript-create_controller'><code>create_controller</code></h3>
-
-Creates a controller that controls a listener for keyboard input to trigger `mapmove` events. Removing the controller deletes the listener. Every provided property must match for the `mapmove` to trigger — which means the `controller` only triggers `mapmove` to adjacent `exits` when a `dir` is provided, and teleports when a `dir` is not provided.
-
-The `<<place_controller>>` macro is a wrapper for this method.
-
-- **argObj Properties:**
-    - `mapname`: (string) name of the `map`
-    - `enabled`: (boolean) *(optional)* whether the controller is active, default `true`
-    - `keys`: (object) map of key codes to target movement objects
-        - `dir`: (string) *(optional)* directional exit to follow ("N", "E", "S", "W", "NE", "SE", "SW", "NW")
-        - `mapnode`: (string) *(optional)* target `mapnode` ID
-        - `x`: (number) *(optional)* target x coordinate
-        - `y`: (number) *(optional)* target y coordinate
-- **Examples:**
-    ```js
-    // set up wasd control for movement to adjacent spaces
-    Sleepymap.create_controller({
-        mapname : 'grid_house',
-        keys    : {
-            w   : { dir: 'N' },
-            d   : { dir: 'E' },
-            s   : { dir: 'S' },
-            a   : { dir: 'W' },
-        }
-    });
-    ```
-    
-    
-<h3 id='javascript-update_interface'><code>update_interface</code></h3>
-
-Manually triggers an update for an `interface` element. One of either `$interface` or `selector` *must* be provided; if both are provided `selector` will be ignored. This is useful if the author has manually modified `interface` items or has disabled autoupdate. 
-
-The `<<update_interface>>` macro is a wrapper for this method.
-
-- **argObj Properties:**
-    - `selector`: (string) jQuery selector string used to find the interface element if `$interface` is not provided
-    - `$interface`: (jQuery object) the specific `$rose` or `$mapview` element to refresh
-        - aliases: `interface`, `$rose`, `$mapview`
-- **Examples:**
-    ```js
-    Sleepymap.update_interface({
-        $interface: $('#rose-element'),
-    });
-    ```
-
-
-<h3 id='javascript-find_path'><code>find_path</code></h3>
-
-Calculates the shortest path between two points on a `grid travel` map using a Breadth-First Search (BFS) algorithm. `node travel` maps aren't supported and will always return `null`.
-
-- **argObj Properties:**
-    - `mapname`: (string) name of the `map`
-    - `from_i`: (number) *(optional)* starting index in the `maparray`
-    - `to_i`: (number) *(optional)* target index in the `maparray`
-    - `from_x` / `from_y`: (number) *(optional)* starting coordinates
-    - `to_x` / `to_y`: (number) *(optional)* target coordinates
-    - `stopped_by_disabled`: (boolean) *(optional)* whether disabled nodes stop pathing, default set in `options`
-    - `stopped_by_hidden`: (boolean) *(optional)* whether hidden nodes stop pathing, default set in `options`
-    - `stopped_by_blocked`: (boolean) *(optional)* whether blocked nodes stop pathing, default set in `options`
-- **Returns:** An array of indices (if `from_i`/`to_i` used) or coordinate objects (if `from_x`/`from_y`/`to_x`/`to_y` used) representing the path, or `null` if no path is found.
-- **Examples:**
-    ```js
-    // find path using indices
-    const path = Sleepymap.find_path({
-        mapname : 'grid_house',
-        from_i  : 5,
-        to_i    : 20
+        entityname : 'kitty',
+        x          : 7,
+        y          : 5,
+        tile       : '🐱',
     });
     ```
 
@@ -1163,7 +1199,7 @@ Calculates the shortest path between two points on a `grid travel` map using a B
  SECTION: events
 -->
 
-<h2 id='events'>Events</h2>
+<h1 id='events'>Events</h1>
 
 `Sleepymap` fires several events that allow for manipulating player movement and tracking map changes. All `Sleepymap` events fire off `#passages` and resolve on `document`.
 
@@ -1202,7 +1238,7 @@ Triggered after any `mapmove` resolves.
     - `mapname`: (string) name of the `map` that triggered the `mapmove`
     - `origins`: (object) origin location details
         - `mapnode`: (string)
-        - `xys`: (array) array of coordinates being targeted
+        - `xys`: (array&lt;object&gt;) array of coordinates being targeted
             - `x`/`y`: (number) x/y coordinates
         - `entities`: (array&lt;object&gt;)
             - `name`: (string) entity's name
@@ -1210,7 +1246,7 @@ Triggered after any `mapmove` resolves.
             - `tile`: (HTML string) entity's tile
     - `targets`: (object) target location details
         - `mapnode`: (string)
-        - `xys`: (array) array of coordinates being targeted
+        - `xys`: (array&lt;object&gt;) array of coordinates being targeted
             - `x`/`y`: (number) x/y coordinates
         - `entities`: (array&lt;object&gt;)
             - `name`: (string) entity's name
@@ -1242,7 +1278,7 @@ Triggered after modifications to the map (i.e., `set_map`, `edit_exits`, `set_ma
  SECTION: options
 -->
 
-<h2 id='options'>Options</h2>
+<h1 id='options'>Options</h1>
 
 - `setup['@Sleepymap/options']`
     - `default`
@@ -1262,12 +1298,14 @@ Triggered after modifications to the map (i.e., `set_map`, `edit_exits`, `set_ma
     - `labels`: (object) directional arrow symbols used in `grid_travel` mode
         - `N`/`E`/`S`/`W`/`NE`/`SE`/`SW`/`NW`: (string) printed text used a label
     - `map_storage_story_variable`: (string) SugarCube story variable where map data is stored (**edit at your own risk**)
-    - `maparray_splitter`: (regex) regular expressions used to detect split the `maparray` provided in `<<new_map>>` (**edit at your own risk**)
+    - `maparray_splitter`: (regex) regular expression used to split the `maparray` provided in `<<new_map>>` (**edit at your own risk**)
     - `barriers`: (object) regular expressions used to detect barriers (**edit at your own risk**)
         - `N`/`E`/`S`/`W`/`NE`/`SE`/`SW`/`NW`: (regex) regular expression to check each raw `maparray` index from `new_map`
+
 
 <p align="center">
     &bull; &bull; &bull;
 </p>
+
 
 </section>

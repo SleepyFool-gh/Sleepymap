@@ -1,5 +1,5 @@
 /* remove useless header */
-.container-lg > h1 {
+.container-lg > h1:first-child {
     display: none;
 }
 .container-lg {
@@ -40,6 +40,10 @@ video {
 :not(pre) > code {
     color: purple;
 }
+.container-lg ul, 
+.container-lg ol {
+    padding-left: 1.25rem;
+}
 
 /* mobile mode */
 @media (max-width: 1020px) {
@@ -61,4 +65,43 @@ video {
             padding-left: 0;
             width: 100%;
         }
+}
+
+
+/* dark mode toggle button */
+#dark-toggle {
+    display: block;
+    margin: 0.5rem 0 0.25rem;
+    padding: 0.2rem 0.6rem;
+    font-size: 1rem;
+    cursor: pointer;
+    background: none;
+    border: 1px solid currentColor;
+    border-radius: 4px;
+    opacity: 0.6;
+}
+#dark-toggle:hover {
+    opacity: 1;
+}
+
+/* dark mode tokens */
+html.dark {
+    color-scheme: dark;
+    --color-canvas-default:      #0d1117;
+    --color-canvas-subtle:       #161b22;
+    --color-border-default:      #30363d;
+    --color-fg-default:          #e6edf3;
+    --color-fg-muted:            #848d97;
+    --color-accent-fg:           #58a6ff;
+    --color-neutral-muted:       rgba(110,118,129,0.4);
+    --color-prettylights-syntax-string: #a5d6ff;
+    --color-prettylights-syntax-keyword: #ff7b72;
+    --color-prettylights-syntax-comment: #8b949e;
+    --color-prettylights-syntax-entity: #d2a8ff;
+    --color-prettylights-syntax-constant: #79c0ff;
+}
+
+/* override code color in dark mode */
+html.dark :not(pre) > code {
+    color: #c084fc;
 }
