@@ -19,7 +19,8 @@
         overflow-y: auto;
     }
     #main {
-        flex-grow: 1;
+        flex: 1;
+        min-width: 0;
         padding-left: 20px;
     }
         #intro {
@@ -33,7 +34,9 @@
         #main h3 {
             margin-top: 3rem;
         }
-
+video {
+    width: 100%;
+}
 
 /* mobile mode */
 @media (max-width: 1020px) {
