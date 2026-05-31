@@ -84,7 +84,7 @@ title: Sleepy Macros — Sleepymap library
 -->
 <h1 id='intro'><code>Sleepymap</code>, a SugarCube Macro Library for 2D Map Systems</h1>
 
-`Sleepymap` is a map library for SugarCube which takes a space-separated 2D text grid (`maparray`) and converts it into a functional map for player movement (`mapmove`). It has two modes:
+`Sleepymap` is a map library for SugarCube which takes a 2D text grid (`maparray`) and converts it into a functional map for player movement (`mapmove`). It has two modes:
 1. **`node travel`:** Node-to-node movement like **Faster Than Light** or room-to-room movement like **Darkest Dungeon**. All grid spaces with the same id will be treated as one big room (`mapnode`) — regardless of how many grid spaces it occupies or whether it is continuous or not. Adjacent `mapnode` will be connected by `exits` that allow navigation between them. Because `mapnode` size is irrelevant, multiple links to different rooms may appear in the same direction on the `rose` (default, or set by `grid_travel = false`)
 2. **`grid travel`:** Grid movement like **Zelda** or **Final Fantasy Tactics**. Adjacent grid spaces with the same id will inherit the same properties, but will need to be traversed through one grid space at a time. Each grid space is connected by `exits` to adjacent grid spaces it can reach. (set by `grid_travel = true`)
 
@@ -139,7 +139,7 @@ title: Sleepy Macros — Sleepymap library
 
 <h2 id="macros">Macros</h2>
 
-Macro arguments *must* be keyed, but can be supplied in any order. Some settings/arguments only work in `node travel` mode or only in `grid travel` mode.
+Macro arguments *must* be keyed, but can be supplied in any order. Some macros arguments have aliases, or alternate accepted names. Some settings/arguments only work in `node travel` mode or only in `grid travel` mode.
 
 
 <h3 id="macro-new_map"><code>&lt;&lt;new_map&gt;&gt;</code></h3>
@@ -155,7 +155,7 @@ Defines a new `Sleepymap`. It accepts a 2D grid layout via its contents and supp
     - `columns`: (number) # of columns in the logic representation grid
     - `diagonals`: (boolean) *(optional)* whether diagonal movement is allowed
 - **Contents:** 
-    - 2D space-separated text grid representing map logic, must be rectangular. By default, several wall and border options are available. These can be changed via `options`, but thin borders (`barriers`) requires Regex. For a mapnode with id `id`, the defaults are:
+    - 2D text grid representing map logic, must be rectangular. By default, this text grid is split into individual grid cells by identifying spaces, but this can be changed in `options`. The default wall and thin borders (`barrier`) identifiers can also be changed in `options`. All these options require regex. For a mapnode with id `id`, the defaults are:
         - thick wall which occupies its own grid cell: `.`
         - thin border to N of grid cell: `"id` or `id"`
         - thin border to E of grid cell: `id|`
@@ -163,7 +163,7 @@ Defines a new `Sleepymap`. It accepts a 2D grid layout via its contents and supp
         - thin border to W of grid cell: `|id`
         - thin border to NE of grid cell: `id\`
         - thin border to SE of grid cell: `id/`
-        - thin broder to SW of grid cell: `\id`
+        - thin border to SW of grid cell: `\id`
         - thin border to NW of grid cell: `/id`
 - **Child Tags:**
     - `<<mapnodes>>`: (object) *(optional)* Defines additional metadata for each `mapnode`. Partial objects will be filled with default values.
@@ -297,11 +297,12 @@ Updates the operational state (`mapstate`) of a map, such as the current positio
 
 <h3 id="macro-connect_map"><code>&lt;&lt;connect_map&gt;&gt;</code></h3>
 
-Manually creates a new exit between two `mapnodes` or two grid coordinates. If this is a `node travel` map, specify `from`/`to`. If this is a `grid travel` map, specify `from_x`/`from_y`/`to_x`/`to_y`.
+Manually creates a new exit between two `mapnodes` or two grid coordinates. If this is a `node travel` map, specify `from`/`to`. If this is a `grid travel` map, specify `from_x`/`from_y`/`to_x`/`to_y`. This macro does *not* automatically add the reciprocal exit from the provided inputs and can create one-way exits.
 
 - **Arguments:** 
     - `mapname`: (string) name of `map`
-    - `direction`: (string) the direction of the connection ("N", "E", "S", "W", "NE", "SE", "SW", "NW")
+    - `dir`: (string) the direction of the connection ("N", "E", "S", "W", "NE", "SE", "SW", "NW")
+        - aliases: `direction`
     - `from`/`to`: (string) *(`node travel`)* ids of the nodes to connect
     - `from_x`/`from_y`/`to_x`/`to_y`: (number) *(`grid travel`)* coordinates to connect
 - **Examples:**
@@ -311,7 +312,7 @@ Manually creates a new exit between two `mapnodes` or two grid coordinates. If t
         mapname     'node_house' 
         from        'M' 
         to          'P' 
-        direction   'S' 
+        dir         'S' 
     >>
 
     /* grid travel, connect bottom floor stairs to top floor stairs */
@@ -328,11 +329,12 @@ Manually creates a new exit between two `mapnodes` or two grid coordinates. If t
 
 <h3 id="macro-disconnect_map"><code>&lt;&lt;disconnect_map&gt;&gt;</code></h3>
 
-Removes an exit that was automatically created between two `mapnodes` or grid coordinates from the `maparray`. If this is a `node travel` map, specify `from` and `to`. If this is a `grid travel` map, specify `from_x`, `from_y`, `to_x`, and `to_y`.
+Removes an exit that was automatically created between two `mapnodes` or grid coordinates from the `maparray`. If this is a `node travel` map, specify `from` and `to`. If this is a `grid travel` map, specify `from_x`, `from_y`, `to_x`, and `to_y`. If no `dir` is specified, it will be removed from *all* direcitons. This macro does *not* automatically remove the reciprocal exit from the provided inputs and can create one-way exits.
 
 - **Arguments:** 
     - `mapname`: (string) name of `map`
-    - `direction`: (string) the direction of the connection to remove
+    - `dir`: (string) the direction of the connection to remove
+        - aliases: `direction`
     - `from`/`to`: (string) *(`node travel`)* ids of the nodes to disconnect
     - `from_x`/`from_y`/`to_x`/`to_y`: (number) *(`grid travel`)* coordinates to disconnect
 - **Examples:**
@@ -354,6 +356,7 @@ Generates a 3x3 grid of directional links for navigation.
 - **Arguments:** 
     - `mapname`: (string) name of `map`
     - `background`: (HTML string) *(optional)* inserted as a background element for the `rose`
+        - aliases: `bg`
     - `autoupdate`: (boolean) *(optional)* whether the `rose` automatically updates after each `mapmove` or when the `map` changes, default set in `options`
     - `clickable` : (boolean) *(optional)* whether the `rose` items are clickable links, default set in `options`
 - **Examples:**
@@ -374,6 +377,7 @@ Renders a visual representation of the `map` with the tiles using the `maparray`
 - **Arguments:** 
     - `mapname`: (string) name of `map`
     - `background`: (HTML string) *(optional)* inserted as a background element for the `mapview`
+        - aliases: `bg`
     - `autoupdate`: (boolean) *(optional)* whether the `mapview` automatically updates after each `mapmove` or when the `map` changes, default set in `options`
     - `clickable`: (boolean) *(optional)* whether nodes can be clicked to navigate, default set in `options`
     - `show_labels`: (boolean) *(optional)* whether to display labels (names or directional icons) for each node, default set in `options`
@@ -517,7 +521,7 @@ Removes an entity from the map.
 
 Assigns TwineScript logic to run during the `mapmove` process (`mapscript`). Both `node travel` and `grid travel` can use any combination of `from`/`to`/`from_x`/`from_y`/`to_x`/`to_y`.  If multiple arguments are set, *all* must be true for the `mapscript` to fire. The `any` keyword can be used to signal that any value will trigger the `mapscript` (which does the same thing as not setting the argument at all).
 
-Child tags of the samee type will execute in the order they are defined — but`<<onmapattempt>>` tags will always run first, followed by:
+Child tags of the same type will execute in the order they are defined — but`<<onmapattempt>>` tags will always run first, followed by:
     - `<<onmapstart>>` then `<<onmapend>>` if `mapmove` succeeds
     - `<<onmapabort>>` if `mapmove` fails
 
@@ -566,7 +570,9 @@ Manually triggers a `mapmove` attempt. This macro *does not* check against exits
 - **Arguments:** 
     - `mapname`: (string) name of `map`
     - `target_mapnode`: (string) id of the node to move to
+        - aliases: `mapnode`
     - `target_x`/`target_y`: (number) target x/y coordinates
+        - aliases: `x`/`y`
     - `force_abort`: (boolean) *(optional)* `true` forces the `mapmove` to fail, default `false`
     - `skip_scripts`: (boolean) *(optional)* `true` to bypass all `onmap` scripts for this `mapmove`, default `false`
 - **Examples:**
@@ -709,7 +715,7 @@ Retrieves a copy of a map object. Manipulating the returned object *will not* af
                 },
                 // etc, maps 1:1 to maparray
             ],
-            manaul: [
+            manual: [
                 {
                     removing: false, // manual connection, (true) for disconnections 
                     dir: 'N',
@@ -724,13 +730,10 @@ Retrieves a copy of a map object. Manipulating the returned object *will not* af
         scripts: [
             {
                 type: 'onmapattempt',
+                contents: '<<set $heat++>>',
                 triggers: {
                     to: ['L', 'H', 'G', 'M'],
-                },
-
-        <<onmapattempt to `['L', 'H', 'G', 'M']`>>
-            <<set $heat++>>
-                    
+                },  
             },
             // etc, other mapscripts
         ],
@@ -761,15 +764,15 @@ Allows for dynamic modification of an existing `map`. This method will automatic
 
 <h3 id='javascript-edit_exits'><code>edit_exits</code></h3>
 
-Manually creates or removes an exit between two `mapnodes` or grid coordinates. Using `from/to` on a `grid travel` map will not throw an error, but it will be non-functional — and vice versa. Connections are *one-directional* — the reciprocal connection going the other way *will not* be automatically generated. 
+Manually creates or removes an exit between two `mapnodes` or grid coordinates. Using `from/to` on a `grid travel` map will not throw an error, but it will be non-functional — and vice versa. This method does *not* automatically add or remove the reciprocal exit from the provided inputs and can create one-way exits. 
 
 The `<<connect_map>>` and `<<disconnect_map>>` macros are both wrappers for this method — the only difference is that `<<disconnect_map>>` has the `removing` argument set to `true`.
 
 - **argObj Properties:**
     - `mapname`: (string) name of the `map`
-    - `dir`: (string) the direction of the connection ("N", "E", "S", "W", "NE", "SE", "SW", "NW"); must be provided when adding a connection; if undefined when removing, connections betweeen the origin and target will be removed in *all* directions
-    - `from`/`to`: (string) *(optional)* `mapnode` id to connect from/to (`node travel`)
-    - `from_x`/`from_y`/`to_x`/`to_y`: (number) *(optional)* origin/target x/y coordinates (`grid travel`)
+    - `dir`: (string) the direction of the connection ("N", "E", "S", "W", "NE", "SE", "SW", "NW"); must be provided when adding a connection; if undefined when removing, connections between the origin and target will be removed in *all* directions
+    - `from`/`to`: (string) (`node travel`) `mapnode` id to connect from/to 
+    - `from_x`/`from_y`/`to_x`/`to_y`: (number) (`grid travel`) origin/target x/y coordinates
     - `removing`: (boolean) *(optional)* `true` to remove an existing connection, `false` to create one, default `false`
 - **Examples:**
     ```js
@@ -914,7 +917,7 @@ The `<<new_entity>>`, `<<set_entity>>`, and `<<delete_entity>>` macros are all w
     - `removing`: (boolean) *(optional)* `true` to delete the entity, default `false`
 - **Examples:**
     ```js
-    // place a kitty in thee dining room
+    // place a kitty in the dining room
     Sleepymap.set_entity({
         mapname    : 'node_house',
         entityname : 'kitty',
@@ -931,7 +934,9 @@ Assigns TwineScript logic to run during the `mapmove` process. Both `node travel
 
 The `<<set_mapscripts>>` macro is a wrapper for this method.
 
-`onmapattempt` scripts always trigger first, then either `onmapstart` scripts followed by `onmapend` scripts if the `mapmove` succeeded, or `onmapabort` scripts if it failed. Scripts of the same type will be triggered by their position in the `scripts` array.
+Scripts of the same type will triggered by their position in the `scripts` array — but `onmapattempt` scripts always trigger first, then:
+    - `onmapstart` scripts followed by `onmapend` scripts if the `mapmove` succeeded
+    - `onmapabort` scripts if it failed.
 
 **Note:** Calling this on a `map` that already has `mapscripts` set will ***overwrite*** existing `mapscripts`!
 
@@ -979,7 +984,7 @@ The `<<set_mapscripts>>` macro is a wrapper for this method.
                     to   : ['K', 'P'],
                 },
             },
-            // tell <<redo>> to run any time mapmove succeedd
+            // tell <<redo>> to run any time mapmove succeeds
             {
                 type     : 'onmapend',
                 contents : '<<redo>>',
@@ -1029,15 +1034,15 @@ The `<<place_rose>>` macro calls this method and appends the result to the macro
 - **argObj Properties:**
     - `mapname`: (string) name of the `map`
     - `autoupdate`: (boolean) *(optional)* whether the `rose` automatically updates, default set in `options`
-    - `clickable` : (boolean) *(optional)* whether the `exits` are navgiation links, default set in `options`
+    - `clickable` : (boolean) *(optional)* whether the `exits` are navigation links, default set in `options`
     - `background`: (HTML string) *(optional)* inserted as a background element
 - **Returns:** (jQuery object) the created `$rose` element
 - **Examples:**
     ```js
     // returns a $rose jQuery element that doesn't autoupdate
     Sleepymap.create_rose({
-        mapname    : 'nose_house',
-        background : '<div>Background</div>',
+        mapname    : 'node_house',
+        background : '<img src="./assets/small_house.png">',
         autoupdate : false
     });
     ```
@@ -1065,7 +1070,7 @@ The `<<place_mapview>>` macro calls this method and appends the result to the ma
         mapname    : 'grid_house',
         pathing    : true,
         quickmove  : false,
-        background : '<div>Background</div>',
+        background : '<img src="./assets/small_house.png">',
     });
     ```
 
@@ -1106,8 +1111,9 @@ Manually triggers an update for an `interface` element. One of either `$interfac
 The `<<update_interface>>` macro is a wrapper for this method.
 
 - **argObj Properties:**
-    - `$interface`: (jQuery object) the specific `$rose` or `$mapview` element to refresh
     - `selector`: (string) jQuery selector string used to find the interface element if `$interface` is not provided
+    - `$interface`: (jQuery object) the specific `$rose` or `$mapview` element to refresh
+        - aliases: `interface`, `$rose`, `$mapview`
 - **Examples:**
     ```js
     Sleepymap.update_interface({
@@ -1204,7 +1210,7 @@ Triggered after any `mapmove` resolves.
             - `tile`: (HTML string) entity's tile
     - `targets`: (object) target location details
         - `mapnode`: (string)
-        - `xys`: (array) array of coordinates being targetted
+        - `xys`: (array) array of coordinates being targeted
             - `x`/`y`: (number) x/y coordinates
         - `entities`: (array&lt;object&gt;)
             - `name`: (string) entity's name
@@ -1256,6 +1262,7 @@ Triggered after modifications to the map (i.e., `set_map`, `edit_exits`, `set_ma
     - `labels`: (object) directional arrow symbols used in `grid_travel` mode
         - `N`/`E`/`S`/`W`/`NE`/`SE`/`SW`/`NW`: (string) printed text used a label
     - `map_storage_story_variable`: (string) SugarCube story variable where map data is stored (**edit at your own risk**)
+    - `maparray_splitter`: (regex) regular expressions used to detect split the `maparray` provided in `<<new_map>>` (**edit at your own risk**)
     - `barriers`: (object) regular expressions used to detect barriers (**edit at your own risk**)
         - `N`/`E`/`S`/`W`/`NE`/`SE`/`SW`/`NW`: (regex) regular expression to check each raw `maparray` index from `new_map`
 

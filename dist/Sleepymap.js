@@ -45,7 +45,9 @@ const options = {
 
     // EDIT THESE AT YOUR OWN RISK
     // State variable which holds the map data
-    map_storage_story_variable  : '$@Sleepymap/maps',
+    map_storage_story_variable  : '@Sleepymap/maps',
+    // regex for splitting the maparray provided in <<new_map>>
+    maparray_splitter           : /\s+/g,
     // regex magic for detecting barriers / thin walls. 
     barriers: {
         N       : /"/,                                          // match " character somewhere
@@ -58,8 +60,6 @@ const options = {
         NW      : /(?<![a-zA-Z0-9])\/(?=[^\s]*[a-zA-Z0-9])/,    // match / character on <-- left side
         replace : /[\/\\|_"]/g,                                 // remove " | _ \ / characters to get node id
     },
-    // regex for splitting the maparray provided in <<new_map>>
-    maparray_splitter: /\s+/g,
 };
 setup['@Sleepymap/options'] = options;
 
@@ -100,6 +100,8 @@ const is_diagonal = {
     SW  : true,
     NW  : true,
 };
+// pathmove flag to disable things as needed
+let _pathmove_running = false;
 
 
 
@@ -120,7 +122,6 @@ const NEW_MAP_TEMPLATE = {
     },
     grid_travel: {
         type: 'boolean',
-        aliases: 'grid_mode',
     },
     start: {
         type: 'string',
@@ -140,9 +141,6 @@ const NEW_MAP_TEMPLATE = {
     },
     // JS properties
     maparray: {
-        type: 'object',
-    },
-    mapstates: {
         type: 'object',
     },
     mapnodes: {
@@ -221,24 +219,13 @@ function new_map(argObj) {
     else if ((! grid_travel) && ((start_x !== undefined) || (start_y !== undefined))) {
         throw new Error(`${name} — Sleepymap "${mapname}" — "start_x" and "start_y" args are only for grid travel mode!`);
     }
-    // ERROR: node map mode, invalid start
-    else if ((! grid_travel) && (! argObj.maparray.includes(start))) {
-        throw new Error(`${name} — Sleepymap "${mapname}" — start mapnode "${start}" not found in maparray!`);
+    // ERROR: start required for node travel map
+    else if ((! grid_travel) && (start === undefined)) {
+        throw new Error(`${name} — Sleepymap "${mapname}" — start mapnode required for node travel mode!`);
     }
-    // ERROR: start_x and start_y required for gridmap mode
+    // ERROR: start_x and start_y required for grid travel map
     else if (grid_travel && (start_x === undefined || start_y === undefined)) {
-        throw new Error(`${name} — Sleepymap "${mapname}" — start_x and start_y required for gridmap mode!`);
-    }
-    // VALIDATE: xy bounds
-    else if (grid_travel) {
-        validate_bounds({ 
-            name, 
-            mapname, 
-            columns, 
-            maparray: argObj.maparray, 
-            x: start_x, 
-            y: start_y 
-        });
+        throw new Error(`${name} — Sleepymap "${mapname}" — start_x and start_y required for grid travel mode!`);
     }
 
     // MAPNODE ERRORS
@@ -292,6 +279,23 @@ function new_map(argObj) {
         barriers.push(barrier);
         maparray.push(cell.replace(options.barriers.replace, ''));
     }
+
+    // ERROR: node map mode, invalid start
+    if ((! grid_travel) && (! maparray.includes(start))) {
+        throw new Error(`${name} — Sleepymap "${mapname}" — start mapnode "${start}" not found in maparray!`);
+    }
+    // VALIDATE: xy bounds
+    else if (grid_travel) {
+        validate_bounds({ 
+            name, 
+            mapname, 
+            columns, 
+            maparray, 
+            x: start_x, 
+            y: start_y 
+        });
+    }
+
     this_map.maparray = maparray;
     this_map.barriers = barriers;
 
@@ -598,10 +602,6 @@ function get_mapstate(argObj) {
     if (this_map === undefined) {
         throw new Error(`${name} — Sleepymap — couldn't find map with name "${mapname}"!`);
     }
-    // ERROR: no mapstate requested
-    else if (mapstate === undefined) {
-        throw new Error(`${name} — Sleepymap "${mapname}" — mapstate args is required!`);
-    }
     
     const { mapnodes } = this_map;
     // ERROR: invalid mapstate requested
@@ -643,12 +643,8 @@ function update_exits(argObj) {
     const { mapname } = argObj;
     const this_map = maps[mapname];
 
-    // ERROR: mapname missing
-    if (mapname === undefined) {
-        throw new Error(`${name} — Sleepymap — mapname is required!`);
-    }
     // ERROR: non-extant map
-    else if (this_map === undefined) {
+    if (this_map === undefined) {
         throw new Error(`${name} — Sleepymap "${mapname}" does not exist!`);
     }
 
@@ -829,7 +825,7 @@ function edit_exits(argObj) {
     ArgObj.validate(name, EDIT_EXITS_TEMPLATE, argObj);
 
     const { mapname, from, to, from_x, from_y, to_x, to_y, dir } = argObj;
-    const removing = argObj.removing ?? false   // default value
+    const removing = argObj.removing ?? false;  // default value
     const this_map = maps[mapname];
 
     // BASIC ERRORS
@@ -994,13 +990,13 @@ function create_rose(argObj) {
     // create rose
     const $rose = $(document.createElement('div'))
         .addClass('macro-Sleepymap-rose')
-        .attr('data-maptype', grid_travel ? 'grid' : 'node')
-        .attr('data-mapname', mapname)
-        .attr('data-mapnode', position.mapnode)
-        .attr('data-x', position.x)
-        .attr('data-y', position.y)
-        .attr('data-autoupdate', autoupdate)
-        .data('argObj', argObj);
+        .attr('data-maptype'    , grid_travel ? 'grid' : 'node')
+        .attr('data-mapname'    , mapname)
+        .attr('data-mapnode'    , position.mapnode)
+        .attr('data-x'          , position.x)
+        .attr('data-y'          , position.y)
+        .attr('data-autoupdate' , autoupdate)
+        .data('argObj'          , argObj);
 
     // insert background
     if (background) {
@@ -1013,11 +1009,11 @@ function create_rose(argObj) {
     // create center
     $(document.createElement('div'))
         .addClass('macro-Sleepymap-dir')
-        .attr('data-dir', 'C')
-        .attr('data-mapnode-name', mapnode.name)
-        .attr('data-mapnode', mapnode.id)
-        .attr('data-x', position.x)
-        .attr('data-y', position.y)
+        .attr('data-dir'            , 'C')
+        .attr('data-mapnode-name'   , mapnode.name)
+        .attr('data-mapnode'        , mapnode.id)
+        .attr('data-x'              , position.x)
+        .attr('data-y'              , position.y)
         .html(mapnode.name)
         .appendTo($rose);
     
@@ -1056,13 +1052,15 @@ function create_rose(argObj) {
                                 : `<span class='macro-Sleepymap-label'>${exit_mapnode.name}</span>`;
                 $(document.createElement(clickable ? 'a' : 'span'))
                     .addClass(clickable ? 'macro-Sleepymap-link' : '')
-                    .attr('data-dir', dir)
-                    .attr('data-mapnode-name', exit_mapnode.name)
-                    .attr('data-mapnode', exit_mapnode.id)
-                    .attr('data-x', xy.x)
-                    .attr('data-y', xy.y)
-                    .attr('disabled', exit_mapnode.disabled || frozen)
-                    .css({ opacity: exit_mapnode.hidden ? '0' : '' })   // opacity instead of visibility because of mapview
+                    .attr('data-dir'            , dir)
+                    .attr('data-mapnode-name'   , exit_mapnode.name)
+                    .attr('data-mapnode'        , exit_mapnode.id)
+                    .attr('data-x'              , xy.x)
+                    .attr('data-y'              , xy.y)
+                    .attr('disabled'            , exit_mapnode.disabled || frozen)
+                    .css({ 
+                        opacity                 : exit_mapnode.hidden ? '0' : '' 
+                    })   // opacity instead of visibility because of mapview
                     .html(label)
                     .appendTo($dir);
             }
@@ -1084,14 +1082,14 @@ function create_rose(argObj) {
 
                 $(document.createElement('a'))
                     .addClass('macro-Sleepymap-link')
-                    .attr('data-dir', dir)
-                    .attr('data-mapnode-name', exit_mapnode.name)
-                    .attr('data-mapnode', exit_mapnode.id)
-                    .attr('data-x', 'undefined')
-                    .attr('data-y', 'undefined')
-                    .attr('disabled', exit_mapnode.disabled || frozen)
+                    .attr('data-dir'            , dir)
+                    .attr('data-mapnode-name'   , exit_mapnode.name)
+                    .attr('data-mapnode'        , exit_mapnode.id)
+                    .attr('data-x'              , 'undefined')
+                    .attr('data-y'              , 'undefined')
+                    .attr('disabled'            , exit_mapnode.disabled || frozen)
                     .css({
-                        visibility: exit_mapnode.hidden ? 'hidden' : '',
+                        visibility              : exit_mapnode.hidden ? 'hidden' : '',
                     })
                     .html(exit_mapnode.name)
                     .appendTo($dir);
@@ -1195,15 +1193,15 @@ function create_mapview(argObj) {
     // use maparray & columns if no mapview object
     const $mapview = $(document.createElement('div'))
         .addClass('macro-Sleepymap-mapview')
-        .attr('data-maptype', grid_travel ? 'grid' : 'node')
-        .attr('data-mapname', mapname)
-        .attr('data-mapnode', position.mapnode)
-        .attr('data-position-x', position.x)
-        .attr('data-position-y', position.y)
-        .attr('data-autoupdate', autoupdate)
+        .attr('data-maptype'    , grid_travel ? 'grid' : 'node')
+        .attr('data-mapname'    , mapname)
+        .attr('data-mapnode'    , position.mapnode)
+        .attr('data-position-x' , position.x)
+        .attr('data-position-y' , position.y)
+        .attr('data-autoupdate' , autoupdate)
         .data('argObj', argObj)
         .css({
-            '--columns': columns,
+            '--columns'         : columns,
         });
     
     // append bg
@@ -1228,9 +1226,9 @@ function create_mapview(argObj) {
             const exit_nodes = exits.node[position.mapnode][dir];
             for (const node of exit_nodes) {
                 const exit_is = [];
-                maparray.reduce( function(acc, el, i) {
+                maparray.forEach( function(el, i) {
                     if (el === node) exit_is.push(i);
-                }, null);
+                });
                 exit_is.forEach( i => i2dir[i] = dir );
             }
         }
@@ -1284,18 +1282,20 @@ function create_mapview(argObj) {
             .attr('data-current-position', grid_travel 
                 ? (position.x === xy.x && position.y === xy.y)
                 : mapnode.id === position.mapnode)
-            .attr('data-dir', dir)
-            .attr('data-mapnode-name', mapnode.name)
-            .attr('data-mapnode', id)
-            .attr('data-i', i)
-            .attr('data-x', xy.x)
-            .attr('data-y', xy.y)
-            .attr('data-disabled', mapnode.disabled)
-            .attr('disabled', mapnode.disabled || frozen)
-            .attr('data-hidden', mapnode.hidden)
-            .css({ opacity: mapnode.hidden ? '0' : '' }) // opacity instead of visibility because of onhover triggers
-            .attr('data-blocked', mapnode.blocked)
-            .attr('data-walled', mapnode.walled)
+            .attr('data-dir'            , dir)
+            .attr('data-mapnode-name'   , mapnode.name)
+            .attr('data-mapnode'        , id)
+            .attr('data-i'              , i)
+            .attr('data-x'              , xy.x)
+            .attr('data-y'              , xy.y)
+            .attr('data-disabled'       , mapnode.disabled)
+            .attr('disabled'            , mapnode.disabled || frozen)
+            .attr('data-hidden'         , mapnode.hidden)
+            .css({ 
+                opacity                 : mapnode.hidden ? '0' : '' 
+            }) // opacity instead of visibility because of onhover triggers
+            .attr('data-blocked'        , mapnode.blocked)
+            .attr('data-walled'         , mapnode.walled)
             // defined tile content +? mapnode name wrapped in a span
             .wiki(mapnode.tile ?? '')
             // print label
@@ -1384,11 +1384,11 @@ $(document).on('Sleepymap:mapmove_resolved Sleepymap:map_edited', function(ev, d
     for (const interface_type of Object.keys(interfaces)) {
         // fetch the ones that autoupdate
         const $interfaces = $(`.macro-Sleepymap-${interface_type}[data-autoupdate="true"]`);
-        console.log($interfaces);
         // replace with itself
         $interfaces.each( function() {
             const $interface = $(this);
             const argObj = $interface.data('argObj');
+            // only update if this the relevant map is affected
             if (argObj.mapname === data?.mapname) {
                 $interface.replaceWith(interfaces[interface_type](argObj));
             }
@@ -1532,7 +1532,6 @@ function create_controller(argObj) {
 
     const { mapname, keys } = argObj;
     const enabled = argObj.enabled ?? true; // default value
-    const autoupdate = argObj.autoupdate ?? options.default.autoupdate_controller;  // default value
     const this_map = maps[mapname];
 
     // ERROR: non-extant map
@@ -1540,15 +1539,15 @@ function create_controller(argObj) {
         throw new Error(`${name} — Sleepymap "${mapname}" not found!`);
     }
 
-    const { grid_travel, columns, position, frozen, maparray, mapnodes, exits } = this_map;
+    const { grid_travel, columns, position, maparray, mapnodes, exits } = this_map;
 
     const $controller = $(document.createElement('div'))
         .addClass('macro-Sleepymap-controller')
-        .attr('data-maptype', grid_travel ? 'grid' : 'node')
-        .attr('data-mapname', mapname)
-        .attr('data-mapnode', position.mapnode)
-        .attr('data-position-x', position.x)
-        .attr('data-position-y', position.y);
+        .attr('data-maptype'    , grid_travel ? 'grid' : 'node')
+        .attr('data-mapname'    , mapname)
+        .attr('data-mapnode'    , position.mapnode)
+        .attr('data-position-x' , position.x)
+        .attr('data-position-y' , position.y);
 
     // not enabled, do nothing
     if (! enabled) return $controller;
@@ -1608,10 +1607,10 @@ function create_controller(argObj) {
 
         // assign extant props
         key2target[key] = {};
-        if (target.dir) key2target[key].dir = target.dir;
-        if (target.mapnode) key2target[key].mapnode = target.mapnode;
-        if (target.x) key2target[key].x = target.x;
-        if (target.y) key2target[key].y = target.y;
+        if (target.dir      !== undefined) key2target[key].dir = target.dir;
+        if (target.mapnode  !== undefined) key2target[key].mapnode = target.mapnode;
+        if (target.x        !== undefined) key2target[key].x = target.x;
+        if (target.y        !== undefined) key2target[key].y = target.y;
     }
 
     // create listener
@@ -1626,7 +1625,8 @@ function create_controller(argObj) {
 
         const target = key2target[ev.key];
         // frozen, do nothing
-        if (frozen) return;
+        // need to fetch fresh because primitive
+        if (maps[mapname].frozen) return;
         // no match, do nothing
         else if (target === undefined) return;
 
@@ -1713,9 +1713,9 @@ function create_controller(argObj) {
         if (found) {
             // only assign the values that were defined
             const mapmove_argObj = { mapname, suppress_warnings: true };
-            if (current.mapnode) mapmove_argObj.target_mapnode = current.mapnode;
-            if (current.x) mapmove_argObj.target_x = current.x;
-            if (current.y) mapmove_argObj.target_y = current.y;
+            if (current.mapnode !== undefined) mapmove_argObj.target_mapnode = current.mapnode;
+            if (current.x       !== undefined) mapmove_argObj.target_x = current.x;
+            if (current.y       !== undefined) mapmove_argObj.target_y = current.y;
             begin_mapmove(mapmove_argObj);
         }
     });
@@ -1805,7 +1805,7 @@ function set_entity(argObj) {
 
     const entities = this_map.entities;
     // WARNING: no tile
-    if (entities[entityname]?.tile ?? tile === undefined) {
+    if ((entities[entityname]?.tile ?? tile) === undefined) {
         console.warn(`${name} — Sleepymap "${mapname}" — entity "${entityname}" has no tile!`)
     }
 
@@ -1977,7 +1977,7 @@ const BEGIN_MAPMOVE_TEMPLATE = {
     },
     target_mapnode: {
         type: 'string',
-        aliases: ['id', 'node', 'mapnode'],
+        aliases: 'mapnode',
     },
     target_x: {
         type: 'number',
@@ -2146,7 +2146,7 @@ function begin_mapmove(argObj) {
     }
 
     // check for any scripts to fire when beginning an attempt
-    if (! skip_scripts) {;
+    if (! skip_scripts) {
         run_mapscripts({ mapname, origins, targets, trigger: 'onmapattempt' });
     }
     
@@ -2186,7 +2186,7 @@ function resolve_mapmove(argObj) {
     if (succeeded) {
         if (! skip_scripts) {
             // check for any onmapstart scripts
-            run_mapscripts({ mapname, origins, targets, triggr: 'onmapstart' });
+            run_mapscripts({ mapname, origins, targets, trigger: 'onmapstart' });
         }
 
         if (grid_travel) {
@@ -2219,7 +2219,6 @@ function resolve_mapmove(argObj) {
     }), Engine.DOM_DELAY);
 }
 
-let _pathmove_running = false;
 function begin_pathmove(argObj) {
     const name = argObj.name ?? 'Sleepymap.begin_pathmove';
 
@@ -2245,16 +2244,16 @@ function begin_pathmove(argObj) {
         }
         return;
     }
+    // ERROR: path not an array
+    else if (! Array.isArray(path)) {
+        throw new Error(`${name} — Sleepymap "${mapname}" — "path" must be an array!`);
+    }
     // WARNING: no movement required for path, exit
     else if (path?.length <= 1) {
         if (! suppress_warnings) {
             console.warn(`${name} — Sleepymap "${mapname}" — path is not long enough to require moving, nothing to do; ABORTED`);
         }
         return;
-    }
-    // ERROR: path not an array
-    else if (! Array.isArray(path)) {
-        throw new Error(`${name} — Sleepymap "${mapname}" — "path" must be an array!`);
     }
 
     const { columns } = this_map;
@@ -2273,11 +2272,11 @@ function begin_pathmove(argObj) {
             ({ x: target_x, y: target_y } = step);
         }
         
-        // attach listener for next step if needed
-        if (path.length > i+1) {
+        // attach listener for next step if needed, plus one more to unlock
+        if (path.length >= i+1) {
             $(document).one('Sleepymap:mapmove_resolved', (ev, data) => {
-                // only proceed to next step if succeeded
-                if (data.succeeded) {
+                // only proceed to next step if succeeded and there is still more to go
+                if (data.succeeded && (path.length > i+1)) {
                     setTimeout( () => execute_step(i+1), pathmove_delay);
                 }
                 // unlock if not
@@ -2286,11 +2285,8 @@ function begin_pathmove(argObj) {
                 }
             })
         }
-        // unlock if not
-        else {
-            _pathmove_running = false;
-        }
 
+        // fire mapmove
         begin_mapmove({
             mapname, 
             skip_scripts, 
@@ -2361,9 +2357,9 @@ function find_path(argObj) {
     }
     // end node is a stopping mapstate
     else if (
-        (end_mapnode.disabled && stopped_by_disabled)   ||
-        (end_mapnode.hidden && stopped_by_hidden)       ||
-        (end_mapnode.blocked && stopped_by_blocked)
+        (end_mapnode.disabled   && stopped_by_disabled) ||
+        (end_mapnode.hidden     && stopped_by_hidden)   ||
+        (end_mapnode.blocked    && stopped_by_blocked)
     ) return null;
  
     // BFS
@@ -2382,9 +2378,9 @@ function find_path(argObj) {
         // prevent pathing through stopping mapstates
         const current_mapnode = mapnodes[maparray[current_i]];
         if (
-            (current_mapnode.disabled && stopped_by_disabled)   ||
-            (current_mapnode.hidden && stopped_by_hidden)       ||
-            (current_mapnode.blocked && stopped_by_blocked)
+            (current_mapnode.disabled   && stopped_by_disabled) ||
+            (current_mapnode.hidden     && stopped_by_hidden)   ||
+            (current_mapnode.blocked    && stopped_by_blocked)
         ) continue;
  
         // searches if this thing is destination, if not pushes its exits into queue
@@ -2500,12 +2496,8 @@ function set_map(argObj) {
     const this_map = maps[mapname];
     let exits_need_updating = false;
 
-    // ERROR: missing arg
-    if (mapname === undefined) {
-        throw new Error(`${name} — Sleepymap — missing required mapname argument!`);
-    }
     // ERROR: non-extant map
-    else if (this_map === undefined) {
+    if (this_map === undefined) {
         throw new Error(`${name} — Sleepymap "${mapname}" not found!`);
     }
 
@@ -2561,12 +2553,9 @@ function get_map(argObj) {
     const name = 'Sleepymap.get_map';
     const mapname = argObj.mapname;
     const this_map = maps[mapname];
-    // ERROR: missing arg
-    if (mapname === undefined) {
-        throw new Error(`${name} — Sleepymap — missing required mapname argument!`);
-    }
+
     // ERROR: non-extant map
-    else if (this_map === undefined) {
+    if (this_map === undefined) {
         throw new Error(`${name} — Sleepymap "${mapname}" not found!`);
     }
     return structuredClone(maps[mapname]);
