@@ -5,6 +5,39 @@ title: Sleepy Macros — Sleepymap library
 <!-- stylesheet -->
 <link rel='stylesheet' href='./style.css'>
 
+
+
+
+<!--
+ ████   ███  ████  █   █     █    █  ████  ████  █████
+ █   █ █   █ █   █ █  █      ██  ██ █    █ █   █ █
+ █   █ █████ ████  ███       █ ██ █ █    █ █   █ ███
+ █   █ █   █ █   █ █  █      █    █ █    █ █   █ █
+ ████  █   █ █   █ █   █     █    █  ████  ████  █████
+ SECTION: dark mode
+-->
+<button id='dark-toggle' aria-label='Toggle dark mode'>☀︎</button>
+<script>
+(function () {
+    const btn = document.getElementById('dark-toggle');
+    const key = 'Sleepymap-dark'; // class to toggle
+    // apply dark mode based on saved preference
+    function set_mode(dark) {
+        document.documentElement.classList.toggle('dark', dark);
+        btn.textContent = dark ? '☀︎' : '☾';
+    }
+    set_mode(localStorage.getItem(key) === '1');
+    btn.addEventListener('click', function () {
+        const dark = ! document.documentElement.classList.contains('dark');
+        localStorage.setItem(key, dark ? '1' : '0');
+        set_mode(dark);
+    });
+})();
+</script>
+
+
+
+
 <!--
  █████  ████   ████
    █   █    █ █
@@ -66,26 +99,9 @@ title: Sleepy Macros — Sleepymap library
 - **[Options](#options)**
 </aside>
 
-
-<button id='dark-toggle' aria-label='Toggle dark mode'>☀︎</button>
-<script>
-(function () {
-    const btn = document.getElementById('dark-toggle');
-    const key = 'sleepymap-dark';
-    function apply(dark) {
-        document.documentElement.classList.toggle('dark', dark);
-        btn.textContent = dark ? '☀︎' : '☾';
-    }
-    apply(localStorage.getItem(key) === '1');
-    btn.addEventListener('click', function () {
-        const dark = !document.documentElement.classList.contains('dark');
-        localStorage.setItem(key, dark ? '1' : '0');
-        apply(dark);
-    });
-})();
-</script>
-
 </div>
+
+
 
 
 <section id='main' markdown='1'>
@@ -97,7 +113,7 @@ title: Sleepy Macros — Sleepymap library
  ███ █   ██   █   █   █  ████
  SECTION: intro
 -->
-<h1 id='intro'><code>Sleepymap</code>, a SugarCube Macro Library for 2D Map Systems</h1>
+<h1 id='intro'>Sleepymap, a SugarCube Macro Library for 2D Maps</h1>
 
 `Sleepymap` is a map library for SugarCube which takes a 2D text grid (`maparray`) and converts it into a functional map for player movement (`mapmove`). It has two modes:
 1. **`node travel`:** Node-to-node movement like **Faster Than Light** or room-to-room movement like **Darkest Dungeon**. All grid spaces with the same id will be treated as one big room (`mapnode`) — regardless of how many grid spaces it occupies or whether it is continuous or not. Adjacent `mapnode` will be connected by `exits` that allow navigation between them. Because `mapnode` size is irrelevant, multiple links to different rooms may appear in the same direction on the `rose` (default, or set by `grid_travel = false`)
@@ -336,12 +352,12 @@ Manually creates a new exit between two `mapnodes` or two grid coordinates. If t
 
     /* grid travel, connect bottom floor stairs to top floor stairs */
     <<connect_map
-        mapname     "grid_house"
+        mapname     'grid_house'
         from_x      8
         from_y      4
         to_x        14
         to_y        5
-        direction   "N"
+        direction   'N'
     >>
     ```
 

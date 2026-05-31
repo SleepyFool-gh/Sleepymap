@@ -1,7 +1,106 @@
+/* coloring */
+html {
+    --page-bg           : #ffffff;
+    --text-color        : black;
+    --code-color        : purple;
+    --code-bg           : #f6f6f6;
+    --h1-border-color   : #dcdcdc;
+    --h1-bg             : lightgray;
+    --scrollbar-color   : #888;
+    --track-color       : #f1f1f1;
+}
+html.dark {
+    --page-bg           : #111;
+    --text-color        : white;
+    --code-color        : orange;
+    --code-bg           : #242424;
+    --h1-border-color   : #464646;
+    --h1-bg             : #363636;
+    --scrollbar-color   : #555;
+    --track-color       : #141414;
+}
+
+/* misc */
+body {
+    color: var(--text-color);
+    background: var(--page-bg);
+}
+video {
+    width: 100%;
+}
+a {
+    color: #68d;
+}
+    a:hover {
+        color: #8af;
+    }
+.highlight {
+    background: none;
+}
+.container-lg ul, 
+.container-lg ol {
+    padding-left: 1.25rem;
+}
+.markdown-body h1 {
+    border: none;
+    border-bottom: 1px solid var(--h1-border-color);
+}
+    #main h1:not(:first-child) {
+        background: var(--h1-bg);
+        padding: 0.25rem 0.75rem
+    }
+
 /* remove useless header */
 .container-lg > h1:first-child {
     display: none;
 }
+
+/* code */
+#main :not(pre) > code,
+#main pre {
+    background: var(--code-bg);
+}
+    :not(pre) > code {
+        color: var(--code-color);
+    }
+        #main .highlighter-rouge .o, 
+        #main .highlighter-rouge .k,
+        #main .highlighter-rouge .kd,
+        #main .highlighter-rouge .sr,
+        #main .highlighter-rouge .err {
+            color: var(--text-color);
+            background: none;
+            font-weight: initial;
+        }
+        #main .highligher-rouge .kd {
+            font-weight: initial;
+        }
+        #main .highlighter-rouge .kc {
+            color: #42c642;
+        }
+
+/* scrollbar mess */
+/* Firefox */
+html {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-color) var(--track-color);
+}
+/* Chrome, Edge, Safari */
+::-webkit-scrollbar {
+    width: 7px;
+}
+::-webkit-scrollbar-track {
+    background: var(--track-color);
+}
+::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-color);
+    border: 2px solid var(--track-color);
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-color);
+}
+
+/* content shaping */
 .container-lg {
     display: flex;
     align-items: flex-start;
@@ -34,16 +133,6 @@
         #main h3 {
             margin-top: 3rem;
         }
-video {
-    width: 100%;
-}
-:not(pre) > code {
-    color: purple;
-}
-.container-lg ul, 
-.container-lg ol {
-    padding-left: 1.25rem;
-}
 
 /* mobile mode */
 @media (max-width: 1020px) {
@@ -67,41 +156,17 @@ video {
         }
 }
 
-
-/* dark mode toggle button */
+/* dark mode button */
 #dark-toggle {
-    display: block;
-    margin: 0.5rem 0 0.25rem;
-    padding: 0.2rem 0.6rem;
-    font-size: 1rem;
-    cursor: pointer;
-    background: none;
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 2rem;
+    height: 2rem;
+    margin: 0.25rem;
+    opacity: 0.4;
     border: 1px solid currentColor;
-    border-radius: 4px;
-    opacity: 0.6;
 }
-#dark-toggle:hover {
-    opacity: 1;
-}
-
-/* dark mode tokens */
-html.dark {
-    color-scheme: dark;
-    --color-canvas-default:      #0d1117;
-    --color-canvas-subtle:       #161b22;
-    --color-border-default:      #30363d;
-    --color-fg-default:          #e6edf3;
-    --color-fg-muted:            #848d97;
-    --color-accent-fg:           #58a6ff;
-    --color-neutral-muted:       rgba(110,118,129,0.4);
-    --color-prettylights-syntax-string: #a5d6ff;
-    --color-prettylights-syntax-keyword: #ff7b72;
-    --color-prettylights-syntax-comment: #8b949e;
-    --color-prettylights-syntax-entity: #d2a8ff;
-    --color-prettylights-syntax-constant: #79c0ff;
-}
-
-/* override code color in dark mode */
-html.dark :not(pre) > code {
-    color: #c084fc;
-}
+    #dark-toggle:hover {
+        opacity: 1;
+    }
