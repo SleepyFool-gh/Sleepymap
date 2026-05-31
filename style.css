@@ -37,6 +37,9 @@
 video {
     width: 100%;
 }
+:not(pre) > code {
+    color: purple;
+}
 
 /* mobile mode */
 @media (max-width: 1020px) {

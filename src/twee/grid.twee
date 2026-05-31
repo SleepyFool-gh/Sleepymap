@@ -118,10 +118,10 @@ Sleepymap Macro Library, Demo
         color: orange
     }
 </style>
-<h2>Sleepymap Macro Library, the <code>mapmove</code> System</h2>
+<h2>Sleepymap, a SugarCube Macro Library for 2D Map Systems</h2>
 <div>
     <div>
-        <code>Sleepymap</code> is a map library for SugarCube which takes a space-separated 2D text grid (<code>maparray</code>) and converts it into a functional map for player movement (<code>mapmove</code>). It has two modes:
+        <code>Sleepymap</code> is a map macro library for SugarCube which takes a space-separated 2D text grid (<code>maparray</code>) and converts it into a functional map for player movement (<code>mapmove</code>). It has two modes:
     </div>
     <ol>
         <li>

@@ -82,11 +82,12 @@ title: Sleepy Macros — Sleepymap library
  ███ █   ██   █   █   █  ████
  SECTION: intro
 -->
-<h1 id='intro'><code>Sleepymap</code> Library</h1>
+<h1 id='intro'><code>Sleepymap</code>, a SugarCube Macro Library for 2D Map Systems</h1>
 
 `Sleepymap` is a map library for SugarCube which takes a space-separated 2D text grid (`maparray`) and converts it into a functional map for player movement (`mapmove`). It has two modes:
-    1. **`node travel`:** Node-to-node movement like **Faster Than Light** or room-to-room movement like **Darkest Dungeon**. All grid spaces with the same id will be treated as one big room (`mapnode`) — regardless of how many grid spaces it occupies or whether it is continuous or not. Adjacent `mapnode` will be connected by `exits` that allow navigation between them. Because `mapnode` size is irrelevant, multiple links to different rooms may appear in the same direction on the `rose` (default, or set by `grid_travel = false`)
-    2. **`grid travel`:** Grid movement like **Zelda** or **Final Fantasy Tactics**. Adjacent grid spaces with the same id will inherit the same properties, but will need to be traversed through one grid space at a time. Each grid space is connected by `exits` to adjacent grid spaces it can reach. (set by `grid_travel = true`)
+1. **`node travel`:** Node-to-node movement like **Faster Than Light** or room-to-room movement like **Darkest Dungeon**. All grid spaces with the same id will be treated as one big room (`mapnode`) — regardless of how many grid spaces it occupies or whether it is continuous or not. Adjacent `mapnode` will be connected by `exits` that allow navigation between them. Because `mapnode` size is irrelevant, multiple links to different rooms may appear in the same direction on the `rose` (default, or set by `grid_travel = false`)
+2. **`grid travel`:** Grid movement like **Zelda** or **Final Fantasy Tactics**. Adjacent grid spaces with the same id will inherit the same properties, but will need to be traversed through one grid space at a time. Each grid space is connected by `exits` to adjacent grid spaces it can reach. (set by `grid_travel = true`)
+
 **Note:** `mapmove` *DOES NOT* trigger passage navigation. Authors **must** navigate to save map changes to `State`.
 
 <div><a href='./demo/index.html'>Check out the demo here</a></div>
@@ -313,7 +314,7 @@ Manually creates a new exit between two `mapnodes` or two grid coordinates. If t
         direction   'S' 
     >>
 
-    /* grid travel, connect the bottom floor stairs to the top floor stairs */
+    /* grid travel, connect bottom floor stairs to top floor stairs */
     <<connect_map
         mapname     "grid_house"
         from_x      8
@@ -336,10 +337,10 @@ Removes an exit that was automatically created between two `mapnodes` or grid co
     - `from_x`/`from_y`/`to_x`/`to_y`: (number) *(`grid travel`)* coordinates to disconnect
 - **Examples:**
     ```js
-    /* make leaving the kitchen impossible by removing the exit back to dining room */
+    /* removes the exit from kitchen to dining room,
+        making leaving the kitchen impossible */
     <<disconnect_map 
         mapname   'node_house' 
-        direction 'S' 
         from      'K' 
         to        'D' 
     >>
@@ -380,7 +381,7 @@ Renders a visual representation of the `map` with the tiles using the `maparray`
     - `quickmove`: (boolean) *(optional)* whether clicking a distant traversable tile initiates multiple sequential `mapmoves`, default set in `options`, quickmove forces the `mapview` to be clickable
 - **Examples:**
     ```js
-    /* places a mapview that has quickmove disabled but pathing enabled */
+    /* places a mapview that has quickmove disabled & pathing enabled */
     <<place_mapview
         mapname     'grid_house'
         background  '<img src="./assets/small_house.png">'
@@ -430,7 +431,8 @@ Creates an invisible element that controls a listener on `document` for `keyup` 
         keys        _keys 
     >>
 
-    /* set up a dedicated key to teleport to the dining room, but only from the outhousee */
+    /* set up a dedicated key to teleport to the dining room, 
+        but only works from the outhouse */
     /* code to update this by calling <<redo>> not shown */
     <<do>>
         <<run
@@ -691,25 +693,25 @@ Retrieves a copy of a map object. Manipulating the returned object *will not* af
             x       : 4,    // non-extant on node travel maps
             y       : 5,    // non-extant on node travel maps
         },
-        exits: { // both node & grid exits always get generated regardless of travel mode
+        exits: { // both node & grid exits always get generated in both modes
             node: {
                 '.' : {},   // walls have no exits
                 D: {
-                    N: Set{'K', 'S'},   // exits point to other mapnode ids
+                    N: Set{'K', 'S'}, // exits point to other mapnode ids
                     W: Set{'P'},
                 },
                 // etc, other nodes
             },
             grid: [
                 {
-                    E: Set{20},     // exits point to other maparray indices
+                    E: Set{20}, // exits point to other maparray indices
                     S: Set{36},
                 },
                 // etc, maps 1:1 to maparray
             ],
             manaul: [
                 {
-                    removing: false,    // manual connection, (true) for disconnections 
+                    removing: false, // manual connection, (true) for disconnections 
                     dir: 'N',
                     ​from_x: 8,
                     from_y: 4,
