@@ -93,11 +93,11 @@ title: Sleepy Macros — Sleepymap library
 <div><a href='https://github.com/SleepyFool-gh/areamap'>Get the map library here</a></div>
 
 ### Videos
-<video width="625" height="500" controls>
+<video controls>
   <source src="./demo/node_house.mp4" type="video/mp4">
   Your browser does not support the video tag.
 </video>
-<video width="625" height="500" controls>
+<video controls>
   <source src="./demo/grid_house.mp4" type="video/mp4">
   Your browser does not support the video tag.
 </video>
