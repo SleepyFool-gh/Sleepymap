@@ -53,6 +53,9 @@
         .macro-Sleepymap-entity {
             position: absolute;
         }
+            .macro-Sleepymap-tile[disabled] {
+                cursor: not-allowed;
+            }
         .macro-Sleepymap-path {
             background: rgba(82, 209, 255, 0.3);
         }
