@@ -2,12 +2,14 @@
 html {
     --page-bg           : #ffffff;
     --text-color        : black;
-    --code-color        : purple;
+    --code-color        : #7a017a;
     --code-bg           : #f6f6f6;
     --h1-border-color   : #dcdcdc;
     --h1-bg             : lightgray;
     --scrollbar-color   : #888;
     --track-color       : #f1f1f1;
+    --link-color        : #0056b7;
+    --link-hover-color  : #3c73fd;
 }
 html.dark {
     --page-bg           : #111;
@@ -18,6 +20,8 @@ html.dark {
     --h1-bg             : #363636;
     --scrollbar-color   : #555;
     --track-color       : #141414;
+    --link-color        : #68d;
+    --link-hover-color  : #8af;
 }
 
 /* misc */
@@ -29,10 +33,10 @@ video {
     width: 100%;
 }
 a {
-    color: #68d;
+    color: var(--link-color);
 }
     a:hover {
-        color: #8af;
+        color: var(--link-hover-color);
     }
 .highlight {
     background: none;
@@ -54,30 +58,35 @@ a {
 .container-lg > h1:first-child {
     display: none;
 }
+.markdown-body::before {
+    content: none;
+}
 
 /* code */
 #main :not(pre) > code,
 #main pre {
     background: var(--code-bg);
 }
+    /* keywords */
     :not(pre) > code {
         color: var(--code-color);
     }
-        #main .highlighter-rouge .o, 
-        #main .highlighter-rouge .k,
-        #main .highlighter-rouge .kd,
-        #main .highlighter-rouge .sr,
-        #main .highlighter-rouge .err {
-            color: var(--text-color);
-            background: none;
-            font-weight: initial;
-        }
-        #main .highligher-rouge .kd {
-            font-weight: initial;
-        }
-        #main .highlighter-rouge .kc {
-            color: #42c642;
-        }
+    /* code blocks */
+    #main .highlighter-rouge .o, 
+    #main .highlighter-rouge .k,
+    #main .highlighter-rouge .kd,
+    #main .highlighter-rouge .sr,
+    #main .highlighter-rouge .err {
+        color: var(--text-color);
+        background: none;
+        font-weight: initial;
+    }
+    #main .highligher-rouge .kd {
+        font-weight: initial;
+    }
+    #main .highlighter-rouge .kc {
+        color: #42c642;
+    }
 
 /* scrollbar mess */
 /* Firefox */
@@ -154,6 +163,10 @@ html {
             padding-left: 0;
             width: 100%;
         }
+            /* make it a little easier to read on mobile */
+            :not(pre) > code {
+                font-weight: bold;
+            }
 }
 
 /* dark mode button */

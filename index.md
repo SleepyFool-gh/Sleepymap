@@ -9,36 +9,6 @@ title: Sleepy Macros — Sleepymap library
 
 
 <!--
- ████   ███  ████  █   █     █    █  ████  ████  █████
- █   █ █   █ █   █ █  █      ██  ██ █    █ █   █ █
- █   █ █████ ████  ███       █ ██ █ █    █ █   █ ███
- █   █ █   █ █   █ █  █      █    █ █    █ █   █ █
- ████  █   █ █   █ █   █     █    █  ████  ████  █████
- SECTION: dark mode
--->
-<button id='dark-toggle' aria-label='Toggle dark mode'>☀︎</button>
-<script>
-(function () {
-    const btn = document.getElementById('dark-toggle');
-    const key = 'Sleepymap-dark'; // class to toggle
-    // apply dark mode based on saved preference
-    function set_mode(dark) {
-        document.documentElement.classList.toggle('dark', dark);
-        btn.textContent = dark ? '☀︎' : '☾';
-    }
-    set_mode(localStorage.getItem(key) === '1');
-    btn.addEventListener('click', function () {
-        const dark = ! document.documentElement.classList.contains('dark');
-        localStorage.setItem(key, dark ? '1' : '0');
-        set_mode(dark);
-    });
-})();
-</script>
-
-
-
-
-<!--
  █████  ████   ████
    █   █    █ █
    █   █    █ █
@@ -299,8 +269,7 @@ Updates the operational state (`mapstate`) of a map, such as the current positio
         - For `node travel`: 
             - `mapnode`: id of new `mapnode` position
         - For `grid travel`: 
-            - `x`: (number) new x position
-            - `y`: (number) new y position
+            - `x`/`y`: (number) new x/y position
     - `frozen`: (boolean) *(optional)* disables *all* `interface` interactions if true
     - `disabled`: (object) *(optional)*
         - `[mapnode id]`: (boolean) whether the `mapnode` is disabled on `interfaces`
@@ -395,6 +364,7 @@ Generates a 3x3 grid of directional links for navigation.
     - `mapname`: (string) name of `map`
     - `background`: (HTML string) *(optional)* inserted as a background element for the `rose`
         - aliases: `bg`
+    - `enabled`: (boolean\|TwineScript string) *(optional)* whether the `rose` is enabled, by default will check the `map`'s `frozen` value
     - `autoupdate`: (boolean) *(optional)* whether the `rose` automatically updates after each `mapmove` or when the `map` changes, default set in `options`
     - `clickable` : (boolean) *(optional)* whether the `rose` items are clickable links, default set in `options`
 - **Examples:**
@@ -416,11 +386,12 @@ Renders a visual representation of the `map` with the tiles using the `maparray`
     - `mapname`: (string) name of `map`
     - `background`: (HTML string) *(optional)* inserted as a background element for the `mapview`
         - aliases: `bg`
+    - `enabled`: (boolean\|TwineScript string) *(optional)* whether the `mapview` is enabled, by default will check the `map`'s `frozen` value
     - `autoupdate`: (boolean) *(optional)* whether the `mapview` automatically updates after each `mapmove` or when the `map` changes, default set in `options`
     - `clickable`: (boolean) *(optional)* whether nodes can be clicked to navigate, default set in `options`
     - `show_labels`: (boolean) *(optional)* whether to display labels (names or directional icons) for each node, default set in `options`
     - `pathing`: (boolean) *(optional)* whether to highlight the path to the hovered tile, default set in `options`
-    - `quickmove`: (boolean) *(optional)* whether clicking a distant traversable tile initiates multiple sequential `mapmoves`, default set in `options`, quickmove forces the `mapview` to be clickable
+    - `quickmove`: (boolean) *(optional)* whether clicking a distant traversable tile initiates multiple sequential `mapmoves`, default set in `options`, the `mapview` *must* be clickable to enable `quickmove`
 - **Examples:**
     ```js
     /* places a mapview that has quickmove disabled & pathing enabled */
@@ -439,13 +410,12 @@ Creates an invisible element that controls a listener on `document` for `keyup` 
 
 - **Arguments:** 
     - `mapname`: (string) name of `map`
-    - `enabled`: (boolean) *(optional)* whether the controller is active, default `true`
+    - `enabled`: (boolean\|TwineScript string) *(optional)* whether the `controller` is enabled, by default will check the `map`'s `frozen` value
     - `keys`: (object) map of key codes to target movement objects
         - `[key]`: (object) `keyup` event `key` value
             - `dir`: (string) *(optional)* directional exit to follow ("N", "E", "S", "W", "NE", "SE", "SW", "NW")
             - `mapnode`: (string) *(optional)* target `mapnode` id
-            - `x`: (number) *(optional)* target x coordinate
-            - `y`: (number) *(optional)* target y coordinate
+            - `x`/`y`: (number) *(optional)* target x/y coordinate
 - **Examples:**
     ```js
     /* set up wasd control for movement to adjacent spaces */
@@ -462,21 +432,16 @@ Creates an invisible element that controls a listener on `document` for `keyup` 
 
     /* set up a dedicated key to teleport to the dining room, 
         but only works from the outhouse */
-    /* code to update this by calling <<redo>> not shown */
-    <<do>>
-        <<run
-            _pos = Sleepymap.get_mapstate({ mapname: 'node_house' });
-            _enabled = _pos.mapnode === 'O';
-            _keys = { 
-                r: { mapnode: 'D' },
-            };
-        >>
-        <<place_controller
-            mapname     'node_house'
-            enabled     _enabled
-            keys        _keys
-        >>
-    <</do>>
+    <<set
+        _keys = { 
+            r: { mapnode: 'D' },
+        };
+    >>
+    <<place_controller
+        mapname     'node_house'
+        enabled     'Sleepymap.get_mapstate({ mapname: "node_house" }).mapnode === "O"'
+        keys        _keys
+    >>
     ```
 
 
@@ -500,7 +465,7 @@ Manually triggers an update for a `rose` or `mapview` element. This is useful if
 
 Manually triggers a `mapmove` attempt. This macro *does not* check against exits — it will *teleport* the player regardless of distance or any `blocked` or `walled` `mapnodes` inbetween — but will fail if the *destination* is `blocked` or `walled`. `mapscripts` will be triggered as normal.
 
-`target_mapnode`, `target_x`/`target_y` can both be used in either `node travel` or `grid travel` modes.  `node travel` will fetch the `mapnode` at the targeted xy coordinate, and `grid travel` will fetch the first xy coordinate with the targeted `mapnode`.
+`target_mapnode`, `target_x`/`target_y` can both be used in either `node travel` or `grid travel` modes.  `node travel` will fetch the `mapnode` at the targeted x/y coordinate, and `grid travel` will fetch the first x/y coordinate with the targeted `mapnode`.
 
 - **Arguments:** 
     - `mapname`: (string) name of `map`
@@ -509,7 +474,7 @@ Manually triggers a `mapmove` attempt. This macro *does not* check against exits
     - `target_x`/`target_y`: (number) target x/y coordinates
         - aliases: `x`/`y`
     - `force_abort`: (boolean) *(optional)* `true` forces the `mapmove` to fail, default `false`
-    - `skip_scripts`: (boolean) *(optional)* `true` to bypass all `onmap` scripts for this `mapmove`, default `false`
+    - `skip_scripts`: (boolean) *(optional)* `true` to bypass all `mapscripts` for this `mapmove`, default `false`
 - **Examples:**
     ```js
     /* teleport to master bedroom */
@@ -571,8 +536,7 @@ Creates a new entity on the map at the specified coordinates. This macro takes `
 - **Arguments:** 
     - `mapname`: (string) name of `map`
     - `entityname`: (string) unique identifier for the entity
-    - `x`: (number) x coordinate
-    - `y`: (number) y coordinate
+    - `x`/`y`: (number) x/y coordinate
     - `tile`: (HTML string) *(optional)* display tile for the entity
 - **Examples:**
     ```js
@@ -594,8 +558,7 @@ Updates the position or display tile of an existing entity. This macro takes `x`
 - **Arguments:** 
     - `mapname`: (string) name of `map`
     - `entityname`: (string) identifier of the entity to modify
-    - `x`: (number) new x coordinate
-    - `y`: (number) new y coordinate
+    - `x`/`y`: (number) new x/y coordinate
     - `tile`: (HTML string) *(optional)* new display tile
 - **Examples:**
     ```js
@@ -927,7 +890,7 @@ The `<<set_mapstate>>` macro is a wrapper for this method.
     - `mapname`: (string) name of the `map`
     - `position`: (object) *(optional)* new position
         - `mapnode`: (string) id of node (`node travel`)
-        - `x`, `y`: (number) coordinates (`grid travel`)
+        - `x`/`y`: (number) x/y coordinate (`grid travel`)
     - `frozen`: (boolean) *(optional)* disables all interface interactions
     - `disabled`, `hidden`, `blocked`, `walled`: (object) *(optional)* Maps of `mapnode` ids to boolean values.
 - **Examples:**
@@ -958,9 +921,10 @@ The `<<place_rose>>` macro calls this method and appends the result to the macro
 
 - **argObj Properties:**
     - `mapname`: (string) name of the `map`
+    - `background`: (HTML string) *(optional)* inserted as a background element
+    - `enabled`: (boolean\|TwineScript string) *(optional)* whether the `rose` is enabled, by default will check the `map`'s `frozen` value
     - `autoupdate`: (boolean) *(optional)* whether the `rose` automatically updates, default set in `options`
     - `clickable` : (boolean) *(optional)* whether the `exits` are navigation links, default set in `options`
-    - `background`: (HTML string) *(optional)* inserted as a background element
 - **Returns:** (jQuery object) the created `$rose` element
 - **Examples:**
     ```js
@@ -981,12 +945,13 @@ The `<<place_mapview>>` macro calls this method and appends the result to the ma
 
 - **argObj Properties:**
     - `mapname`: (string) name of the `map`
+    - `background`: (HTML string) *(optional)* inserted as a background element
+    - `enabled`: (boolean\|TwineScript string) *(optional)* whether the `mapview` is enabled, by default will check the `map`'s `frozen` value
     - `autoupdate`: (boolean) *(optional)* whether the `mapview` automatically updates, default set in `options`
     - `clickable`: (boolean) *(optional)* whether nodes can be clicked to navigate, default set in `options`
     - `show_labels`: (boolean) *(optional)* whether to display labels (names or directional icons) for each node, default set in `options`
     - `pathing`: (boolean) *(optional)* whether to highlight the path to the hovered tile; highlighted path is generated by adding the `.macro-Sleepymap-path` class to each `tile` along the path; default set in `options`
     - `quickmove`: (boolean) *(optional)* whether clicking a distant traversable tile initiates multiple sequential `mapmoves`; `clickable` *must* be `true` for `quickmove` to function; default set in `options`
-    - `background`: (HTML string) *(optional)* inserted as a background element
 - **Returns:** (jQuery object) the created `$mapview` element
 - **Examples:**
     ```js
@@ -1008,13 +973,12 @@ The `<<place_controller>>` macro is a wrapper for this method.
 
 - **argObj Properties:**
     - `mapname`: (string) name of the `map`
-    - `enabled`: (boolean) *(optional)* whether the controller is active, default `true`
+    - `enabled`: (boolean\|TwineScript string) *(optional)* whether the `controller` is enabled, by default will check the `map`'s `frozen` value
     - `keys`: (object) map of key codes to target movement objects
         - `[key]`: (string) `keyup` event `key` value
             - `dir`: (string) *(optional)* directional exit to follow ("N", "E", "S", "W", "NE", "SE", "SW", "NW")
             - `mapnode`: (string) *(optional)* target `mapnode` ID
-            - `x`: (number) *(optional)* target x coordinate
-            - `y`: (number) *(optional)* target y coordinate
+            - `x`/`y`: (number) *(optional)* target x/y coordinate
 - **Examples:**
     ```js
     // set up wasd control for movement to adjacent spaces
@@ -1055,7 +1019,7 @@ The `<<update_interface>>` macro is a wrapper for this method.
 
 Begins the `mapmove` procedure and fires the `Sleepymap:mapmove_began` event. This method does not check against automatically generated exits and will *teleport* the player regardless of distance or any `blocked` or `walled` mapnodes inbetween — but will fail if the destination is `blocked` or `walled`. `mapscripts` trigger as normal.
 
-`target_mapnode`, `target_x`/`target_y` can both be used in either `node travel` or `grid travel` modes.  `node travel` will fetch the `mapnode` at the targeted xy coordinate, and `grid travel` will fetch the first xy coordinate with the targeted `mapnode`.
+`target_mapnode`, `target_x`/`target_y` can both be used in either `node travel` or `grid travel` modes.  `node travel` will fetch the `mapnode` at the targeted x/y coordinate, and `grid travel` will fetch the first x/y coordinate with the targeted `mapnode`.
 
 The `<<mapmove>>` macro is a wrapper for this method.
 
@@ -1065,7 +1029,7 @@ The `<<mapmove>>` macro is a wrapper for this method.
     - `target_x`: (number) *(optional)* target x coordinate (`grid travel`)
     - `target_y`: (number) *(optional)* target y coordinate (`grid travel`)
     - `force_abort`: (boolean) *(optional)* `true` to force the move to fail, default `false`
-    - `skip_scripts`: (boolean) *(optional)* `true` to bypass `onmap` scripts for this move, default `false`
+    - `skip_scripts`: (boolean) *(optional)* `true` to bypass `mapscripts` for this move, default `false`
 - **Examples:**
     ```js
     // teleport to the master bedroom
@@ -1122,7 +1086,7 @@ Scripts of the same type will triggered by their position in the `scripts` array
 - **argObj Properties:**
     - `mapname`: (string) name of the `map`
     - `scripts`: (array&lt;object&gt;) array of script objects, each containing:
-        - `type`: (`"onmapattempt"`|`"onmapstart"`|`"onmapend"`|`"onmapabort"`) the script trigger
+        - `type`: (`"onmapattempt"`\|`"onmapstart"`\|`"onmapend"`\|`"onmapabort"`) the script trigger
         - `contents`: (TwineScript string) the TwineScript code to execute
         - `triggers`: (object) *(optional)* conditional triggers, scripts will *always* run if left undefined
             - `from`/`to`: (string\|array&lt;string&gt;\|"any") *(optional)* id(s) of the node the player is moving from/to
@@ -1182,8 +1146,7 @@ The `<<new_entity>>`, `<<set_entity>>`, and `<<delete_entity>>` macros are all w
 - **argObj Properties:**
     - `mapname`: (string) name of the `map`
     - `entityname`: (string) unique identifier for the entity
-    - `x`: (number) x coordinate
-    - `y`: (number) y coordinate
+    - `x`/`y`: (number) x/y coordinate
     - `tile`: (HTML string) *(optional)* display tile for the entity
     - `removing`: (boolean) *(optional)* `true` to delete the entity, default `false`
 - **Examples:**
@@ -1232,7 +1195,7 @@ Triggered when any `mapmove` attempt begins immediately after `onmapattempt` scr
             - `x`/`y`: (number) x/y coordinates
         - `entities`: (array&lt;object&gt;)
             - `name`: (string) entity's name
-            - `x`/`y`: (number) entity's xy coordinates
+            - `x`/`y`: (number) entity's x/y coordinates
             - `tile`: (HTML string) entity's tile
     - `targets`: (object) target location details
         - `mapnode`: (string)
@@ -1240,7 +1203,7 @@ Triggered when any `mapmove` attempt begins immediately after `onmapattempt` scr
             - `x`/`y`: (number) x/y coordinates
         - `entities`: (array&lt;object&gt;)
             - `name`: (string) entity's name
-            - `x`/`y`: (number) entity's xy coordinates
+            - `x`/`y`: (number) entity's x/y coordinates
             - `tile`: (HTML string) entity's tile
 
     - `force_abort`: (boolean) whether the `mapmove` is being forced to fail
@@ -1258,7 +1221,7 @@ Triggered after any `mapmove` resolves.
             - `x`/`y`: (number) x/y coordinates
         - `entities`: (array&lt;object&gt;)
             - `name`: (string) entity's name
-            - `x`/`y`: (number) entity's xy coordinates
+            - `x`/`y`: (number) entity's x/y coordinates
             - `tile`: (HTML string) entity's tile
     - `targets`: (object) target location details
         - `mapnode`: (string)
@@ -1266,7 +1229,7 @@ Triggered after any `mapmove` resolves.
             - `x`/`y`: (number) x/y coordinates
         - `entities`: (array&lt;object&gt;)
             - `name`: (string) entity's name
-            - `x`/`y`: (number) entity's xy coordinates
+            - `x`/`y`: (number) entity's x/y coordinates
             - `tile`: (HTML string) entity's tile
     - `succeeded`: (boolean) whether the movement was successful
 
@@ -1322,6 +1285,36 @@ Triggered after modifications to the map (i.e., `set_map`, `edit_exits`, `set_ma
 <p align="center">
     &bull; &bull; &bull;
 </p>
+
+
+
+
+<!--
+ ████   ███  ████  █   █     █    █  ████  ████  █████
+ █   █ █   █ █   █ █  █      ██  ██ █    █ █   █ █
+ █   █ █████ ████  ███       █ ██ █ █    █ █   █ ███
+ █   █ █   █ █   █ █  █      █    █ █    █ █   █ █
+ ████  █   █ █   █ █   █     █    █  ████  ████  █████
+ SECTION: dark mode
+-->
+<button id='dark-toggle' aria-label='Toggle dark mode'>☀︎</button>
+<script>
+(function () {
+    const btn = document.getElementById('dark-toggle');
+    const key = 'Sleepymap-dark'; // class to toggle
+    // apply dark mode based on saved preference
+    function set_mode(dark) {
+        document.documentElement.classList.toggle('dark', dark);
+        btn.textContent = dark ? '☀︎' : '☾';
+    }
+    set_mode(localStorage.getItem(key) === '1');
+    btn.addEventListener('click', function () {
+        const dark = ! document.documentElement.classList.contains('dark');
+        localStorage.setItem(key, dark ? '1' : '0');
+        set_mode(dark);
+    });
+})();
+</script>
 
 
 </section>

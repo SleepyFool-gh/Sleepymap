@@ -20,9 +20,11 @@ const options = {
         clickable_mapview       : true,
         show_labels_on_mapview  : true,
 
+        autoupdate_controller   : true,
+
         pathing_on_mapview      : true,
         quickmove_on_mapview    : true,
-        pathmove_delay          : 250,
+        quickmove_delay         : 250,
         
         disabled_stops_pathing  : true,
         hidden_stops_pathing    : true,
@@ -100,8 +102,8 @@ const is_diagonal = {
     SW  : true,
     NW  : true,
 };
-// pathmove flag to disable things as needed
-let _pathmove_running = false;
+// quickmove flag to disable things as needed
+let _quickmove_running = false;
 
 
 
@@ -552,11 +554,15 @@ function set_mapstate(argObj) {
             throw new Error(`${name} — Sleepymap "${mapname}" — mapnode "${argObj.position?.mapnode}" not found in maparray!`);
         }
         this_map.position.mapnode = argObj.position.mapnode;
+        // trigger autoupdate
+        setTimeout( () => $('#passages').trigger('Sleepymap:map_edited', { mapname }), Engine.DOM_DELAY);
     }
 
     // set frozen state
     if (argObj.frozen !== undefined) {
         this_map.frozen = argObj.frozen;
+        // trigger autoupdate
+        setTimeout( () => $('#passages').trigger('Sleepymap:map_edited', { mapname }), Engine.DOM_DELAY);
     }
 
     // SYNC REMINDER: if changing here, need to change in SET_MAPSTATE_TEMPLATE, new_map, set_mapstate, & set_mapnode
@@ -944,15 +950,18 @@ const CREATE_ROSE_TEMPLATE = {
         required: true,
         type: 'string',
     },
+    background: {
+        type: 'string',
+        aliases: 'bg',
+    },
+    enabled: {
+        type: ['boolean', 'string'],
+    },
     autoupdate: {
         type: 'boolean',
     },
     clickable: {
         type: 'boolean',
-    },
-    background: {
-        type: 'string',
-        aliases: 'bg',
     },
 }
 // macro wrapper, calls the create_rose function (which returns a $rose object)
@@ -985,6 +994,18 @@ function create_rose(argObj) {
     }
 
     const { grid_travel, columns, maparray, mapnodes, position, frozen, exits } = this_map;
+
+    // check if enabled
+    const enabled   = argObj.enabled === undefined
+                        ? ! frozen // default value
+                    : typeof argObj.enabled === 'boolean'
+                        ? argObj.enabled
+                    : Scripting.evalTwineScript(argObj.enabled);
+    // WARNING: evaluated to non-boolean
+    if (typeof enabled !== 'boolean') {
+        console.warn(`${name} — Sleepymap "${mapname}" — controller "enabled" args string didn't evaluate into a boolean! Coercing...`);
+    }
+
     const mapnode = mapnodes[position.mapnode];
 
     // create rose
@@ -996,6 +1017,8 @@ function create_rose(argObj) {
         .attr('data-x'          , position.x)
         .attr('data-y'          , position.y)
         .attr('data-autoupdate' , autoupdate)
+        .attr('data-disabled'   , ! enabled)
+        .attr('disabled'        , ! enabled)
         .data('argObj'          , argObj);
 
     // insert background
@@ -1014,6 +1037,8 @@ function create_rose(argObj) {
         .attr('data-mapnode'        , mapnode.id)
         .attr('data-x'              , position.x)
         .attr('data-y'              , position.y)
+        .attr('data-disabled'       , ! enabled)
+        .attr('disabled'            , ! enabled)
         .html(mapnode.name)
         .appendTo($rose);
     
@@ -1057,7 +1082,8 @@ function create_rose(argObj) {
                     .attr('data-mapnode'        , exit_mapnode.id)
                     .attr('data-x'              , xy.x)
                     .attr('data-y'              , xy.y)
-                    .attr('disabled'            , exit_mapnode.disabled || frozen)
+                    .attr('data-disabled'       , exit_mapnode.disabled || ! enabled)
+                    .attr('disabled'            , exit_mapnode.disabled || ! enabled)
                     .css({ 
                         opacity                 : exit_mapnode.hidden ? '0' : '' 
                     })   // opacity instead of visibility because of mapview
@@ -1087,7 +1113,7 @@ function create_rose(argObj) {
                     .attr('data-mapnode'        , exit_mapnode.id)
                     .attr('data-x'              , 'undefined')
                     .attr('data-y'              , 'undefined')
-                    .attr('disabled'            , exit_mapnode.disabled || frozen)
+                    .attr('disabled'            , exit_mapnode.disabled || ! enabled)
                     .css({
                         visibility              : exit_mapnode.hidden ? 'hidden' : '',
                     })
@@ -1118,15 +1144,18 @@ const CREATE_MAPVIEW_TEMPLATE = {
         required: true,
         type: 'string',
     },
+    background: {
+        type: 'string',
+        aliases: 'bg',
+    },
+    enabled: {
+        type: ['boolean', 'string'],
+    },
     autoupdate: {
         type: 'boolean',
     },
     clickable: {
         type: 'boolean',
-    },
-    background: {
-        type: 'string',
-        aliases: 'bg',
     },
     show_labels: {
         type: 'boolean',
@@ -1159,14 +1188,26 @@ function create_mapview(argObj) {
     const show_labels   = argObj.show_labels ?? options.default.show_labels_on_mapview; 
     const autoupdate    = argObj.autoupdate  ?? options.default.autoupdate_mapview;
     const clickable     = argObj.clickable   ?? options.default.clickable_mapview;
-    const this_map = maps[mapname];
 
+    const this_map = maps[mapname];
     // ERROR: non-extant map
     if (this_map === undefined) {
         throw new Error(`${name} — Sleepymap "${mapname}" not found!`);
     }
     
     const { grid_travel, columns, maparray, mapnodes, position, frozen, exits, entities } = this_map;
+    
+    // check if enabled
+    const enabled   = argObj.enabled === undefined
+                        ? ! frozen // default value
+                    : typeof argObj.enabled === 'boolean'
+                        ? argObj.enabled
+                    : Scripting.evalTwineScript(argObj.enabled);
+    // WARNING: evaluated to non-boolean
+    if (typeof enabled !== 'boolean') {
+        console.warn(`${name} — Sleepymap "${mapname}" — controller "enabled" args string didn't evaluate into a boolean! Coercing...`);
+    }
+
 
     // WARNING: pathing on node travel map
     if ((argObj.pathing || argObj.quickmove) && (! grid_travel)) {
@@ -1199,6 +1240,8 @@ function create_mapview(argObj) {
         .attr('data-position-x' , position.x)
         .attr('data-position-y' , position.y)
         .attr('data-autoupdate' , autoupdate)
+        .attr('data-disabled'   , ! enabled)
+        .attr('disabled'        , ! enabled)
         .data('argObj', argObj)
         .css({
             '--columns'         : columns,
@@ -1248,7 +1291,7 @@ function create_mapview(argObj) {
         const mapnode = mapnodes[id];
 
         // if walled, not traversable
-        if (mapnode.walled || _pathmove_running) return false;
+        if (mapnode.walled || _quickmove_running) return false;
 
         // check exits dirs that at least one has target
         if (grid_travel) {
@@ -1265,9 +1308,11 @@ function create_mapview(argObj) {
         const id = maparray[i];
         const mapnode = mapnodes[id];
         // if clickable & valid travel destination --> clickable
-        const link  = ! (clickable || quickmove)
+        const link  = clickable || quickmove
+                        ? true
+                    : ! enabled
                         ? false
-                        : !! is_traversable(i);
+                    : !! is_traversable(i);
 
         const xy = i2xy({ i, columns });
         // labels only work in grid mode
@@ -1288,8 +1333,8 @@ function create_mapview(argObj) {
             .attr('data-i'              , i)
             .attr('data-x'              , xy.x)
             .attr('data-y'              , xy.y)
-            .attr('data-disabled'       , mapnode.disabled)
-            .attr('disabled'            , mapnode.disabled || frozen)
+            .attr('data-disabled'       , mapnode.disabled || ! enabled)
+            .attr('disabled'            , mapnode.disabled || ! enabled)
             .attr('data-hidden'         , mapnode.hidden)
             .css({ 
                 opacity                 : mapnode.hidden ? '0' : '' 
@@ -1328,7 +1373,7 @@ function create_mapview(argObj) {
                 to_i    : target_i,
             });
             // show pathing if enabled and not pathmoving
-            if (pathing && ! _pathmove_running) {
+            if (enabled && pathing && ! _quickmove_running) {
                 // remove path class on all tiles
                 $mapview[0]
                     .querySelectorAll('.macro-Sleepymap-path')
@@ -1339,7 +1384,7 @@ function create_mapview(argObj) {
                 }
             }
             // if quickmove enabled and not pathmoving
-            if (quickmove && ! _pathmove_running) {
+            if (enabled && quickmove && ! _quickmove_running) {
                 // if path exists, movable
                 $(this).removeClass('macro-Sleepymap-hoverlink');
                 if (path) {
@@ -1347,11 +1392,11 @@ function create_mapview(argObj) {
                 }
             }
         });
-        // if quickmove enabled
-        if (quickmove) {
+        // run quickmove if enabled
+        if (enabled && quickmove) {
             $mapview.on('click', '.macro-Sleepymap-tile', function(ev) {
                 // if valid path
-                if (path?.length > 1) begin_pathmove({ mapname, path });
+                if (path?.length > 1) begin_quickmove({ mapname, path });
             });
         }
         
@@ -1373,6 +1418,7 @@ function create_mapview(argObj) {
 const interfaces = {
     rose: create_rose,
     mapview: create_mapview,
+    controller: create_controller,
 };
 
 // ┌─┐┬ ┬┌┬┐┌─┐┬ ┬┌─┐┌┬┐┌─┐┌┬┐┌─┐
@@ -1476,8 +1522,8 @@ function attach_click(argObj) {
 
         // link disabled, do nothing
         if ($(this).attr('disabled')) return;
-        // pathmove running, do nothing
-        if (_pathmove_running) return;
+        // quickmove running, do nothing
+        if (_quickmove_running) return;
 
         // attempt move to target
         const target_mapnode    = $(this).attr('data-mapnode');
@@ -1504,15 +1550,12 @@ const CREATE_CONTROLLER_TEMPLATE = {
         type: 'string',
         required: true,
     },
-    teleport: {
-        type: 'boolean',
+    enabled: {
+        type: ['boolean', 'string'],
     },
     keys: {
         type: 'object',
         required: true,
-    },
-    enabled: {
-        type: 'boolean',
     },
 };
 Macro.add(['place_controller'], {
@@ -1531,7 +1574,7 @@ function create_controller(argObj) {
     ArgObj.validate(name, CREATE_CONTROLLER_TEMPLATE, argObj);
 
     const { mapname, keys } = argObj;
-    const enabled = argObj.enabled ?? true; // default value
+    const autoupdate = argObj.autoupdate ?? options.default.autoupdate_controller; // default value
     const this_map = maps[mapname];
 
     // ERROR: non-extant map
@@ -1539,7 +1582,7 @@ function create_controller(argObj) {
         throw new Error(`${name} — Sleepymap "${mapname}" not found!`);
     }
 
-    const { grid_travel, columns, position, maparray, mapnodes, exits } = this_map;
+    const { grid_travel, columns, position, maparray, mapnodes, exits, frozen } = this_map;
 
     const $controller = $(document.createElement('div'))
         .addClass('macro-Sleepymap-controller')
@@ -1547,9 +1590,20 @@ function create_controller(argObj) {
         .attr('data-mapname'    , mapname)
         .attr('data-mapnode'    , position.mapnode)
         .attr('data-position-x' , position.x)
-        .attr('data-position-y' , position.y);
+        .attr('data-position-y' , position.y)
+        .attr('data-autoupdate' , autoupdate)
+        .data('argObj'          , argObj);
 
-    // not enabled, do nothing
+    // check if enabled, immediately return $controller if not
+    const enabled   = argObj.enabled === undefined
+                        ? ! frozen // default value
+                    : typeof argObj.enabled === 'boolean'
+                        ? argObj.enabled
+                    : Scripting.evalTwineScript(argObj.enabled);
+    // WARNING: evaluated to non-boolean
+    if (typeof enabled !== 'boolean') {
+        console.warn(`${name} — Sleepymap "${mapname}" — controller "enabled" args string didn't evaluate into a boolean! Coercing...`);
+    }
     if (! enabled) return $controller;
 
     const namespace = `Sleepymap.${crypto.randomUUID()}`;
@@ -1620,15 +1674,12 @@ function create_controller(argObj) {
             $(document).off(`keyup.${namespace}`);
             return;
         }
-        // pathmove running or not enabled, do nothing
-        else if (_pathmove_running) return;
+        // quickmove running or not enabled, do nothing
+        else if (_quickmove_running) return;
 
         const target = key2target[ev.key];
-        // frozen, do nothing
-        // need to fetch fresh because primitive
-        if (maps[mapname].frozen) return;
         // no match, do nothing
-        else if (target === undefined) return;
+        if (target === undefined) return;
 
         let found = false;
         const current = {};
@@ -2219,17 +2270,17 @@ function resolve_mapmove(argObj) {
     }), Engine.DOM_DELAY);
 }
 
-function begin_pathmove(argObj) {
-    const name = argObj.name ?? 'Sleepymap.begin_pathmove';
+function begin_quickmove(argObj) {
+    const name = argObj.name ?? 'Sleepymap.begin_quickmove';
 
-    // do nothing if pathmove running
-    if (_pathmove_running) return;
+    // do nothing if quickmove running
+    if (_quickmove_running) return;
 
     const { mapname, path } = argObj;
     // default values
-    const skip_scripts      = argObj.skip_scripts ?? false;
-    const suppress_warnings = argObj.suppress_warnings ?? false;
-    const pathmove_delay    = argObj.pathmove_delay ?? options.default.pathmove_delay;
+    const skip_scripts      = argObj.skip_scripts       ?? false;
+    const suppress_warnings = argObj.suppress_warnings  ?? false;
+    const quickmove_delay   = argObj.quickmove_delay    ?? options.default.quickmove_delay;
 
     const this_map = maps[mapname];
 
@@ -2258,7 +2309,7 @@ function begin_pathmove(argObj) {
 
     const { columns } = this_map;
 
-    _pathmove_running = true;
+    _quickmove_running = true;
     // recursive fn to execute each step
     function execute_step(i) {
         const step = path[i];
@@ -2277,11 +2328,13 @@ function begin_pathmove(argObj) {
             $(document).one('Sleepymap:mapmove_resolved', (ev, data) => {
                 // only proceed to next step if succeeded and there is still more to go
                 if (data.succeeded && (path.length > i+1)) {
-                    setTimeout( () => execute_step(i+1), pathmove_delay);
+                    setTimeout( () => execute_step(i+1), quickmove_delay);
                 }
                 // unlock if not
                 else {
-                    _pathmove_running = false;
+                    _quickmove_running = false;
+                    setTimeout( () => $('#passages').trigger('Sleepymap:map_edited', { mapname }), Engine.DOM_DELAY);
+                    
                 }
             })
         }
@@ -2546,7 +2599,7 @@ function set_map(argObj) {
         update_exits({ mapname });
     }
     // update roses & mapviews
-    $('#passages').trigger('Sleepymap:map_edited', { mapname });
+    setTimeout( () => $('#passages').trigger('Sleepymap:map_edited', { mapname }), Engine.DOM_DELAY);
 }
 // fetch a clone of map object
 function get_map(argObj) {
@@ -2573,26 +2626,24 @@ function get_map(argObj) {
 // class needed to write each property directly to State because SugarCube breaks references on passage navigation
 const Sleepymap = {
     new_map,
-
     get_map,
     set_map,
 
     edit_exits,
-
     get_mapnode,
     set_mapnode,
     get_mapstate,
     set_mapstate,
 
-    set_entity,
-    set_mapscripts,
-
-    begin_mapmove,
-
     create_rose,
     create_mapview,
+    create_controller,
     update_interface,
+
+    begin_mapmove,
     find_path,
+    set_entity,
+    set_mapscripts,
 };
 window.Sleepymap = Sleepymap;
 

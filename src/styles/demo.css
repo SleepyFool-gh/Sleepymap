@@ -1,0 +1,38 @@
+:not(pre) code {
+    color: orange
+}
+#story {
+    margin-top: 0 !important;
+}
+#grid {
+    display: grid;
+    grid-template-columns: 1fr minmax(0, 60%);
+    gap: 1rem;
+}
+    #controls {
+        --indent: 0.5rem;
+        display:flex;
+        flex-direction:column;
+        text-indent: calc(-1 * var(--indent));
+        margin-left: var(--indent);
+    }
+    #rose {
+        margin-top: 0.75rem;
+    }
+    #kitty {
+        font-size: 1rem;
+    }
+@media (max-width: 768px) {
+    #grid {
+        grid-template-columns: 1fr;
+    }
+        #controls {
+            grid-row: 2;
+        }
+        #kitty {
+            font-size: 0.7rem;
+        }
+        .macro-Sleepymap-tile { 
+            --border-width: 0.1rem;
+        }
+}
