@@ -414,6 +414,7 @@ function set_mapnode(argObj) {
         walled: 'boolean',
     };
     let interfaces_need_updating = false;
+    let exits_need_updating = false;
     for (const prop in data) {
         // WARNING: not valid property, skip
         if (! Object.hasOwn(MAPTILE_PROPS, prop)) {
@@ -427,12 +428,15 @@ function set_mapnode(argObj) {
         }
         mapnodes[argObj.mapnode][prop] = data[prop];
         interfaces_need_updating = true;
+        if (prop === 'walled') exits_need_updating = true;
     }
 
-    // update interfaces
+    // update interfaces & exits
     if (interfaces_need_updating) {
         setTimeout( () => $('#passages').trigger('Sleepymap:map_edited', { mapname }), Engine.DOM_DELAY);
     }
+    if (exits_need_updating) update_exits({ mapname });
+
 }
 function get_mapnode(argObj) {
     const name = argObj.name ?? 'Sleepymap.get_mapnode';
@@ -1308,9 +1312,7 @@ function create_mapview(argObj) {
         const id = maparray[i];
         const mapnode = mapnodes[id];
         // if clickable & valid travel destination --> clickable
-        const link  = clickable || quickmove
-                        ? true
-                    : ! enabled
+        const link  = ! enabled || ! (clickable || quickmove)
                         ? false
                     : !! is_traversable(i);
 
@@ -2644,6 +2646,7 @@ const Sleepymap = {
     find_path,
     set_entity,
     set_mapscripts,
+    update_exits,
 };
 window.Sleepymap = Sleepymap;
 

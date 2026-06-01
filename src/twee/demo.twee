@@ -156,9 +156,6 @@ Sleepymap Macro Library, Demo
 <<set 
     _mapname = 'node_house';
     _code_passage = 'node_code';
-    _quickmove = false;
-    _rose_autoupdate = true;
-    _mapview_autoupdate = true;
 >>
 <h2>Node Travel — demo</h2>
 <<include 'content'>>
@@ -194,15 +191,16 @@ Sleepymap Macro Library, Demo
 >>
 
 :: node_code
-<h3>Node Travel — sample code</h3><<back 'Back to demo'>><h3>StoryInit</h3><p>
+<<nobr>>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+<</nobr>><h3>Node Travel — sample code</h3><<back 'Back to demo'>><h3>StoryInit</h3><p>
     The code is mostly identical between <code>grid travel</code> & <code>node travel</code>, so a <code><nowiki><<for>></nowiki></code> loop or <code><nowiki><<include>></nowiki></code> handles most of it. Styling and page formatting ommitted.
 </p><pre><code class="language-javascript"><nowiki>/* init vars */
 <<set 
     _mapname = 'node_house';
     _code_passage = 'node_code';
-    _quickmove = false;
-    _rose_autoupdate = true;
-    _mapview_autoupdate = true;
     $energy = 100;
     $heat = 0;
     $hunter = 0;
@@ -282,10 +280,6 @@ Sleepymap Macro Library, Demo
 <<set 
     _mapname = 'grid_house';
     _code_passage = 'grid_code';
-    _quickmove = true;
-    _rose_autoupdate = true;
-    _mapview_autoupdate = true;
-    Sleepymap.set_mapstate({ mapname: _mapname, frozen: true });
 >>
 <h2>Grid Travel — demo</h2>
 <<include 'content'>>
@@ -310,14 +304,15 @@ Sleepymap Macro Library, Demo
 
 
 :: grid_code
-<h3>Grid Travel — sample code</h3><<back 'Back to demo'>><p>The code is mostly identical between <code>grid travel</code> & <code>node travel</code>, so a <code><nowiki><<for>></nowiki></code> loop or <code><nowiki><<include>></nowiki></code> handles most of it. Styling and page formatting ommitted.
+<<nobr>>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+<</nobr>><h3>Grid Travel — sample code</h3><<back 'Back to demo'>><p>The code is mostly identical between <code>grid travel</code> & <code>node travel</code>, so a <code><nowiki><<for>></nowiki></code> loop or <code><nowiki><<include>></nowiki></code> handles most of it. Styling and page formatting ommitted.
 </p><h3>StoryInit</h3><pre><code class="language-javascript"><nowiki>/* init vars */
 <<set 
     _mapname = 'grid_house';
     _code_passage = 'grid_code';
-    _quickmove = true;
-    _rose_autoupdate = true;
-    _mapview_autoupdate = true;
     $energy = 100;
     $heat = 0;
     $hunter = 0;
@@ -382,6 +377,14 @@ Sleepymap Macro Library, Demo
   ████  ████  █   ██   █   █████ █   ██   █
  SECTION: content
 -->
+<<set
+    _rose_autoupdate = true;
+    _mapview_autoupdate = true;
+    _frozen = false;
+    _pantry_disabled = false;
+    _living_walled = false;
+    _stairs_blockedd = false;
+>>
 /* mapview, <<do>> for enabling/disabling autoupdate */
 <<do tag 'mapview'>>
     <<if _mapview_autoupdate>>
@@ -397,58 +400,40 @@ Sleepymap Macro Library, Demo
 <</do>>
 
 <div id='grid'>
-    <div id='controls'>
 
-        /* map stats */
+    /* map stats */
+    <div id='stats'>
         <h3>Map Info</h3>
         <<do tag 'stats'>>
-            <div>Energy: $energy</div>
-            <div>Heat: $heat</div>
-            <div>Hunger: $hunger</div>
+            <ul>
+                <li>Energy: $energy</li>
+                <li>Heat: $heat</li>
+                <li>Hunger: $hunger</li>
+            </ul>
         <</do>>
-
-        /* demo navigation */
-        <h3>Navigation</h3>
-        [[Return to travel mode selection -> Start]]
-        <<link 'See the code for this demo' _code_passage>><</link>>
-        <<link 'Navigate in place' _mapname>><</link>>
-        <div>Use sidebar to navigate backwards or forwards.</div>
-
-        /* mapmove controls */
-        <h3>Map Controls</h3>
-        <<link 'Go upstairs'>>
-            <<mapmove mapname _mapname target_x 14  target_y 5>>
-        <</link>>
-        <<link 'Go downstairs'>>
-            <<mapmove mapname _mapname target_x 8 target_y 4>>
-        <</link>>
-        <<link 'Go to guest bedroom'>>
-            <<mapmove mapname _mapname target_mapnode 'G'>>
-        <</link>>
-        
-        /* interface controls controls */
-        <<do tag 'mapview'>>
-            <<set _text = _mapview_autoupdate ? "Disable mapview autoupdate" : "Enable mapview autoupdate">>
-            <<link _text>>
-                <<set _mapview_autoupdate = ! _mapview_autoupdate>>
-                <<redo 'mapview'>>
-            <</link>>
-        <</do>>
-        <<do tag 'rose'>>
-            <<set _text = _rose_autoupdate ? "Disable rose autoupdate" : "Enable rose autoupdate">>
-            <<link _text>>
-                <<set _rose_autoupdate = ! _rose_autoupdate>>
-                <<redo 'rose'>>
-            <</link>>
-        <</do>>
-        <<link 'Update interfaces'>>
-            <<update_interface selector '.macro-Sleepymap-rose'>>
-            <<update_interface selector '.macro-Sleepymap-mapview'>>
-        <</link>>
-        <div>WASD for north, east, south, west respectively.</div>
-        <div>E to teleport to Outhouse</div>
-        <div>R to teleport to Dining Room, only from Outhouse</div>
     </div>
+
+    <div id='controls'>
+        <div id='headers' data-selected='demo'>
+            <h3 class='header' data-control='demo'>Demo Navigation</h3>
+            <h3 class='header' data-control='map'>Map Manipulation</h3>
+            <h3 class='header' data-control='mapmove'>Mapmove Controls</h3>
+            <h3 class='header' data-control='interface'>Interface Controls</h3>
+        </div>
+        <div id='control-content'>
+            <<include 'control_demo'>>
+        </div>
+    </div>
+    <<done>>
+        <<run
+            $('#controls').on('click', '.header', function() {
+                const control = $(this).attr('data-control');
+                $('#control-content').html('');
+                $('#control-content').wikiPassage(`control_${control}`);
+                $('#headers').attr('data-selected', control);
+            });
+        >>
+    <</done>>
 
     /* rose, <<do>> to toggle autoupdate */
     <div id='rose'>
@@ -490,6 +475,123 @@ Sleepymap Macro Library, Demo
     enabled     "Sleepymap.get_mapstate({ mapname: _mapname }).mapnode === 'O'"
 >>
 
+:: control_demo [nobr]
+<!--
+ ┌┐┌┌─┐┬  ┬┬┌─┐┌─┐┌┬┐┬┌─┐┌┐┌
+ │││├─┤└┐┌┘││ ┬├─┤ │ ││ ││││
+ ┘└┘┴ ┴ └┘ ┴└─┘┴ ┴ ┴ ┴└─┘┘└┘
+ SECTION: navigation
+-->
+<ul>
+    <li>[[Return to travel mode selection -> Start]]</li>
+    <li><<link 'See the code for this demo' _code_passage>><</link>></li>
+    <li><<link 'Navigate in place' _mapname>><</link>></li>
+    <li>Use sidebar to navigate backwards or forwards.</li>
+</ul>
+
+:: control_map [nobr]
+<!--
+ ┌┬┐┌─┐┌─┐
+ │││├─┤├─┘
+ ┴ ┴┴ ┴┴
+ SECTION: map
+-->
+<<do tag 'control_map'>>
+    <ul>
+        <li>
+            <<set _text = _frozen ? "Unfreeze map" : "Freeze map">>
+            <<link _text>>
+                <<set _frozen = ! _frozen>>
+                <<run Sleepymap.set_mapstate({ mapname: _mapname, frozen: _frozen })>>
+                <<redo 'control_map'>>
+            <</link>>
+        </li>
+        <li>
+            <<set _text = _pantry_disabled ? "Enable pantry" : "Disable pantry">>
+            <<link _text>>
+                <<set _pantry_disabled = ! _pantry_disabled>>
+                <<run Sleepymap.set_mapnode({ mapname: _mapname, mapnode: 'P', data: { disabled: _pantry_disabled } })>>
+                <<redo 'control_map'>>
+            <</link>>
+        </li>
+        <li>
+            <<set _text = _living_walled ? "Unwall halllway" : "Wall off hallway">>
+            <<link _text>>
+                <<set _living_walled = ! _living_walled>>
+                <<run Sleepymap.set_mapnode({ mapname: _mapname, mapnode: 'H', data: { walled: _living_walled } })>>
+                <<redo 'control_map'>>
+            <</link>>
+        </li>
+        <li>
+            <<set _text = _stairs_blocked ? "Unblock stairs" : "Block stairs">>
+            <<link _text>>
+                <<set _stairs_blocked = ! _stairs_blocked>>
+                <<run Sleepymap.set_mapnode({ mapname: _mapname, mapnode: 'S', data: { blocked: _stairs_blocked } })>>
+                <<redo 'control_map'>>
+            <</link>>
+        </li>
+    </ul>
+<</do>>
+
+:: control_mapmove [nobr]
+<!--
+ ┌┬┐┌─┐┌─┐┌┬┐┌─┐┬  ┬┌─┐
+ │││├─┤├─┘││││ │└┐┌┘├┤
+ ┴ ┴┴ ┴┴  ┴ ┴└─┘ └┘ └─┘
+ SECTION: mapmove
+-->
+<ul>
+    <li>
+        <<link 'Go upstairs'>>
+            <<mapmove mapname _mapname target_x 14  target_y 5>>
+        <</link>>
+    </li>
+    <li>
+        <<link 'Go downstairs'>>
+            <<mapmove mapname _mapname target_x 8 target_y 4>>
+        <</link>>
+    </li>
+    <li>
+        <<link 'Go to guest bedroom'>>
+            <<mapmove mapname _mapname target_mapnode 'G'>>
+        <</link>>
+    </li>
+</ul>
+
+:: control_interface [nobr]
+<!--
+ ┬┌┐┌┌┬┐┌─┐┬─┐┌─┐┌─┐┌─┐┌─┐
+ ││││ │ ├┤ ├┬┘├┤ ├─┤│  ├┤
+ ┴┘└┘ ┴ └─┘┴└─└  ┴ ┴└─┘└─┘
+ SECTION: interface
+-->
+<<do tag 'control_interface'>>
+    <ul>
+        <li>
+            <<set _text = _mapview_autoupdate ? "Disable mapview autoupdate" : "Enable mapview autoupdate">>
+            <<link _text>>
+                <<set _mapview_autoupdate = ! _mapview_autoupdate>>
+                <<redo 'control_interface'>>
+            <</link>>
+        </li>
+        <li>
+            <<set _text = _rose_autoupdate ? "Disable rose autoupdate" : "Enable rose autoupdate">>
+            <<link _text>>
+                <<set _rose_autoupdate = ! _rose_autoupdate>>
+                <<redo 'control_interface'>>
+            <</link>>
+        </li>
+        <li>
+            <<link 'Update interfaces'>>
+                <<update_interface selector '.macro-Sleepymap-rose'>>
+                <<update_interface selector '.macro-Sleepymap-mapview'>>
+            <</link>>
+        </li>
+        <li>WASD for north, east, south, west respectively.</li>
+        <li>E to teleport to Outhouse</li>
+        <li>R to teleport to Dining Room, only from Outhouse</li>
+    </ul>
+<</do>>
 
 
 
@@ -501,11 +603,7 @@ Sleepymap Macro Library, Demo
  █     █    █ █  █ █   █   █     █  █ █   █         █     █    █ █   █ █
   ████  ████  █   ██   █   █████ █   ██   █   █████  ████  ████  ████  █████
  SECTION: content code
---><<nobr>>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
-<</nobr>><pre><code class="language-javascript"><nowiki>/* set scripts */
+--><pre><code class="language-javascript"><nowiki>/* set scripts */
 <<set_mapscripts mapname _mapname>>
     /* decrement energy whenever a mapmove is attempted */
     <<onmapattempt>>
@@ -529,7 +627,14 @@ Sleepymap Macro Library, Demo
     x           7
     y           5
     tile        '<div id="kitty">🐱</div>'
->></nowiki></code></pre><h3>Passage Code</h3><pre><code class="language-javascript"><nowiki>/* place mapview, <<do>> for toggling autoupdate */
+>></nowiki></code></pre><h3>Passage Code</h3><pre><code class="language-javascript"><nowiki>/* initvars */
+<<set
+    _rose_autoupdate = true;
+    _mapview_autoupdate = true;
+    _frozen = false;
+    _pantry_disabled = false;
+    _living_walled = false;
+>>></nowiki></code></pre><pre><code class="language-javascript"><nowiki>/* place mapview, <<do>> for toggling autoupdate */
 <<do tag 'mapview'>>
     <<if _mapview_autoupdate>>
         <div>This map autoupdates.</div>
@@ -554,18 +659,41 @@ Sleepymap Macro Library, Demo
         autoupdate  _rose_autoupdate
     >>
 <</do>></nowiki></code></pre><pre><code class="language-javascript"><nowiki>/* map stats */
-<h3>Map Info</h3>
 <<do tag 'stats'>>
     <div>Energy: $energy</div>
     <div>Heat: $heat</div>
     <div>Hunger: $hunger</div>
-<</do>></nowiki></code></pre><pre><code class="language-javascript"><nowiki>/* demo controls */
-<h3>Navigation</h3>
+<</do>></nowiki></code></pre><pre><code class="language-javascript"><nowiki>/* demo navigation */
 [[Return to travel mode selection -> Start]]
 <<link 'See the code for this demo' _code_passage>><</link>>
 <<link 'Navigate in place' _mapname>><</link>>
-<div>Use sidebar to navigate backwards or forwards.</div></nowiki></code></pre><pre><code class="language-javascript"><nowiki>/* mapmove controls */
-<h3>Map Controls</h3>
+<div>Use sidebar to navigate backwards or forwards.</div></nowiki></code></pre><pre><code class="language-javascript"><nowiki>/* map manipulation */
+<<do tag 'control_map'>>
+    <<set _text = _frozen ? "Unfreeze map" : "Freeze map">>
+    <<link _text>>
+        <<set _frozen = ! _frozen>>
+        <<run Sleepymap.set_mapstate({ mapname: _mapname, frozen: _frozen })>>
+        <<redo 'control_map'>>
+    <</link>>
+    <<set _text = _pantry_disabled ? "Enable pantry" : "Disable pantry">>
+    <<link _text>>
+        <<set _pantry_disabled = ! _pantry_disabled>>
+        <<run Sleepymap.set_mapnode({ mapname: _mapname, mapnode: 'P', data: { disabled: _pantry_disabled } })>>
+        <<redo 'control_map'>>
+    <</link>>
+    <<set _text = _living_walled ? "Unwall halllway" : "Wall off hallway">>
+    <<link _text>>
+        <<set _living_walled = ! _living_walled>>
+        <<run Sleepymap.set_mapnode({ mapname: _mapname, mapnode: 'H', data: { walled: _living_walled } })>>
+        <<redo 'control_map'>>
+    <</link>>
+    <<set _text = _stairs_blocked ? "Unblock stairs" : "Block stairs">>
+    <<link _text>>
+        <<set _stairs_blocked = ! _stairs_blocked>>
+        <<run Sleepymap.set_mapnode({ mapname: _mapname, mapnode: 'S', data: { blocked: _stairs_blocked } })>>
+        <<redo 'control_map'>>
+    <</link>>
+<</do>></nowiki></code></pre><pre><code class="language-javascript"><nowiki>/* mapmove controls */
 <<link 'Go upstairs'>>
     <<mapmove mapname _mapname target_x 14  target_y 5>>
 <</link>>
@@ -574,24 +702,6 @@ Sleepymap Macro Library, Demo
 <</link>>
 <<link 'Go to guest bedroom'>>
     <<mapmove mapname _mapname target_mapnode 'G'>>
-<</link>></nowiki></code></pre><pre><code class="language-javascript"><nowiki>/* interface controls */
-<<do tag 'mapview'>>
-    <<set _text = _mapview_autoupdate ? "Disable mapview autoupdate" : "Enable mapview autoupdate">>
-    <<link _text>>
-        <<set _mapview_autoupdate = ! _mapview_autoupdate>>
-        <<redo 'mapview'>>
-    <</link>>
-<</do>>
-<<do tag 'rose'>>
-    <<set _text = _rose_autoupdate ? "Disable rose autoupdate" : "Enable rose autoupdate">>
-    <<link _text>>
-        <<set _rose_autoupdate = ! _rose_autoupdate>>
-        <<redo 'rose'>>
-    <</link>>
-<</do>>
-<<link 'Update interfaces'>>
-    <<update_interface selector '.macro-Sleepymap-rose'>>
-    <<update_interface selector '.macro-Sleepymap-mapview'>>
 <</link>></nowiki></code></pre><pre><code class="language-javascript"><nowiki>/* WASD controller */
 <<set _keys = {
     w: { dir: 'N' },
