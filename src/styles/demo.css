@@ -20,16 +20,8 @@ html {
     column-gap: 1rem;
     margin-top: 0.75rem;
 }
-    #stats {
-        grid-column: 1;
-        grid-row: 1;
-        border: 1px solid var(--border-color);
-        border-radius: 1rem 1rem 0 0;
-        padding: 0.5rem;
-    }
-    #controls {
-        grid-column: 1;
-        grid-row: 2;
+    #rose {
+        max-width: 30rem;
     }
         #headers {
             display: flex;
@@ -62,15 +54,12 @@ html {
             padding: 0 0.5rem 1rem 0.5rem;
             border: 1px solid var(--border-color);
             border-top: none;
+            min-height: 15rem;
         }
-    #rose {
-        grid-column: 2;
-        grid-row: 1 / span 2;
-    }
     #kitty {
         font-size: 1rem;
     }
-@media (max-width: 768px) {
+@media (max-width: 1000px) {
     #grid {
         grid-template-columns: 1fr;
     }
