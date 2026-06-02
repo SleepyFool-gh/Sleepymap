@@ -1275,11 +1275,19 @@ Triggered after modifications to the map (i.e., `set_map`, `edit_exits`, `set_ma
         - `blocked_stops_pathing`: (boolean) whether blocked nodes stop pathfinding (value: `false`)
     - `wall_id`: (string) default id used to represent walls in the map grid (value: `.`)
     - `labels`: (object) directional arrow symbols used in `grid_travel` mode
-        - `N`/`E`/`S`/`W`/`NE`/`SE`/`SW`/`NW`: (string) printed text used a label
-    - `map_storage_story_variable`: (string) SugarCube story variable where map data is stored (**edit at your own risk**)
-    - `maparray_splitter`: (regex) regular expression used to split the `maparray` provided in `<<new_map>>` (**edit at your own risk**)
-    - `barriers`: (object) regular expressions used to detect barriers (**edit at your own risk**)
-        - `N`/`E`/`S`/`W`/`NE`/`SE`/`SW`/`NW`: (regex) regular expression to check each raw `maparray` index from `new_map`
+        - `N`/`E`/`S`/`W`/`NE`/`SE`/`SW`/`NW`: (string) printed text used a label (value: `<svg class='macro-Sleepymap-arrow' viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12 2L4 12h5v10h6V12h5L12 2z" transform="rotate(${deg} 12 12)"/></svg>`, where `${deg}` is the rotation dependding on the direction)
+    - `map_storage_story_variable`: (string) SugarCube story variable where map data is stored (value: `'@Sleepymap/maps'`) (**edit at your own risk**)
+    - `maparray_splitter`: (regex) regular expression used to split the `maparray` provided in `<<new_map>>` (value: `/\s+/g`) (**edit at your own risk**)
+    - `barriers`: (object) regular expressions used to detect barriers from the raw `maparray` index in `new_map` or `<<new_map>>` (**edit at your own risk**)
+        - `N`: (regex) used to identify north barriers (value: `/"/`)
+        - `E`: (regex) used to identify east barriers (value: `/(?<=[a-zA-Z0-9][^\s]*)\|(?![a-zA-Z0-9])/`)
+        - `S`: (regex) used to identify south barriers (value: `/_/`)
+        - `W`: (regex) used to identify west barriers (value: `/(?<![a-zA-Z0-9])\|(?=[^\s]*[a-zA-Z0-9])/`)
+        - `NE`: (regex) used to identify northeast barriers (value: `/(?<=[a-zA-Z0-9][^\s]*)\\(?![a-zA-Z0-9])/`)
+        - `SE`: (regex) used to identify southeast barriers (value: `/(?<=[a-zA-Z0-9][^\s]*)\/(?![a-zA-Z0-9])/`)
+        - `SW`: (regex) used to identify southwest barriers (value: `/(?<![a-zA-Z0-9])\\(?=[^\s]*[a-zA-Z0-9])/`)
+        - `NW`: (regex) used to identify northwest barriers (value: `/(?<![a-zA-Z0-9])\/(?=[^\s]*[a-zA-Z0-9])/`)
+        - `replace`: (regex) final regex that cleanses all special characters to get the `mapnode` id (value: `/[\/\\|_"]/g`)
 
 
 <p align="center">

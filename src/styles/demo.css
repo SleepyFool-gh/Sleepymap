@@ -23,6 +23,18 @@ html {
     #rose {
         max-width: 30rem;
     }
+        .macro-Sleepymap-rose [data-dir='NE'] {
+            padding: 1rem 1rem 0 0;
+        }
+        .macro-Sleepymap-rose [data-dir='SE'] {
+            padding: 0 1rem 1rem 0;
+        }
+        .macro-Sleepymap-rose [data-dir='SW'] {
+            padding: 0 0 1rem 1rem;
+        }
+        .macro-Sleepymap-rose [data-dir='NW'] {
+            padding: 1rem 0 0 1rem;
+        }
         #headers {
             display: flex;
             flex-wrap: wrap;

@@ -35,14 +35,14 @@ const options = {
     wall_id                     : '.',
     // shows on mapview & rose in grid_travel mode
     labels: {
-        N                       : '\u2191',
-        E                       : '\u2192',
-        S                       : '\u2193',
-        W                       : '\u2190',
-        NE                      : '\u2197',
-        SE                      : '\u2198',
-        SW                      : '\u2199',
-        NW                      : '\u2196',
+        N  : arrow(0),
+        NE : arrow(45),
+        E  : arrow(90),
+        SE : arrow(135),
+        S  : arrow(180),
+        SW : arrow(225),
+        W  : arrow(270),
+        NW : arrow(315),
     },
 
     // EDIT THESE AT YOUR OWN RISK
@@ -64,6 +64,11 @@ const options = {
     },
 };
 setup['@Sleepymap/options'] = options;
+
+// helper to generate svg arrows
+function arrow(deg) {
+    return `<svg class='macro-Sleepymap-arrow' viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12 2L4 12h5v10h6V12h5L12 2z" transform="rotate(${deg} 12 12)"/></svg>`
+}
 
 // maps container
 // proxy required because SugarCube breaks references on passage navigation
