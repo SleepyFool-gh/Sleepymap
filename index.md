@@ -92,7 +92,7 @@ title: Sleepy Macros — Sleepymap library
 **Note:** `mapmove` *DOES NOT* trigger passage navigation. Authors **must** navigate to save map changes to `State`.
 
 <div><a href='./demo/index.html'>Check out the demo here</a></div>
-<div><a href='https://github.com/SleepyFool-gh/areamap'>Get the map library here</a></div>
+<div><a href='https://github.com/SleepyFool-gh/Sleepymap'>Get the map library here</a></div>
 
 ### Videos
 <video controls>
