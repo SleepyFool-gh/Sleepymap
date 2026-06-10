@@ -1238,6 +1238,10 @@ function create_mapview(argObj) {
     if (quickmove && (! pathing)) {
         console.warn(`${name} — Sleepymap "${mapname}" — quickmove without showing pathing isn't sensible!`);
     }
+    // WARNING: show labels on node travel not supported
+    if (argObj.show_labels_on_mapview && (! grid_travel)) {
+        console.warn(`${name} — Sleepymap "${mapname}" — showing labels on node travel map isn't supported! Input ignored...`);
+    }
 
     // create map object
     // use maparray & columns if no mapview object
