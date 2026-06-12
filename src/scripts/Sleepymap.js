@@ -2624,6 +2624,82 @@ function get_map(argObj) {
     }
     return structuredClone(maps[mapname]);
 }
+// shortcuts
+function named_argObj(name, data) {
+    Object.defineProperty(data, 'name', {
+        value: name,
+        writable: false,
+        enumerable: true,
+        configurable: false,
+    });
+    return data;
+}
+function get_handler(mapname) {
+    return {
+        get pos() {
+            return get_mapstate(named_argObj('Sleepymap.handler.pos', {
+                mapname,
+            }))
+        },
+        block(mapnode) {
+            set_mapnode(named_argObj('Sleepymap.handler.block', {
+                mapname,
+                mapnode,
+                data: { blocked: true },
+            }))
+        },
+        unblock(mapnode) {
+            set_mapnode(named_argObj('Sleepymap.handler.unblock', {
+                mapname,
+                mapnode,
+                data: { blocked: false },
+            }))
+        },
+        disable(mapnode) {
+            set_mapnode(named_argObj('Sleepymap.handler.disable', {
+                mapname,
+                mapnode,
+                data: { disabled: true },
+            }))
+        },
+        enable(mapnode) {
+            set_mapnode(named_argObj('Sleepymap.handler.enable', {
+                mapname,
+                mapnode,
+                data: { disabled: false },
+            }))
+        },
+        hide(mapnode) {
+            set_mapnode(named_argObj('Sleepymap.handler.hide', {
+                mapname,
+                mapnode,
+                data: { hidden: true },
+            }))
+        },
+        show(mapnode) {
+            set_mapnode(named_argObj('Sleepymap.handler.show', {
+                mapname,
+                mapnode,
+                data: { hidden: false },
+            }))
+        },
+        move_to(arg) {
+            if (typeof arg === 'string') {
+                begin_mapmove(named_argObj('Sleepymap.handler.move_to', {
+                    mapname,
+                    target_mapnode: arg,
+                }))
+            }
+            else if (typeof arg === 'object') {
+                begin_mapmove(named_argObj('Sleepymap.handler.move_to', {
+                    mapname,
+                    target_x: arg.x,
+                    target_y: arg.y,
+                }))
+            }
+        },
+    }
+}
 
 
 
@@ -2656,6 +2732,8 @@ const Sleepymap = {
     set_entity,
     set_mapscripts,
     update_exits,
+
+    get_handler,
 };
 window.Sleepymap = Sleepymap;
 
