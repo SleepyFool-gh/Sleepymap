@@ -176,7 +176,7 @@ Macro.add(['new_map'], {
             argObj.mapnodes = mapnodes;
         }
 
-        argObj.add_metadata('name', name);
+        ArgObj.add_metadata('name', name, argObj);
         new_map(argObj);
     },
 });
@@ -386,7 +386,7 @@ Macro.add(['set_mapnode'], {
     handler() {
         const name = this.name;
         const argObj = new ArgObj(name, SET_MAPNODE_TEMPLATE, this.args);
-        argObj.add_metadata('name', name);
+        ArgObj.add_metadata('name', name, argObj);
         set_mapnode(argObj);
     }
 });
@@ -504,7 +504,7 @@ Macro.add(['set_mapstate'], {
     handler() {
         const name = this.name;
         const argObj = new ArgObj(name, SET_MAPSTATE_TEMPLATE, this.args);
-        argObj.add_metadata('name', name);
+        ArgObj.add_metadata('name', name, argObj);
         set_mapstate(argObj);
     }
 });
@@ -828,7 +828,7 @@ Macro.add(['connect_map', 'disconnect_map'], {
         const name = this.name;
         const argObj = new ArgObj(name, EDIT_EXITS_TEMPLATE, this.args);
         argObj.removing = name.includes('disconnect');
-        argObj.add_metadata('name', name);
+        ArgObj.add_metadata('name', name, argObj);
         edit_exits(argObj);
     },
 });
@@ -979,7 +979,7 @@ Macro.add(['place_rose'], {
     handler() {
         const name = this.name;
         const argObj = new ArgObj(name, CREATE_ROSE_TEMPLATE, this.args);
-        argObj.add_metadata('name', name);
+        ArgObj.add_metadata('name', name, argObj);
         create_rose(argObj).appendTo(this.output);
     }
 });
@@ -1181,7 +1181,7 @@ Macro.add(['place_mapview'], {
     handler() {
         const name = this.name;
         const argObj = new ArgObj(name, CREATE_MAPVIEW_TEMPLATE, this.args);
-        argObj.add_metadata('name', name);
+        ArgObj.add_metadata('name', name, argObj);
         create_mapview(argObj).appendTo(this.output);
     }
 });
@@ -1237,10 +1237,6 @@ function create_mapview(argObj) {
     // WARNING: quickmove without pathing
     if (quickmove && (! pathing)) {
         console.warn(`${name} — Sleepymap "${mapname}" — quickmove without showing pathing isn't sensible!`);
-    }
-    // WARNING: show labels on node travel not supported
-    if (argObj.show_labels_on_mapview && (! grid_travel)) {
-        console.warn(`${name} — Sleepymap "${mapname}" — showing labels on node travel map isn't supported! Input ignored...`);
     }
 
     // create map object
@@ -1471,7 +1467,7 @@ Macro.add(['update_interface'], {
     handler() {
         const name = this.name;
         const argObj = new ArgObj(name, UPDATE_INTERFACE_TEMPLATE, this.args);
-        argObj.add_metadata('name', name);
+        ArgObj.add_metadata('name', name, argObj);
         update_interface(argObj);
     }
 });
@@ -1573,7 +1569,7 @@ Macro.add(['place_controller'], {
     handler() {
         const name = this.name;
         const argObj = new ArgObj(name, CREATE_CONTROLLER_TEMPLATE, this.args);
-        argObj.add_metadata('name', name);
+        ArgObj.add_metadata('name', name, argObj);
         create_controller(argObj).appendTo(this.output);
     }
 });
@@ -1840,7 +1836,7 @@ Macro.add(['new_entity', 'set_entity', 'delete_entity'], {
         const template = this.name.includes('delete') ? DELETE_ENTITY_TEMPLATE : SET_ENTITY_TEMPLATE;
         const argObj = new ArgObj(name, template, this.args);
         argObj.removing = this.name.includes('delete');
-        argObj.add_metadata('name', name);
+        ArgObj.add_metadata('name', name, argObj);
         set_entity(argObj);
     }
 });
@@ -1953,7 +1949,7 @@ Macro.add(['set_mapscripts'], {
             });
         }
 
-        argObj.add_metadata('name', name);
+        ArgObj.add_metadata('name', name, argObj);
         set_mapscripts(argObj);
     }
 });
@@ -2064,7 +2060,7 @@ Macro.add(['mapmove'], {
     handler() {
         const name = this.name;
         const argObj = new ArgObj(name, BEGIN_MAPMOVE_TEMPLATE, this.args);
-        argObj.add_metadata('name', name);
+        ArgObj.add_metadata('name', name, argObj);
         begin_mapmove(argObj);      
     }
 });
@@ -2122,6 +2118,17 @@ function begin_mapmove(argObj) {
 
     const { grid_travel, columns, maparray, position, entities } = this_map;
 
+    // VALIDATE: bounds
+    if (argObj.target_x !== undefined || argObj.target_y !== undefined) {
+        validate_bounds({ 
+            name, 
+            mapname, 
+            columns, 
+            maparray, 
+            x: argObj.target_x, 
+            y: argObj.target_y 
+        });
+    }
     // WARNING: assumed arg because no xy
     if (
         (! suppress_warnings) && 
@@ -2624,6 +2631,85 @@ function get_map(argObj) {
     }
     return structuredClone(maps[mapname]);
 }
+// map handler
+function get_handler(mapname) {
+    return {
+        get pos() {
+            return get_mapstate(ArgObj.add_metadata('name', 'Sleepymap.handler.pos', {
+                mapname,
+            }));
+        },
+        freeze() {
+            set_mapstate(ArgObj.add_metadata('name', 'Sleepymap.handler.freeze', {
+                mapname,
+                frozen: true,
+            }));
+        },
+        unfreeze() {
+            set_mapstate(ArgObj.add_metadata('name', 'Sleepymap.handler.freeze', {
+                mapname,
+                frozen: false,
+            }));
+        },
+        block(mapnode) {
+            set_mapnode(ArgObj.add_metadata('name', 'Sleepymap.handler.block', {
+                mapname,
+                mapnode,
+                data: { blocked: true },
+            }));
+        },
+        unblock(mapnode) {
+            set_mapnode(ArgObj.add_metadata('name', 'Sleepymap.handler.unblock', {
+                mapname,
+                mapnode,
+                data: { blocked: false },
+            }));
+        },
+        disable(mapnode) {
+            set_mapnode(ArgObj.add_metadata('name', 'Sleepymap.handler.disable', {
+                mapname,
+                mapnode,
+                data: { disabled: true },
+            }));
+        },
+        enable(mapnode) {
+            set_mapnode(ArgObj.add_metadata('name', 'Sleepymap.handler.enable', {
+                mapname,
+                mapnode,
+                data: { disabled: false },
+            }));
+        },
+        hide(mapnode) {
+            set_mapnode(ArgObj.add_metadata('name', 'Sleepymap.handler.hide', {
+                mapname,
+                mapnode,
+                data: { hidden: true },
+            }));
+        },
+        show(mapnode) {
+            set_mapnode(ArgObj.add_metadata('name', 'Sleepymap.handler.show', {
+                mapname,
+                mapnode,
+                data: { hidden: false },
+            }));
+        },
+        move_to(arg) {
+            if (typeof arg === 'string') {
+                begin_mapmove(ArgObj.add_metadata('name', 'Sleepymap.handler.move_to', {
+                    mapname,
+                    target_mapnode: arg,
+                }));
+            }
+            else if (typeof arg === 'object') {
+                begin_mapmove(ArgObj.add_metadata('name', 'Sleepymap.handler.move_to', {
+                    mapname,
+                    target_x: arg.x,
+                    target_y: arg.y,
+                }));
+            }
+        },
+    }
+}
 
 
 
@@ -2656,6 +2742,8 @@ const Sleepymap = {
     set_entity,
     set_mapscripts,
     update_exits,
+    
+    get_handler,
 };
 window.Sleepymap = Sleepymap;
 

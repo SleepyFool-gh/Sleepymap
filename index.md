@@ -43,6 +43,9 @@ title: Sleepy Macros — Sleepymap library
         - [`<<set_entity>>`](#macros-set_entity)
         - [`<<delete_entity>>`](#macros-delete_entity)
 - **[JavaScript Methods](#javascript)**
+    - [*Map Handler*](#javascript-handler)
+        - [`get_handler`](#javascript-get_handler)
+        -
     - [*Initialization & Manipulation*](#javascript-initialization)
         - [`new_map`](#javascript-new_map)
         - [`get_map`](#javascript-get_map)
@@ -155,8 +158,7 @@ Defines a new `Sleepymap`. It accepts a 2D grid layout via its contents and supp
     - `mapname`: (string) name of `map`
     - `grid_travel`: (boolean) *(optional)* whether to use grid-based movement (default: `false`, node-to-node movement)
     - `start`: (string) *(`node travel`)* starting position in map, must be a valid `mapnode` id
-    - `start_x`: (number) *(`grid travel`)* starting x coordinate
-    - `start_y`: (number) *(`grid travel`)* starting y coordinate
+    - `start_x`/`start_y`: (number) *(`grid travel`)* starting x/y coordinate
     - `columns`: (number) # of columns in the logic representation grid
     - `diagonals`: (boolean) *(optional)* whether diagonal movement is allowed
 - **Contents:** 
@@ -607,8 +609,56 @@ Removes an entity from the map.
 
 <h1 id='javascript'>JavaScript Methods</h1>
 
-Javascript methods are stored on the `Sleepymap` window object. All methods take an `argObj` argument object.
+Javascript methods are stored on the `Sleepymap` window object. All `Sleepymap` methods take an `argObj` argument object. 
 
+A map `handler` is available for common operations on a specific map. `Handler` methods take `mapnode` string inputs, except `pos` which takes no inputs. The `move_to` method can also take an `x/y` coordinate object.
+
+<h2 id='javascript-handler'>Map Handler</h2>
+
+
+
+<h3 id='javascript-get_handler'><code>get_handler</code></h3>
+
+Retrieves the handler object for a map. The handler object is a simplified map manipulator that allows for easier access to common map operations.
+
+- **argObj Properties:**
+    - `mapname`: (string) name of the `map` to retrieve
+- **Returns:** 
+    - `[handler object]`: (object) contains methods for manipulating the map
+- **Examples:**
+    ```js
+    // get node_house handler
+    const node_house = Sleepymap.get_handler({
+        mapname: 'node_house',
+    });
+    ```
+
+
+<h3 id='javascript-handler_pos'><code>pos</code></h3>
+
+- **Returns:**
+    - `[position object]`: (object) contains the current position of the map
+        - `mapnode`: (string) name of current `mapnode`
+        - `x/y`: (number) x/y coordinate values of the curreny position
+- **Examples:**
+    ```js
+    // check if currently in kitchen
+    if (node_house.pos.mapnode === 'K') {
+        console.log("You're in the kitchen!");
+    }
+    ```
+
+
+<h3 id='javascript-handler_block'><code>block</code></h3>
+
+- **Arguments:**
+    - `mapnode`: (string) name of the `mapnode` to block
+- **Examples:**
+    ```js
+    // block the kitchen
+    node_house.block('K');
+    ```
+    
 
 <h2 id='javascript-initialization'>Initialization & Manipulation</h2>
 
@@ -623,8 +673,7 @@ Creates a new `Sleepymap`. The `<<new_map>>` macro is a wrapper for this method.
     - `maparray`: (array&lt;string&gt;) 1D array of `mapnode` ids representing the map navigation logic, length must be divisible by `columns`
     - `grid_travel`: (boolean) *(optional)* whether to use grid-based movement (default: `false`, node-to-node movement)
     - `start`: (string) *(`node travel`)* starting position on map, must be a valid `mapnode` id
-    - `start_x`: (number) *(`grid travel`)* starting x coordinate
-    - `start_y`: (number) *(`grid travel`)* starting y coordinate
+    - `start_x`/`start_y`: (number) *(`grid travel`)* starting x/y coordinate
     - `diagonals`: (boolean) *(optional)* whether diagonal movement is allowed, default set in `options`
     - `mapnodes`: (object) *(optional)* additional metadata for `mapnodes`, partial objects will be filled with default values
         - `[mapnode id]`: (object)
@@ -1026,8 +1075,7 @@ The `<<mapmove>>` macro is a wrapper for this method.
 - **argObj Properties:**
     - `mapname`: (string) name of the `map`
     - `target_mapnode`: (string) *(optional)* ID of the `mapnode` to move to (`node travel`)
-    - `target_x`: (number) *(optional)* target x coordinate (`grid travel`)
-    - `target_y`: (number) *(optional)* target y coordinate (`grid travel`)
+    - `target_x`/`target_y`: (number) *(optional)* target x/y coordinate (`grid travel`)
     - `force_abort`: (boolean) *(optional)* `true` to force the move to fail, default `false`
     - `skip_scripts`: (boolean) *(optional)* `true` to bypass `mapscripts` for this move, default `false`
 - **Examples:**
