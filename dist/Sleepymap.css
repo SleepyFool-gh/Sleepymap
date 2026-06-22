@@ -6,12 +6,26 @@
     grid-template-rows: repeat(3, 1fr);
     position: relative;
 }
-    .macro-Sleepymap-rosebg,
-    .macro-Sleepymap-mapviewbg {
+    .macro-Sleepymap-rosebg {
         position: absolute;
         height: 100%;
         width: 100%;
         z-index: -1;
+    }
+    .macro-Sleepymap-mapviewbg {
+        position: absolute;
+        z-index: -1;
+        top: 0;
+        left: 0;
+        /* Make the asset match the full width/height of the original un-clamped grid */
+        width: calc((var(--columns) / var(--aperture-x)) * 100%);
+        height: calc((var(--rows) / var(--aperture-y)) * 100%);
+        /* Shift it top/left to match the current viewport frame offset */
+        transform: translate(
+            calc((var(--offset-x) / var(--columns)) * -100%),
+            calc((var(--offset-y) / var(--rows)) * -100%)
+        );
+        transform-origin: top left;
     }
         .macro-Sleepymap-rosebg > *,
         .macro-Sleepymap-mapviewbg > * {
@@ -34,9 +48,9 @@
         }
 .macro-Sleepymap-mapview {
     width: 100%;
-    aspect-ratio: 16 / 9;
+    aspect-ratio: var(--aspect-ratio);   /* change this as needed*/
     display: inline-grid;
-    grid-template-columns: repeat(var(--columns), 1fr);
+    grid-template-columns: repeat(var(--aperture-x), 1fr);
     position: relative;
 }
     .macro-Sleepymap-tile {

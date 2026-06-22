@@ -45,7 +45,20 @@ title: Sleepy Macros — Sleepymap library
 - **[JavaScript Methods](#javascript)**
     - [*Map Handler*](#javascript-handler)
         - [`get_handler`](#javascript-get_handler)
-        -
+        - [`pos`](#javascript-pos)
+        - [`frozen`](#javascript-frozen)
+        - [`freeze`](#javascript-freeze)
+        - [`unfreeze`](#javascript-unfreeze)
+        - [`disabled`](#javascript-disabled)
+        - [`disable`](#javascript-disable)
+        - [`enable`](#javascript-enable)
+        - [`blocked`](#javascript-blocked)
+        - [`block`](#javascript-block)
+        - [`unblock`](#javascript-unblock)
+        - [`hidden`](#javascript-hidden)
+        - [`hide`](#javascript-hide)
+        - [`show`](#javascript-show)
+        - [`move_to`](#javascript-move_to)
     - [*Initialization & Manipulation*](#javascript-initialization)
         - [`new_map`](#javascript-new_map)
         - [`get_map`](#javascript-get_map)
@@ -634,7 +647,9 @@ Retrieves the handler object for a map. The handler object is a simplified map m
     ```
 
 
-<h3 id='javascript-handler_pos'><code>pos</code></h3>
+<h3 id='javascript-pos'><code>pos</code></h3>
+
+Getter that returns the current position of the map. This *cannot* be directly modified. Use `[handler].move_to` or `Sleepymap.set_mapstate` to manipulate map position.
 
 - **Returns:**
     - `[position object]`: (object) contains the current position of the map
@@ -649,7 +664,91 @@ Retrieves the handler object for a map. The handler object is a simplified map m
     ```
 
 
-<h3 id='javascript-handler_block'><code>block</code></h3>
+<h3 id='javascript-frozen'><code>frozen</code></h3>
+
+Returns whether the map is `frozen`. This *cannot* be directly modified. Use `[handler].freeze`, `[handler].unfreeze`, or `Sleepymap.set_mapstate` to modify `frozen` state.
+
+- **Examples:**
+    ```js
+    // returns
+    node_house.frozen;
+    ```
+
+<h3 id='javascript-freeze'><code>freeze</code></h3>
+
+Freezes the map's `interface` items, ie. disables inputs on `mapviews`, `roses`, and `controllers`.
+
+- **Examples:**
+    ```js
+    // disable clicking on the mapview
+    node_house.freeze();
+    ```
+
+
+<h3 id='javascript-unfreeze'><code>unfreeze</code></h3>
+
+Unfreezes the map's `interface` items, ie. re-enables `mapviews`, `roses`, and `controllers`.
+
+*Note:* This will *NOT* enable `mapnodes` specifically set to `disabled`.
+
+- **Examples:**
+    ```js
+    // re-enable mapview clicking
+    node_house.unfreeze();
+    ```
+
+
+<h3 id='javascript-disabled'><code>disabled</code></h3>
+
+Checks whether a specific `mapnode` is `disabled`. This *cannot* be directly modified. Use `[handler].disable`, `[handler].enable`, `Sleepymap.set_mapnode`, or `Sleepymap.set_mapstate` to manipulate `disabled` status.
+
+- **Arguments:**
+    - `mapnode`: (string) name of the `mapnode` to check
+- **Examples:**
+    ```js
+    // checks disable state of kitchen
+    node_house.disabled('K');
+    ```
+
+
+<h3 id='javascript-disable'><code>disable</code></h3>
+
+Disables navigation to a `mapnode` via clicking on `interfaces` (`mapviews` & `roses`). `Controllers` are not affected as they use the keyboard.
+
+- **Arguments:**
+    - `mapnode`: (string) name of the `mapnode` to disable
+- **Examples:**
+    ```js
+    // disable navigation to the kitchen
+    node_house.disable('K');
+    ```
+
+
+<h3 id='javascript-enable'><code>enable</code></h3>
+
+Enables navigation to a `mapnode` via clicking on `interfaces` (`mapviews` & `roses`). `Controllers` are not affected as they use the keyboard.
+
+- **Arguments:**
+    - `mapnode`: (string) name of the `mapnode` to enable
+- **Examples:**
+    ```js
+    // enable navigation to the kitchen
+    node_house.enable('K');
+    ```
+
+
+<h3 id='javascript-blocked'><code>blocked</code></h3>
+
+- **Arguments:**
+    - `mapnode`: (string) name of the `mapnode` to check
+- **Examples:**
+    ```js
+    // checks blocked state of kitchen
+    node_house.blocked('K');
+    ```
+
+
+<h3 id='javascript-block'><code>block</code></h3>
 
 - **Arguments:**
     - `mapnode`: (string) name of the `mapnode` to block
@@ -658,7 +757,58 @@ Retrieves the handler object for a map. The handler object is a simplified map m
     // block the kitchen
     node_house.block('K');
     ```
+
+
+<h3 id='javascript-unblock'><code>unblock</code></h3>
+
+- **Arguments:**
+    - `mapnode`: (string) name of the `mapnode` to unblock
+- **Examples:**
+    ```js
+    // unblock the kitchen
+    node_house.unblock('K');
+    ```
+
+
+<h3 id='javascript-hidden'><code>hidden</code></h3>
+
+- **Arguments:**
+    - `mapnode`: (string) name of the `mapnode` to check
     
+- **Examples:**
+    ```js
+    // checks the hidden state of the kitchen
+    node_house.hidden('K');
+    ```
+
+
+<h3 id='javascript-hide'><code>hide</code></h3>
+
+- **Arguments:**
+    - `mapnode`: (string) name of the `mapnode` to hide
+    
+- **Examples:**
+    ```js
+    // hide the kitchen
+    node_house.hide('K');
+    ```
+
+
+<h3 id='javascript-show'><code>show</code></h3>
+
+- **Arguments:**
+    - `mapnode`: (string) name of the `mapnode` to show
+    
+- **Examples:**
+    ```js
+    // show the kitchen
+    node_house.show('K');
+    ```
+
+
+<h3 id='javascript-move_to'><code>move_to</code></h3>
+
+
 
 <h2 id='javascript-initialization'>Initialization & Manipulation</h2>
 
