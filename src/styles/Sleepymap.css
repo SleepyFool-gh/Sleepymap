@@ -67,6 +67,8 @@
         .macro-Sleepymap-tile .macro-Sleepymap-label,
         .macro-Sleepymap-entity {
             position: absolute;
+            display: grid;
+            place-content: center;
         }
             .macro-Sleepymap-tile[disabled] {
                 cursor: not-allowed;

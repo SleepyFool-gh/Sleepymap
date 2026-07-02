@@ -404,8 +404,7 @@ Sleepymap Macro Library, Demo
         mapname     $mapname
         background  '<img src="./assets/small_house.png">'
         autoupdate  _mapview_autoupdate
-        x_span      5
-        y_span      5
+        quickmove   true
     >>
 <</do>>
 
