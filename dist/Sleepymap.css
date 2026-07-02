@@ -48,10 +48,11 @@
         }
 .macro-Sleepymap-mapview {
     width: 100%;
-    aspect-ratio: var(--aspect-ratio);   /* change this as needed*/
+    aspect-ratio: var(--aspect-ratio);
     display: inline-grid;
     grid-template-columns: repeat(var(--aperture-x), 1fr);
     position: relative;
+    overflow: hidden;
 }
     .macro-Sleepymap-tile {
         --border-width: 0.17rem;

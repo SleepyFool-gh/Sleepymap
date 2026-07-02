@@ -1391,6 +1391,16 @@ function create_mapview(argObj) {
     for (let i = 0; i < maparray.length; i++) {
         const xy = i2xy({ i, columns });
 
+        // check aperture for grid travel maps, skip if not within
+        if (grid_travel) {
+            if (
+                xy.x < aperture.min_x ||
+                xy.x > aperture.max_x ||
+                xy.y < aperture.min_y ||
+                xy.y > aperture.max_y
+            ) continue;
+        }
+
         const id = maparray[i];
         const mapnode = mapnodes[id];
         // if clickable & valid travel destination --> clickable
@@ -1439,15 +1449,6 @@ function create_mapview(argObj) {
         
         $tiles[i] = $tile;
 
-        // check aperture for grid travel maps, skip if not within
-        if (grid_travel) {
-            if (
-                xy.x < aperture.min_x ||
-                xy.x > aperture.max_x ||
-                xy.y < aperture.min_y ||
-                xy.y > aperture.max_y
-            ) continue;
-        }
         $mapview.append($tile);
     }
 
@@ -1473,7 +1474,9 @@ function create_mapview(argObj) {
                     .forEach( el => el.classList.remove('macro-Sleepymap-path'));
                 // add path class to each path tile
                 for (let i = 0; i < path?.length; i++) {
-                    $tiles[path[i]].addClass('macro-Sleepymap-path');
+                    if ($tiles[path[i]]) {
+                        $tiles[path[i]].addClass('macro-Sleepymap-path');
+                    }
                 }
             }
             // if quickmove enabled and not pathmoving
