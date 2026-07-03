@@ -405,6 +405,8 @@ Sleepymap Macro Library, Demo
         background  '<img src="./assets/small_house.png">'
         autoupdate  _mapview_autoupdate
         quickmove   true
+        x_span      5
+        y_span      5
     >>
 <</do>>
 

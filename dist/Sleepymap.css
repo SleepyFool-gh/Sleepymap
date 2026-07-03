@@ -51,11 +51,14 @@
     aspect-ratio: var(--aspect-ratio);
     display: inline-grid;
     grid-template-columns: repeat(var(--aperture-x), 1fr);
+    grid-template-rows: repeat(var(--aperture-y), 1fr);
     position: relative;
     overflow: hidden;
 }
     .macro-Sleepymap-tile {
         --border-width: 0.17rem;
+        grid-column: calc(var(--x) - var(--offset-x) + 1);
+        grid-row: calc(var(--y) - var(--offset-y) + 1);
         height: 100%;
         width: 100%;
         display: grid;

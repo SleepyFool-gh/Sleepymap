@@ -1202,13 +1202,14 @@ class Mapview {
         ArgObj.validate(name, MAPVIEW_TEMPLATE, argObj);
 
         const { mapname, background, x_span, y_span } = argObj;
+        this.mapname        = mapname;
         // default values
         const show_labels   = argObj.show_labels ?? options.default.show_labels_on_mapview;
         const autoupdate    = argObj.autoupdate  ?? options.default.autoupdate_mapview;
         const clickable     = argObj.clickable   ?? options.default.clickable_mapview;
-        this.mapname      = mapname;
-        this.autoupdate   = autoupdate;
-        this.clickable    = clickable;
+        this.show_labels    = show_labels;
+        this.autoupdate     = autoupdate;
+        this.clickable      = clickable;
 
         const this_map = maps[mapname];
         // ERROR: non-extant map
@@ -1216,7 +1217,8 @@ class Mapview {
             throw new Error(`${name} — Sleepymap "${mapname}" not found!`);
         }
 
-        const { grid_travel, columns, maparray, mapnodes, position, frozen, exits, entities } = this_map;
+        const { grid_travel, columns, maparray, position, frozen, exits, entities } = this_map;
+        const rows = maparray.length / columns;
 
         // check if enabled
         const enabled   = argObj.enabled === undefined
@@ -1230,7 +1232,6 @@ class Mapview {
         }
         this.enabled = enabled;
 
-        const rows = maparray.length / columns;
         // WARNING: unsupported partial view on node travel map
         if (
             (! grid_travel) &&
@@ -1251,6 +1252,8 @@ class Mapview {
         ) {
             throw new Error(`${name} — Sleepymap "${mapname}" — x_span input must be between 1 & ${rows}!`);
         }
+        this.x_span = x_span;
+        this.y_span = y_span;
 
         // WARNING: pathing on node travel map
         if ((argObj.pathing || argObj.quickmove) && (! grid_travel)) {
@@ -1263,8 +1266,8 @@ class Mapview {
         const quickmove = ! grid_travel
                             ? false
                             : argObj.quickmove ?? options.default.quickmove_on_mapview;
-        this.pathing      = pathing;
-        this.quickmove    = quickmove;
+        this.pathing    = pathing;
+        this.quickmove  = quickmove;
 
         // ERROR: quickmove on non-clickable map
         if (! clickable && quickmove) {
@@ -1278,10 +1281,13 @@ class Mapview {
         // create map object
         const aperture = this.new_aperture();
         // use maparray & columns if no mapview object
+        const id = crypto.randomUUID();
         const $mapview = $(document.createElement('div'))
             .addClass('macro-Sleepymap-mapview')
-            .attr('data-grid_travel'        , grid_travel)
-            .data('grid_travel'             , grid_travel)
+            .attr('data-id'                 , id)
+            .data('id'                      , id)
+            .attr('data-grid-travel'        , grid_travel)
+            .data('grid-travel'             , grid_travel)
             .attr('data-mapname'            , mapname)
             .data('mapname'                 , mapname)
             .attr('data-position-mapnode'   , position.mapnode)
@@ -1304,6 +1310,7 @@ class Mapview {
                 '--offset-y'        : aperture.min_y ?? 0,
                 '--aspect-ratio'    : `${aperture.max_x - aperture.min_x + 1} / ${aperture.max_y - aperture.min_y + 1}`
             });
+        this.$mapview = $mapview;
 
         // append bg
         if (background) {
@@ -1314,7 +1321,7 @@ class Mapview {
         }
 
         // map out dirs to i's from exits
-        const position_i = xy2i({ xy: position, columns });B
+        const position_i = xy2i({ xy: position, columns });
         const i2dir = [];
         if (grid_travel) {
             for (const dir in exits.grid[position_i]) {
@@ -1334,7 +1341,7 @@ class Mapview {
                 }
             }
         }
-        this.i2dir          = i2dir;
+        this.i2dir = i2dir;
         // map out entities to i's
         const i2entity = [];
         for (const entityname in entities) {
@@ -1343,7 +1350,7 @@ class Mapview {
             i2entity[i] ??= [];
             i2entity[i].push(entity.entityname);
         }
-        this.i2entity       = i2entity;
+        this.i2entity = i2entity;
 
         const $tiles = [];
         // create & append tiles
@@ -1364,6 +1371,7 @@ class Mapview {
             $tiles[i] = $tile;
             $mapview.append($tile);
         }
+        this.$tiles = $tiles; 
 
         if (grid_travel) {
             // pathing always works, but hidden if not shown
@@ -1398,8 +1406,13 @@ class Mapview {
             });
             // run quickmove if enabled
             $mapview.on('click', '.macro-Sleepymap-tile', () => {
+                if (_quickmove_running) {
+                    $('#story').one('Sleepymap:mapmove_began', (ev, data) => {
+                        data.force_abort = true;
+                    });
+                }
                 // enabled &, either quickmove or clickable & adjacent
-                if (
+                else if (
                     this.enabled && (
                         this.quickmove ||
                         (this.clickable && path?.length === 2)
@@ -1440,15 +1453,12 @@ class Mapview {
             });
         }
 
-        const id = crypto.randomUUID();
         mapviews[id] = this;
-        // expose useful state on the instance
         // save instanced values
-        this.$mapview       = $mapview;
-        this.show_labels    = show_labels;
-        this.$tiles         = $tiles; 
-        this.position       = {...position};
-        this.aperture       = {...aperture};
+        this.position = {...position};
+        this.aperture = {...aperture};
+        // band-aid for race condition
+        this.#update_position();
     }
     new_aperture() {
         const this_map = maps[this.mapname];
@@ -1508,7 +1518,7 @@ class Mapview {
             (this.aperture.max_x !== aperture.max_x)    ||
             (this.aperture.max_y !== aperture.max_y)
         ) {
-            // this.#update_aperture();
+            this.#update_aperture();
         }
         // check position
         if (
@@ -1548,11 +1558,55 @@ class Mapview {
                     $tile.wiki(`<span class='macro-Sleepymap-label'>${options.labels[dir]}</span>`);
                 }
             }
+            this.position = {...position};
         }
     }
     // update aperture
     #update_aperture() {
-        const aperture = this.new_aperture();
+        const this_map = maps[this.mapname];
+        const { grid_travel, columns, maparray } = this_map;
+
+        // node map always full view
+        if (! grid_travel) return;
+
+        const old_aperture = this.aperture;
+        const new_aperture = this.new_aperture();
+
+        // update css with new aperture
+        this.$mapview.css({
+            '--aperture-x'   : new_aperture.max_x - new_aperture.min_x + 1,
+            '--aperture-y'   : new_aperture.max_y - new_aperture.min_y + 1,
+            '--offset-x'     : new_aperture.min_x ?? 0,
+            '--offset-y'     : new_aperture.min_y ?? 0,
+            '--aspect-ratio' : `${new_aperture.max_x - new_aperture.min_x + 1} / ${new_aperture.max_y - new_aperture.min_y + 1}`
+        });
+
+        // helper function to check if a position is in the aperture
+        const in_range = (xy, aperture) =>
+            xy.x >= aperture.min_x && xy.x <= aperture.max_x &&
+            xy.y >= aperture.min_y && xy.y <= aperture.max_y;
+
+        for (let i = 0; i < maparray.length; i++) {
+            const xy = i2xy({ i, columns });
+            const was_in = in_range(xy, old_aperture);
+            const is_in  = in_range(xy, new_aperture);
+
+            if (was_in && ! is_in) {
+                this.$tiles[i]?.remove();
+            }
+            else if (! was_in && is_in) {
+                if (this.$tiles[i] === undefined) {
+                    const $tile = this.#create_tile(i);
+                    this.$tiles[i] = $tile;
+                    this.$mapview.append($tile);
+                }
+                else {
+                    this.$mapview.append(this.$tiles[i]);
+                }
+            }
+        }
+
+        this.aperture = { ...new_aperture };
     }
     // define traversability
     #is_traversable(i) {
