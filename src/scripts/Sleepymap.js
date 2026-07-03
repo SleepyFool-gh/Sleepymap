@@ -1286,16 +1286,19 @@ class Mapview {
             .addClass('macro-Sleepymap-mapview')
             .attr('data-id'                 , id)
             .data('id'                      , id)
+            // map data
             .attr('data-grid-travel'        , grid_travel)
             .data('grid-travel'             , grid_travel)
             .attr('data-mapname'            , mapname)
             .data('mapname'                 , mapname)
+            // mapstate data
             .attr('data-position-mapnode'   , position.mapnode)
             .data('position-mapnode'        , position.mapnode)
             .attr('data-position-x'         , position.x)
             .data('position-x'              , position.x)
             .attr('data-position-y'         , position.y)
             .data('position-y'              , position.y)
+            // mapview data
             .attr('data-autoupdate'         , autoupdate)
             .data('autoupdate'              , autoupdate)
             .attr('data-disabled'           , ! enabled)
@@ -1376,11 +1379,21 @@ class Mapview {
         if (grid_travel) {
             // pathing always works, but hidden if not shown
             let path;
+            // helper to clear path
+            const clear_path = function() {
+                for (let i = 0; i < path?.length; i++) {
+                    const $tile = $tiles[path[i]];
+                    if ($tile) $tile.removeClass('macro-Sleepymap-path');
+                }
+            };
             $mapview.on('mouseover', '.macro-Sleepymap-tile', (ev) => {
                 const x = Number($mapview.data('position-x'));
                 const y = Number($mapview.data('position-y'));
                 const current_i = xy2i({ xy: { x, y }, columns });
                 const target_i = Number($(ev.currentTarget).data('i'));
+                // clear path
+                clear_path();
+                // set new path
                 path = Sleepymap.find_path({
                     mapname,
                     from_i  : current_i,
@@ -1388,8 +1401,6 @@ class Mapview {
                 });
                 // if show pathing enabled and not pathmoving
                 if (this.enabled && this.pathing && ! _quickmove_running) {
-                    // remove path class on all tiles
-                    $mapview.find('.macro-Sleepymap-path').removeClass('macro-Sleepymap-path');
                     // add path class to each path tile
                     for (let i = 0; i < path?.length; i++) {
                         // only if tile exists on mapview
@@ -1397,19 +1408,23 @@ class Mapview {
                         if ($tile) $tile.addClass('macro-Sleepymap-path');
                     }
                 }
-                // if quickmove enabled and not pathmoving
-                if (this.enabled && this.quickmove && ! _quickmove_running) {
-                    // if path exists -> movable
-                    $(ev.currentTarget).removeClass('macro-Sleepymap-hoverlink');
-                    if (path) $(ev.currentTarget).addClass('macro-Sleepymap-hoverlink');
+                // if not pathmoving, add cursor if either:
+                // path exists and quickmove enabled
+                // path exists, is adjacent, and clickable
+                if (
+                    (this.enabled && ! _quickmove_running) && (
+                        (this.quickmove && path) ||
+                        (this.clickable && path?.length === 2)
+                    )
+                ) {
+                    $(ev.currentTarget).addClass('macro-Sleepymap-hoverlink');
                 }
             });
             // run quickmove if enabled
             $mapview.on('click', '.macro-Sleepymap-tile', () => {
+                // abort quickmove on click if running
                 if (_quickmove_running) {
-                    $('#story').one('Sleepymap:mapmove_began', (ev, data) => {
-                        data.force_abort = true;
-                    });
+                    $('#story').one('Sleepymap:mapmove_began', (ev, data) => data.force_abort = true);
                 }
                 // enabled &, either quickmove or clickable & adjacent
                 else if (
@@ -1419,7 +1434,7 @@ class Mapview {
                     )
                 ) {
                     // remove path
-                    $mapview.find('.macro-Sleepymap-path').removeClass('macro-Sleepymap-path');
+                    clear_path();
                     // if valid path
                     if (path?.length > 1) begin_quickmove({ mapname, path });
                 }
@@ -1427,20 +1442,20 @@ class Mapview {
         }
         // attach click listener for node maps
         else if (clickable) {
-            $mapview.on('click', '.macro-Sleepymap-link', (ev) => {
-                // uses "this" because that is the element that matches the selector ^
-                // whereas ev.target is the thing clicked, which maybe inside the matched element
-
+            $mapview.on('click', '.macro-Sleepymap-tile', (ev) => {
                 const $tile = $(ev.currentTarget);
                 // disabled, do nothing
-                if ($tile.attr('disabled') || ! this.enabled) return;
-                // quickmove running, do nothing
-                if (_quickmove_running) return;
+                if (
+                    _quickmove_running      ||
+                    $tile.data('disabled')  ||
+                    ! this.enabled          ||
+                    ! $tile.data('traversable')
+                ) return;
 
                 // attempt move to target
-                const target_mapnode    = $tile.attr('data-mapnode');
-                const target_x          = Number($tile.attr('data-x'));
-                const target_y          = Number($tile.attr('data-y'));
+                const target_mapnode    = $tile.data('mapnode');
+                const target_x          = $tile.data('x');
+                const target_y          = $tile.data('y');
                 const target_argObj = {
                     mapname,
                     target_mapnode,
@@ -1457,6 +1472,9 @@ class Mapview {
         // save instanced values
         this.position = {...position};
         this.aperture = {...aperture};
+        // data storage for indices
+        this._traversable = [];
+        this._position = [];
         // band-aid for race condition
         this.#update_position();
     }
@@ -1533,16 +1551,35 @@ class Mapview {
     #update_position() {
         const $mapview = this.$mapview;
         const this_map = maps[this.mapname];
-        const { grid_travel, columns, position, exits } = this_map;
+        const { grid_travel, columns, maparray, position, exits } = this_map;
+        
         // reset
-        $mapview.find('[data-traversable]').attr('data-traversable', false);
-        $mapview.find('[data-current-position]').attr('data-current-position', false);
-        $mapview.find('.macro-Sleepymap-label').remove();
+        while (this._traversable.length) {
+            const i = this._traversable.pop();
+            const $tile = this.$tiles[i];
+            if ($tile) {
+                $tile.attr('data-traversable'   , false);
+                $tile.data('traversable'        , false);
+                $tile.children('.macro-Sleepymap-label').remove();
+            }
+        }
+        while (this._position.length) {
+            const i = this._position.pop();
+            const $tile = this.$tiles[i];
+            if ($tile) {
+                $tile.attr('data-current-position'  , false);
+                $tile.data('current-position'       , false);
+            }
+        }
 
+        // grid maps
         if (grid_travel) {
-            const i = xy2i({ xy: position, columns });
             // update position
-            $mapview.children(`[data-x='${position.x}'][data-y='${position.y}']`).attr('data-current-position', true);
+            const i = xy2i({ xy: position, columns });
+            this._position = [i];
+            this.$tiles[i]
+                .attr('data-current-position'   , true)
+                .data('current-position'        , true);
             $mapview
                 .attr('data-position-mapnode'   , position.mapnode)
                 .data('position-mapnode'        , position.mapnode)
@@ -1553,9 +1590,46 @@ class Mapview {
             // update traversable
             for (const dir in exits.grid[i]) {
                 for (const exit_i of exits.grid[i][dir]) {
-                    const $tile = $mapview.find(`[data-i='${exit_i}']`);
-                    $tile.attr('data-traversable', true);
-                    $tile.wiki(`<span class='macro-Sleepymap-label'>${options.labels[dir]}</span>`);
+                    const $tile = this.$tiles[exit_i];
+                    if ($tile) {
+                        $tile
+                            .attr('data-traversable', true)
+                            .data('traversable'     , true)
+                            .wiki(`<span class='macro-Sleepymap-label'>${options.labels[dir]}</span>`);
+                    }
+                    this._traversable.push(exit_i);
+                }
+            }
+            this.position = {...position};
+        }
+        // node maps
+        else {
+            // update position
+            this._position = get_is({ mapname: this.mapname, mapnode: position.mapnode });
+            for (const i of this._position) {
+                const $tile = this.$tiles[i];
+                if ($tile) {
+                    $tile
+                        .attr('data-current-position', true)
+                        .data('current-position'     , true);
+                }
+            }
+            $mapview
+                .attr('data-position-mapnode'   , position.mapnode)
+                .data('position-mapnode'        , position.mapnode);
+            // update traversable
+            for (const dir in exits.node[position.mapnode]) {
+                for (const id of exits.node[position.mapnode][dir]) {
+                    const is = get_is({ mapname: this.mapname, mapnode: id });
+                    for (const i of is) {
+                        const $tile = this.$tiles[i];
+                        if ($tile) {
+                            $tile
+                                .attr('data-traversable', true)
+                                .data('traversable'     , true);
+                        }
+                    }
+                    this._traversable.push(...is);
                 }
             }
             this.position = {...position};
@@ -1593,19 +1667,14 @@ class Mapview {
 
             if (was_in && ! is_in) {
                 this.$tiles[i]?.remove();
+                delete this.$tiles[i];
             }
             else if (! was_in && is_in) {
-                if (this.$tiles[i] === undefined) {
-                    const $tile = this.#create_tile(i);
-                    this.$tiles[i] = $tile;
-                    this.$mapview.append($tile);
-                }
-                else {
-                    this.$mapview.append(this.$tiles[i]);
-                }
+                const $tile = this.#create_tile(i);
+                this.$tiles[i] = $tile;
+                this.$mapview.append($tile);
             }
         }
-
         this.aperture = { ...new_aperture };
     }
     // define traversability
@@ -1648,7 +1717,7 @@ class Mapview {
 
         const $tile = $(document.createElement('div'))
             .addClass('macro-Sleepymap-tile')
-            .addClass(traversable ? '.macro-Sleepymap-link' : '')
+            .addClass(traversable ? 'macro-Sleepymap-link' : '')
             // relational data
             .attr('data-traversable'        , traversable)
             .data('traversable'             , traversable)
@@ -2837,9 +2906,8 @@ function get_offsets(argObj) {
         NW  : -columns - 1,
     }
 }
-// aux function to fetch all valid xys for a given mapnode
-function get_xys(argObj) {
-    const { mapname, mapnode } = argObj;
+// aux function to fetch all valid xys or is for a given mapnode
+function get_xys({ mapname, mapnode }) {
     const this_map = maps[mapname];
     const { maparray, columns } = this_map;
     const xys = [];
@@ -2850,6 +2918,17 @@ function get_xys(argObj) {
         }
     }
     return xys;
+}
+function get_is({ mapname, mapnode }) {
+    const this_map = maps[mapname];
+    const { maparray, columns } = this_map;
+    const is = [];
+    for (let i = 0; i < maparray.length; i++) {
+        if (maparray[i] === mapnode) {
+            is.push(i);
+        }
+    }
+    return is;
 }
 
 // exposed helpers
