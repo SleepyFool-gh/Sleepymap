@@ -551,6 +551,7 @@ const options = {
         disabled_stops_pathing  : true,
         hidden_stops_pathing    : true,
         blocked_stops_pathing   : false,
+        aperture_stops_pathing  : true,
     },
 
     // default wall id
@@ -1703,6 +1704,9 @@ const CREATE_MAPVIEW_TEMPLATE = {
     y_span: {
         type: 'number',
     },
+    aperture_stops_pathing: {
+        type: 'boolean',
+    },
 };
 // macro wrapper, creates & places mapview
 Macro.add(['place_mapview'], {
@@ -1722,9 +1726,10 @@ function create_mapview(argObj) {
 
     const { mapname, background, x_span, y_span } = argObj;
     // default values
-    const show_labels   = argObj.show_labels ?? options.default.show_labels_on_mapview; 
-    const autoupdate    = argObj.autoupdate  ?? options.default.autoupdate_mapview;
-    const clickable     = argObj.clickable   ?? options.default.clickable_mapview;
+    const show_labels               = argObj.show_labels ?? options.default.show_labels_on_mapview; 
+    const autoupdate                = argObj.autoupdate  ?? options.default.autoupdate_mapview;
+    const clickable                 = argObj.clickable   ?? options.default.clickable_mapview;
+    const aperture_stops_pathing    = argObj.aperture_stops_pathing ?? options.default.aperture_stops_pathing;
 
     const this_map = maps[mapname];
     // ERROR: non-extant map
@@ -1985,8 +1990,10 @@ function create_mapview(argObj) {
             const target_i = Number($(this).attr('data-i'));
             path = Sleepymap.find_path({
                 mapname, 
-                from_i  : position_i, 
+                from_i  : position_i,
                 to_i    : target_i,
+                aperture_stops_pathing,
+                aperture,
             });
             // show pathing if enabled and not pathmoving
             if (enabled && pathing && ! _quickmove_running) {
@@ -2995,9 +3002,10 @@ function find_path(argObj) {
  
     const name = argObj.name ?? 'Sleepymap.find_path';
     const { mapname, from_i, to_i, from_x, from_y, to_x, to_y } = argObj;
-    const stopped_by_disabled   = argObj.stopped_by_disabled    ?? options.default.disabled_stops_pathing;
-    const stopped_by_hidden     = argObj.stopped_by_hidden      ?? options.default.hidden_stops_pathing;
-    const stopped_by_blocked    = argObj.stopped_by_blocked     ?? options.default.blocked_stops_pathing;
+    const disabled_stops_pathing    = argObj.disabled_stops_pathing ?? options.default.disabled_stops_pathing;
+    const hidden_stops_pathing      = argObj.hidden_stops_pathing   ?? options.default.hidden_stops_pathing;
+    const blocked_stops_pathing     = argObj.blocked_stops_pathing  ?? options.default.blocked_stops_pathing;
+    const aperture_stops_pathing    = argObj.aperture_stops_pathing ?? options.default.aperture_stops_pathing;
     const this_map = maps[mapname];
  
     const has_i_inputs = from_i !== undefined || to_i !== undefined;
@@ -3018,8 +3026,24 @@ function find_path(argObj) {
     ) {
         throw new Error(`${name} — Sleepymap "${mapname}" — insufficient inputs, need both from_i/to_i or, all of from_x/from_y/to_x/to_y!`);
     }
+    // ERROR: no aperture provided
+    else if (aperture_stops_pathing && argObj.aperture === undefined) {
+        throw new Error(`${name} — Sleepymap "${mapname}" — aperture_stops_pathing is true but no aperture provided!`);
+    }
  
     const { grid_travel, exits, maparray, columns, mapnodes } = this_map;
+    const rows = maparray / columns;
+    const aperture = argObj.aperture ?? { x_span: columns, y_span: rows };
+
+    // ERROR: invalid aperture
+    if (
+        aperture.min_x < 0              ||
+        aperture.max_x > columns - 1    ||
+        aperture.min_y < 0              ||
+        aperture.max_y > rows - 1
+    ) {
+        throw new Error(`${name} — Sleepymap "${mapname}" — invalid min/max x/y!`);
+    }
     
     // WARNING: unsupported on node travel map
     if (! grid_travel) {
@@ -3057,12 +3081,19 @@ function find_path(argObj) {
         const current_i = queue[head];
         head++;
 
+        const current_xy = i2xy({ i: current_i, columns });
         // prevent pathing through stopping mapstates
         const current_mapnode = mapnodes[maparray[current_i]];
         if (
-            (current_mapnode.disabled   && stopped_by_disabled) ||
-            (current_mapnode.hidden     && stopped_by_hidden)   ||
-            (current_mapnode.blocked    && stopped_by_blocked)
+            (disabled_stops_pathing && current_mapnode.disabled) ||
+            (hidden_stops_pathing   && current_mapnode.hidden)   ||
+            (blocked_stops_pathing  && current_mapnode.blocked)  ||
+            (aperture_stops_pathing && (
+                current_xy.x < aperture.min_x   ||
+                current_xy.x > aperture.max_x   ||
+                current_xy.y < aperture.min_y   ||
+                current_xy.y > aperture.max_y
+            ))
         ) continue;
  
         // searches if this thing is destination, if not pushes its exits into queue
