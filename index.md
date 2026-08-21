@@ -43,6 +43,22 @@ title: Sleepy Macros — Sleepymap library
         - [`<<set_entity>>`](#macros-set_entity)
         - [`<<delete_entity>>`](#macros-delete_entity)
 - **[JavaScript Methods](#javascript)**
+    - [*Map Handler*](#javascript-handler)
+        - [`get_handler`](#javascript-get_handler)
+        - [`pos`](#javascript-pos)
+        - [`frozen`](#javascript-frozen)
+        - [`freeze`](#javascript-freeze)
+        - [`unfreeze`](#javascript-unfreeze)
+        - [`disabled`](#javascript-disabled)
+        - [`disable`](#javascript-disable)
+        - [`enable`](#javascript-enable)
+        - [`blocked`](#javascript-blocked)
+        - [`block`](#javascript-block)
+        - [`unblock`](#javascript-unblock)
+        - [`hidden`](#javascript-hidden)
+        - [`hide`](#javascript-hide)
+        - [`show`](#javascript-show)
+        - [`move_to`](#javascript-move_to)
     - [*Initialization & Manipulation*](#javascript-initialization)
         - [`new_map`](#javascript-new_map)
         - [`get_map`](#javascript-get_map)
@@ -155,8 +171,7 @@ Defines a new `Sleepymap`. It accepts a 2D grid layout via its contents and supp
     - `mapname`: (string) name of `map`
     - `grid_travel`: (boolean) *(optional)* whether to use grid-based movement (default: `false`, node-to-node movement)
     - `start`: (string) *(`node travel`)* starting position in map, must be a valid `mapnode` id
-    - `start_x`: (number) *(`grid travel`)* starting x coordinate
-    - `start_y`: (number) *(`grid travel`)* starting y coordinate
+    - `start_x`/`start_y`: (number) *(`grid travel`)* starting x/y coordinate
     - `columns`: (number) # of columns in the logic representation grid
     - `diagonals`: (boolean) *(optional)* whether diagonal movement is allowed
 - **Contents:** 
@@ -181,7 +196,7 @@ Defines a new `Sleepymap`. It accepts a 2D grid layout via its contents and supp
             - `walled`: (boolean) *(optional)* turns the node into a wall, default `false`
 - **Examples:**
     ```js
-    /* define mapnodes */
+    // define mapnodes
     <<set _mapnodes = {
         M: {name: 'Master Bedroom'},
         G: {name: 'Guest Bedroom'},
@@ -193,7 +208,7 @@ Defines a new `Sleepymap`. It accepts a 2D grid layout via its contents and supp
         P: {name: 'Pantry'},
     }>>
 
-    /* new node travel map */
+    // new node travel map
     <<new_map 
         mapname     'node_house'
         columns     16
@@ -211,7 +226,7 @@ Defines a new `Sleepymap`. It accepts a 2D grid layout via its contents and supp
     <<mapnodes _mapnodes>>
     <</new_map>>
 
-    /* new grid travel map */
+    // new grid travel map
     <<new_map 
         mapname     'grid_house'
         columns     16
@@ -249,7 +264,7 @@ Updates the metadata for a specific `mapnode` in an existing `map`. Incomplete o
         - `walled`: (boolean) *(optional)* turns the `mapnode` into a wall
 - **Examples:**
     ```js
-    /* lock the pantry */
+    // lock the pantry
     <<set _P = { name: 'Locked Pantry', blocked: true }>>
     <<set_mapnode
         mapname     'node_house'
@@ -281,14 +296,14 @@ Updates the operational state (`mapstate`) of a map, such as the current positio
         - `[mapnode id]`: (boolean) whether the `mapnode` is a wall
 - **Examples:**
     ```js
-    /* reposition player without triggering any scripts or events */
+    // reposition player without triggering any scripts or events
     <<set _position = { x: 10, y: 5 }>>
     <<set_mapstate
         mapname     'grid_house'
         position    _position
     >>
 
-    /* unlock pantry and hide both bedrooms */
+    // unlock pantry and hide both bedrooms
     <<set _blocked = { 'P': false }>>
     <<set _hidden = { 'M': true, 'G': true }>>
     <<set_mapstate
@@ -311,7 +326,7 @@ Manually creates a new exit between two `mapnodes` or two grid coordinates. If t
     - `from_x`/`from_y`/`to_x`/`to_y`: (number) *(`grid travel`)* coordinates to connect
 - **Examples:**
     ```js
-    /* node travel, create secret passage from master bedroom to pantry */
+    // node travel, create secret passage from master bedroom to pantry
     <<connect_map 
         mapname     'node_house' 
         from        'M' 
@@ -319,7 +334,7 @@ Manually creates a new exit between two `mapnodes` or two grid coordinates. If t
         dir         'S' 
     >>
 
-    /* grid travel, connect bottom floor stairs to top floor stairs */
+    // grid travel, connect bottom floor stairs to top floor stairs
     <<connect_map
         mapname     'grid_house'
         from_x      8
@@ -343,8 +358,8 @@ Removes an exit that was automatically created between two `mapnodes` or grid co
     - `from_x`/`from_y`/`to_x`/`to_y`: (number) *(`grid travel`)* coordinates to disconnect
 - **Examples:**
     ```js
-    /* removes the exit from kitchen to dining room,
-        making leaving the kitchen impossible */
+    // removes the exit from kitchen to dining room,
+    // making leaving the kitchen impossible
     <<disconnect_map 
         mapname   'node_house' 
         from      'K' 
@@ -369,7 +384,7 @@ Generates a 3x3 grid of directional links for navigation.
     - `clickable` : (boolean) *(optional)* whether the `rose` items are clickable links, default set in `options`
 - **Examples:**
     ```js
-    /* places a rose that doesn't autoupdate */
+    // places a rose that doesn't autoupdate
     <<place_rose
         mapname     'grid_house'
         background  '<img src="./assets/small_house.png">'
@@ -392,9 +407,10 @@ Renders a visual representation of the `map` with the tiles using the `maparray`
     - `show_labels`: (boolean) *(optional)* whether to display labels (names or directional icons) for each node, default set in `options`
     - `pathing`: (boolean) *(optional)* whether to highlight the path to the hovered tile, default set in `options`
     - `quickmove`: (boolean) *(optional)* whether clicking a distant traversable tile initiates multiple sequential `mapmoves`, default set in `options`, the `mapview` *must* be clickable to enable `quickmove`
+    - `x_span`/`y_span`: (number) *(optional)* width/height in # of tiles of mapview aperture, centered on `position`
 - **Examples:**
     ```js
-    /* places a mapview that has quickmove disabled & pathing enabled */
+    // places a mapview that has quickmove disabled & pathing enabled
     <<place_mapview
         mapname     'grid_house'
         background  '<img src="./assets/small_house.png">'
@@ -418,7 +434,7 @@ Creates an invisible element that controls a listener on `document` for `keyup` 
             - `x`/`y`: (number) *(optional)* target x/y coordinate
 - **Examples:**
     ```js
-    /* set up wasd control for movement to adjacent spaces */
+    // set up wasd control for movement to adjacent spaces
     <<set _keys = {
         w: { dir: 'N' },
         d: { dir: 'E' },
@@ -430,8 +446,8 @@ Creates an invisible element that controls a listener on `document` for `keyup` 
         keys        _keys 
     >>
 
-    /* set up a dedicated key to teleport to the dining room, 
-        but only works from the outhouse */
+    // set up a dedicated key to teleport to the dining room 
+    // that only works from the outhouse
     <<set
         _keys = { 
             r: { mapnode: 'D' },
@@ -453,7 +469,7 @@ Manually triggers an update for a `rose` or `mapview` element. This is useful if
     - `selector`: (selector string) jQuery selector for the interface element(s) to update
 - **Examples:**
     ```js
-    /* updates all mapviews on the page */
+    // updates all mapviews on the page
     <<update_interface selector '.macro-Sleepymap-mapview'>>
     ```
 
@@ -477,10 +493,10 @@ Manually triggers a `mapmove` attempt. This macro *does not* check against exits
     - `skip_scripts`: (boolean) *(optional)* `true` to bypass all `mapscripts` for this `mapmove`, default `false`
 - **Examples:**
     ```js
-    /* teleport to master bedroom */
+    // teleport to master bedroom
     <<mapmove mapname 'node_house' target_mapnode 'M'>>
 
-    /* teleport to first grid cell of dining room */
+    // teleport to first grid cell of dining room
     <<mapmove mapname 'grid_house' target_mapnode 'D'>>
     ```
 
@@ -510,19 +526,19 @@ Child tags of the same type will execute in the order they are defined — but `
 - **Examples:**
     ```js
     <<set_mapscripts mapname _mapname>>
-        /* decrement energy whenever a mapmove is attempted */
+        // decrement energy whenever a mapmove is attempted
         <<onmapattempt>>
             <<set $energy-->>
-        /* increase heat when moving around upstairs */
+        // increase heat when moving around upstairs
         <<onmapattempt to `['L', 'H', 'G', 'M']`>>
             <<set $heat++>>
-        /* ring a bell when coming down the stairs */
+        // ring a bell when coming down the stairs
         <<onmapstart from 'S' to 'D'>>
             <<run console.log('Ding!')>>
-        /* increase hunger when entering the kitchen or pantry */
+        // increase hunger when entering the kitchen or pantry
         <<onmapend from 'D' to `['K', 'P']`>>
             <<set $hunger++>>
-        /* tell <<redo>> to run any time mapmove succeeds */
+        // tell <<redo>> to run any time mapmove succeeds
         <<onmapend>>
             <<redo>>
     <</set_mapscripts>>
@@ -540,7 +556,7 @@ Creates a new entity on the map at the specified coordinates. This macro takes `
     - `tile`: (HTML string) *(optional)* display tile for the entity
 - **Examples:**
     ```js
-    /* places a kitty in the dining room */
+    // places a kitty in the dining room
     <<new_entity 
         mapname     'node_house' 
         entityname  'kitty' 
@@ -562,7 +578,7 @@ Updates the position or display tile of an existing entity. This macro takes `x`
     - `tile`: (HTML string) *(optional)* new display tile
 - **Examples:**
     ```js
-    /* move the kitty to the pantry */
+    // move the kitty to the pantry
     <<set_entity 
         mapname    'node_house' 
         entityname 'kitty' 
@@ -581,7 +597,7 @@ Removes an entity from the map.
     - `entityname`: (string) identifier of the entity to remove
 - **Examples:**
     ```js
-    /* remove the kitty from the map */
+    // remove the kitty from the map
     <<delete_entity 
         mapname    'node_house' 
         entityname 'kitty' 
@@ -607,7 +623,219 @@ Removes an entity from the map.
 
 <h1 id='javascript'>JavaScript Methods</h1>
 
-Javascript methods are stored on the `Sleepymap` window object. All methods take an `argObj` argument object.
+Javascript methods are stored on the `Sleepymap` window object. All `Sleepymap` methods take an `argObj` argument object. 
+
+A map `handler` is available for common operations on a specific map. `Handler` methods take `mapnode` string inputs, except `pos` which takes no inputs. The `move_to` method can also take an `x/y` coordinate object.
+
+<h2 id='javascript-handler'>Map Handler</h2>
+
+
+
+<h3 id='javascript-get_handler'><code>get_handler</code></h3>
+
+Retrieves the handler object for a map. The handler object is a simplified map manipulator that allows for easier access to common map operations.
+
+- **argObj Properties:**
+    - `mapname`: (string) name of the `map` to retrieve
+- **Returns:** 
+    - (object) utility object for map manipulation shorthands
+- **Examples:**
+    ```js
+    // get node_house handler
+    const node_house = Sleepymap.get_handler({
+        mapname: 'node_house',
+    });
+    ```
+
+
+<h3 id='javascript-pos'><code>pos</code></h3>
+
+Getter that returns the current position of the map. This *cannot* be directly modified. Use `[handler].move_to` or `Sleepymap.set_mapstate` to manipulate map position.
+
+- **Returns:**
+    - (object) contains the current position of the map
+        - `mapnode`: (string) name of current `mapnode` (`node travel`)
+        - `x/y`: (number) x/y coordinate values of the curreny position (`grid travel`)
+- **Examples:**
+    ```js
+    // check if currently in kitchen
+    if (node_house.pos.mapnode === 'K') {
+        console.log("You're in the kitchen!");
+    }
+    ```
+
+
+<h3 id='javascript-frozen'><code>frozen</code></h3>
+
+Returns whether the map is `frozen`. This *cannot* be directly modified. Use `[handler].freeze`, `[handler].unfreeze`, or `Sleepymap.set_mapstate` to modify `frozen` state.
+
+- **Returns:**
+    - (boolean) whether the map is `frozen`
+- **Examples:**
+    ```js
+    // returns
+    node_house.frozen;
+    ```
+
+<h3 id='javascript-freeze'><code>freeze</code></h3>
+
+Freezes the map's `interface` items, ie. disables inputs on `mapviews`, `roses`, and `controllers`.
+
+- **Examples:**
+    ```js
+    // disable clicking on the mapview
+    node_house.freeze();
+    ```
+
+
+<h3 id='javascript-unfreeze'><code>unfreeze</code></h3>
+
+Unfreezes the map's `interface` items, ie. re-enables `mapviews`, `roses`, and `controllers`.
+
+*Note:* This will *NOT* enable `mapnodes` specifically set to `disabled`.
+
+- **Examples:**
+    ```js
+    // re-enable mapview clicking
+    node_house.unfreeze();
+    ```
+
+
+<h3 id='javascript-disabled'><code>disabled</code></h3>
+
+Checks whether a specific `mapnode` is `disabled`. This *cannot* be directly modified. Use `[handler].disable`, `[handler].enable`, `Sleepymap.set_mapnode`, or `Sleepymap.set_mapstate` to manipulate `disabled` status.
+
+- **Arguments:**
+    - `mapnode`: (string) name of the `mapnode` to check
+- **Returns:**
+    - (boolean) whether the `mapnode` is `disabled`
+- **Examples:**
+    ```js
+    // checks disable state of kitchen
+    node_house.disabled('K');
+    ```
+
+
+<h3 id='javascript-disable'><code>disable</code></h3>
+
+Disables navigation to a `mapnode` via clicking on `interfaces` (`mapviews` & `roses`). `Controllers` are not affected as they use the keyboard.
+
+- **Arguments:**
+    - `mapnode`: (string) name of the `mapnode` to disable
+- **Examples:**
+    ```js
+    // disable navigation to the kitchen
+    node_house.disable('K');
+    ```
+
+
+<h3 id='javascript-enable'><code>enable</code></h3>
+
+Enables navigation to a `mapnode` via clicking on `interfaces` (`mapviews` & `roses`). `Controllers` are not affected as they use the keyboard.
+
+- **Arguments:**
+    - `mapnode`: (string) name of the `mapnode` to enable
+- **Examples:**
+    ```js
+    // enable navigation to the kitchen
+    node_house.enable('K');
+    ```
+
+
+<h3 id='javascript-blocked'><code>blocked</code></h3>
+
+Check whether a specific `mapnode` is `blocked`.
+
+- **Arguments:**
+    - `mapnode`: (string) name of the `mapnode` to check
+- **Returns:**
+    - (boolean) whether the `mapnode` is `blocked`
+- **Examples:**
+    ```js
+    // checks blocked state of kitchen
+    node_house.blocked('K');
+    ```
+
+
+<h3 id='javascript-block'><code>block</code></h3>
+
+Blocks navigation through a `mapnode`, attempts will be aborted.
+
+- **Arguments:**
+    - `mapnode`: (string) name of the `mapnode` to block
+- **Examples:**
+    ```js
+    // block the kitchen
+    node_house.block('K');
+    ```
+
+
+<h3 id='javascript-unblock'><code>unblock</code></h3>
+
+Unblocks navigation through a `mapnode`.
+
+- **Arguments:**
+    - `mapnode`: (string) name of the `mapnode` to unblock
+- **Examples:**
+    ```js
+    // unblock the kitchen
+    node_house.unblock('K');
+    ```
+
+
+<h3 id='javascript-hidden'><code>hidden</code></h3>
+
+Checks whether a specific `mapnode` is `hidden`.
+
+- **Arguments:**
+    - `mapnode`: (string) name of the `mapnode` to check
+- **Returns:**
+    - (boolean) whether the `mapnode` is `hidden`
+- **Examples:**
+    ```js
+    // checks the hidden state of the kitchen
+    node_house.hidden('K');
+    ```
+
+
+<h3 id='javascript-hide'><code>hide</code></h3>
+
+Hides a `mapnode` from showing up on `interface` items.
+
+- **Arguments:**
+    - `mapnode`: (string) name of the `mapnode` to hide
+- **Examples:**
+    ```js
+    // hide the kitchen
+    node_house.hide('K');
+    ```
+
+
+<h3 id='javascript-show'><code>show</code></h3>
+
+Shows a hidden `mapnode` on `interface` items.
+
+- **Arguments:**
+    - `mapnode`: (string) name of the `mapnode` to show
+- **Examples:**
+    ```js
+    // show the kitchen
+    node_house.show('K');
+    ```
+
+
+<h3 id='javascript-move_to'><code>move_to</code></h3>
+
+Starts a `mapmove` to the designated destination, works identically to calling `begin_mapmove`, except only `target_mapnode` and `target_x`/`target_y` can be specified.
+
+- **Arguments:**
+    - `target_mapnode`: (string) *(optional)* ID of the `mapnode` to move to (`node travel`)
+    - `target_x`/`target_y`: (number) *(optional)* target x/y coordinate (`grid travel`)
+- **Examples:**
+    ```js
+    // move to the pantry
+    node_house.move_to('P');
+    ```
 
 
 <h2 id='javascript-initialization'>Initialization & Manipulation</h2>
@@ -623,8 +851,7 @@ Creates a new `Sleepymap`. The `<<new_map>>` macro is a wrapper for this method.
     - `maparray`: (array&lt;string&gt;) 1D array of `mapnode` ids representing the map navigation logic, length must be divisible by `columns`
     - `grid_travel`: (boolean) *(optional)* whether to use grid-based movement (default: `false`, node-to-node movement)
     - `start`: (string) *(`node travel`)* starting position on map, must be a valid `mapnode` id
-    - `start_x`: (number) *(`grid travel`)* starting x coordinate
-    - `start_y`: (number) *(`grid travel`)* starting y coordinate
+    - `start_x`/`start_y`: (number) *(`grid travel`)* starting x/y coordinate
     - `diagonals`: (boolean) *(optional)* whether diagonal movement is allowed, default set in `options`
     - `mapnodes`: (object) *(optional)* additional metadata for `mapnodes`, partial objects will be filled with default values
         - `[mapnode id]`: (object)
@@ -636,7 +863,7 @@ Creates a new `Sleepymap`. The `<<new_map>>` macro is a wrapper for this method.
             - `walled`: (boolean) *(optional)* turns the node into a wall, default `false`
 - **Examples:**
     ```js
-    /* create a new node travel map */
+    // create a new node travel map
     Sleepymap.new_map({
         mapname  : 'node_house',
         columns  : 16,
@@ -649,7 +876,7 @@ Creates a new `Sleepymap`. The `<<new_map>>` macro is a wrapper for this method.
         },
     });
 
-    /* create a new grid travel map */
+    // create a new grid travel map
     Sleepymap.new_map({
         mapname     : 'grid_house',
         columns     : 16,
@@ -672,7 +899,8 @@ Retrieves a copy of a map object. Manipulating the returned object *will not* af
 
 - **argObj Properties:**
     - `mapname`: (string) name of the `map` to retrieve
-- **Returns:** An object containing the map's structure (see example below)
+- **Returns:** 
+    - (object) `Sleepymap` object (see example below)
 - **Examples:**
     ```js
     // get node_house object
@@ -784,7 +1012,7 @@ The `<<connect_map>>` and `<<disconnect_map>>` macros are both wrappers for this
     - `removing`: (boolean) *(optional)* `true` to remove an existing connection, `false` to create one, default `false`
 - **Examples:**
     ```js
-    /* connect the stairs */
+    // connect the stairs
     Sleepymap.edit_exits({
         mapname : 'grid_house',
         from_x  : 8,
@@ -802,7 +1030,7 @@ The `<<connect_map>>` and `<<disconnect_map>>` macros are both wrappers for this
         dir     : 'S',
     });
 
-    /* master bedroom can be entered but not left */
+    // master bedroom can be entered but not left
     Sleepymap.edit_exits({
         mapname  : 'node_house',
         from     : 'M',
@@ -819,7 +1047,8 @@ Retrieves the current metadata for a specific `mapnode`.
 - **argObj Properties:**
     - `mapname`: (string) name of the `map`
     - `mapnode`: (string) id of the `mapnode` to retrieve
-- **Returns:** A cloned object containing the `mapnode`'s properties.
+- **Returns:** 
+    - (object) cloned object containing the `mapnode`'s properties.
 - **Examples:**
     ```js
     // get the current metadata for the pantry
@@ -864,7 +1093,16 @@ Retrieves the current state of a specific map property. If no `mapstate` is supp
 - **argObj Properties:**
     - `mapname`: (string) name of the `map`
     - `mapstate`: (string) *(optional)* the property to retrieve (`"position"`, `"frozen"`, `"disabled"`, `"hidden"`, `"blocked"`, or `"walled"`)
-- **Returns:** The current value of the requested property.
+- **Returns:** 
+    - if `position`:
+        - (object) `position` object
+            - `mapnode`: (string) name of current `mapnode` (`node travel`)
+            - `x`/`y`: (number) x/y coordinate (`grid travel`)
+    - if `frozen`:
+        - (boolean) whether the `map` is `frozen`
+    - if `disabled`/`hidden`/`blocked`/`walled`:
+        - (object) object with each `mapnode` as a key and a boolean as the value
+            - `[mapnode]` - (boolean) whether the `mapnode` is `disabled`/`hidden`/`blocked`/`walled`
 - **Examples:**
     ```js
     // get the current position
@@ -925,7 +1163,8 @@ The `<<place_rose>>` macro calls this method and appends the result to the macro
     - `enabled`: (boolean\|TwineScript string) *(optional)* whether the `rose` is enabled, by default will check the `map`'s `frozen` value
     - `autoupdate`: (boolean) *(optional)* whether the `rose` automatically updates, default set in `options`
     - `clickable` : (boolean) *(optional)* whether the `exits` are navigation links, default set in `options`
-- **Returns:** (jQuery object) the created `$rose` element
+- **Returns:** 
+    - (jQuery object) the created `$rose` element
 - **Examples:**
     ```js
     // returns a $rose jQuery element that doesn't autoupdate
@@ -952,7 +1191,9 @@ The `<<place_mapview>>` macro calls this method and appends the result to the ma
     - `show_labels`: (boolean) *(optional)* whether to display labels (names or directional icons) for each node, default set in `options`
     - `pathing`: (boolean) *(optional)* whether to highlight the path to the hovered tile; highlighted path is generated by adding the `.macro-Sleepymap-path` class to each `tile` along the path; default set in `options`
     - `quickmove`: (boolean) *(optional)* whether clicking a distant traversable tile initiates multiple sequential `mapmoves`; `clickable` *must* be `true` for `quickmove` to function; default set in `options`
-- **Returns:** (jQuery object) the created `$mapview` element
+    - `x_span`/`y_span`: (number) *(optional)* width/height in # of tiles of mapview aperture, centered on `position`
+- **Returns:** 
+    - (jQuery object) the created `$mapview` element
 - **Examples:**
     ```js
     // places a mapview that has quickmove disabled but pathing enabled
@@ -1026,8 +1267,7 @@ The `<<mapmove>>` macro is a wrapper for this method.
 - **argObj Properties:**
     - `mapname`: (string) name of the `map`
     - `target_mapnode`: (string) *(optional)* ID of the `mapnode` to move to (`node travel`)
-    - `target_x`: (number) *(optional)* target x coordinate (`grid travel`)
-    - `target_y`: (number) *(optional)* target y coordinate (`grid travel`)
+    - `target_x`/`target_y`: (number) *(optional)* target x/y coordinate (`grid travel`)
     - `force_abort`: (boolean) *(optional)* `true` to force the move to fail, default `false`
     - `skip_scripts`: (boolean) *(optional)* `true` to bypass `mapscripts` for this move, default `false`
 - **Examples:**
@@ -1059,7 +1299,8 @@ Calculates the shortest path between two points on a `grid travel` map using a B
     - `stopped_by_disabled`: (boolean) *(optional)* whether disabled nodes stop pathing, default set in `options`
     - `stopped_by_hidden`: (boolean) *(optional)* whether hidden nodes stop pathing, default set in `options`
     - `stopped_by_blocked`: (boolean) *(optional)* whether blocked nodes stop pathing, default set in `options`
-- **Returns:** An array of indices (if `from_i`/`to_i` used) or coordinate objects (if `from_x`/`from_y`/`to_x`/`to_y` used) representing the path, or `null` if no path is found.
+- **Returns:** 
+    - (array) An array of indices (if `from_i`/`to_i` used) or coordinate objects (if `from_x`/`from_y`/`to_x`/`to_y` used) representing the path, or `null` if no path is found.
 - **Examples:**
     ```js
     // find path using indices

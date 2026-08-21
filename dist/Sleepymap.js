@@ -176,7 +176,7 @@ Macro.add(['new_map'], {
             argObj.mapnodes = mapnodes;
         }
 
-        argObj.add_metadata('name', name);
+        ArgObj.add_metadata('name', name, argObj);
         new_map(argObj);
     },
 });
@@ -386,7 +386,7 @@ Macro.add(['set_mapnode'], {
     handler() {
         const name = this.name;
         const argObj = new ArgObj(name, SET_MAPNODE_TEMPLATE, this.args);
-        argObj.add_metadata('name', name);
+        ArgObj.add_metadata('name', name, argObj);
         set_mapnode(argObj);
     }
 });
@@ -504,7 +504,7 @@ Macro.add(['set_mapstate'], {
     handler() {
         const name = this.name;
         const argObj = new ArgObj(name, SET_MAPSTATE_TEMPLATE, this.args);
-        argObj.add_metadata('name', name);
+        ArgObj.add_metadata('name', name, argObj);
         set_mapstate(argObj);
     }
 });
@@ -821,14 +821,14 @@ const EDIT_EXITS_TEMPLATE = {
     removing: {
         type: 'boolean',
     },
-}
+};
 // wrapper for edit_exits
 Macro.add(['connect_map', 'disconnect_map'], {
     handler() {
         const name = this.name;
         const argObj = new ArgObj(name, EDIT_EXITS_TEMPLATE, this.args);
         argObj.removing = name.includes('disconnect');
-        argObj.add_metadata('name', name);
+        ArgObj.add_metadata('name', name, argObj);
         edit_exits(argObj);
     },
 });
@@ -972,14 +972,14 @@ const CREATE_ROSE_TEMPLATE = {
     clickable: {
         type: 'boolean',
     },
-}
+};
 // macro wrapper, calls the create_rose function (which returns a $rose object)
 // then attaches it to the macro output
 Macro.add(['place_rose'], {
     handler() {
         const name = this.name;
         const argObj = new ArgObj(name, CREATE_ROSE_TEMPLATE, this.args);
-        argObj.add_metadata('name', name);
+        ArgObj.add_metadata('name', name, argObj);
         create_rose(argObj).appendTo(this.output);
     }
 });
@@ -1175,13 +1175,19 @@ const CREATE_MAPVIEW_TEMPLATE = {
     quickmove: {
         type: 'boolean',
     },
-}
+    x_span: {
+        type: 'number',
+    },
+    y_span: {
+        type: 'number',
+    },
+};
 // macro wrapper, creates & places mapview
 Macro.add(['place_mapview'], {
     handler() {
         const name = this.name;
         const argObj = new ArgObj(name, CREATE_MAPVIEW_TEMPLATE, this.args);
-        argObj.add_metadata('name', name);
+        ArgObj.add_metadata('name', name, argObj);
         create_mapview(argObj).appendTo(this.output);
     }
 });
@@ -1192,7 +1198,7 @@ function create_mapview(argObj) {
     // VALIDATE: required args & type
     ArgObj.validate(name, CREATE_MAPVIEW_TEMPLATE, argObj);
 
-    const { mapname, background } = argObj;
+    const { mapname, background, x_span, y_span } = argObj;
     // default values
     const show_labels   = argObj.show_labels ?? options.default.show_labels_on_mapview; 
     const autoupdate    = argObj.autoupdate  ?? options.default.autoupdate_mapview;
@@ -1217,6 +1223,27 @@ function create_mapview(argObj) {
         console.warn(`${name} — Sleepymap "${mapname}" — controller "enabled" args string didn't evaluate into a boolean! Coercing...`);
     }
 
+    const rows = maparray.length / columns;
+    // WARNING: unsupported partial view on node travel map
+    if (
+        (! grid_travel) &&
+        (x_span !== undefined || y_span !== undefined)
+    ) {
+        console.warn(`${name} — Sleepymap "${mapname}" — partial views aren't supported for node travel, ignoring...`);
+    }
+    // ERROR: partial view numbers not valid
+    else if (
+        grid_travel &&
+        (x_span <= 0 || x_span > columns)
+     ) {
+        throw new Error(`${name} — Sleepymap "${mapname}" — x_span input must be between 1 & ${columns}!`);
+    }
+    else if (
+        grid_travel && 
+        (y_span <= 0 || y_span > rows)
+    ) {
+        throw new Error(`${name} — Sleepymap "${mapname}" — x_span input must be between 1 & ${rows}!`);
+    }
 
     // WARNING: pathing on node travel map
     if ((argObj.pathing || argObj.quickmove) && (! grid_travel)) {
@@ -1243,6 +1270,48 @@ function create_mapview(argObj) {
         console.warn(`${name} — Sleepymap "${mapname}" — showing labels on node travel map isn't supported! Input ignored...`);
     }
 
+    // create aperture
+    const aperture = {};
+    if (grid_travel) {
+        const aperture_x = x_span ?? columns;
+        const aperture_y = y_span ?? rows;
+        const half_x = Math.floor(aperture_x / 2);
+        const half_y = Math.floor(aperture_y / 2);
+        // ideal center
+        let min_x = position.x - half_x;
+        let max_x = min_x + (aperture_x - 1);
+        let min_y = position.y - half_y;
+        let max_y = min_y + (aperture_y - 1);
+        // clamp x
+        if (min_x < 0) {
+            min_x = 0;
+            max_x = aperture_x - 1;
+        } else if (max_x > columns - 1) {
+            max_x = columns - 1;
+            min_x = columns - aperture_x;
+        }
+        // clamp y
+        if (min_y < 0) {
+            min_y = 0;
+            max_y = aperture_y - 1;
+        } else if (max_y > rows - 1) {
+            max_y = rows - 1;
+            min_y = rows - aperture_y;
+        }
+        // assign
+        aperture.min_x = min_x;
+        aperture.max_x = max_x;
+        aperture.min_y = min_y;
+        aperture.max_y = max_y;
+    }
+    // node travel ignores, uses full size
+    else {
+        aperture.min_x = 0;
+        aperture.max_x = columns - 1;
+        aperture.min_y = 0;
+        aperture.max_y = rows - 1;
+    }
+
     // create map object
     // use maparray & columns if no mapview object
     const $mapview = $(document.createElement('div'))
@@ -1258,6 +1327,12 @@ function create_mapview(argObj) {
         .data('argObj', argObj)
         .css({
             '--columns'         : columns,
+            '--rows'            : rows,
+            '--aperture-x'      : aperture.max_x - aperture.min_x + 1,
+            '--aperture-y'      : aperture.max_y - aperture.min_y + 1,
+            '--offset-x'        : aperture.min_x ?? 0,
+            '--offset-y'        : aperture.min_y ?? 0,
+            '--aspect-ratio'    : `${aperture.max_x - aperture.min_x + 1} / ${aperture.max_y - aperture.min_y + 1}`
         });
     
     // append bg
@@ -1318,6 +1393,18 @@ function create_mapview(argObj) {
     const $tiles = [];
     // create & append tiles
     for (let i = 0; i < maparray.length; i++) {
+        const xy = i2xy({ i, columns });
+
+        // check aperture for grid travel maps, skip if not within
+        if (grid_travel) {
+            if (
+                xy.x < aperture.min_x ||
+                xy.x > aperture.max_x ||
+                xy.y < aperture.min_y ||
+                xy.y > aperture.max_y
+            ) continue;
+        }
+
         const id = maparray[i];
         const mapnode = mapnodes[id];
         // if clickable & valid travel destination --> clickable
@@ -1325,7 +1412,6 @@ function create_mapview(argObj) {
                         ? false
                     : !! is_traversable(i);
 
-        const xy = i2xy({ i, columns });
         // labels only work in grid mode
         const dir = i2dir[i];
         const label     = (! show_labels) || (! grid_travel) || (! is_traversable(i))
@@ -1365,8 +1451,9 @@ function create_mapview(argObj) {
             }
         }
         
-        $mapview.append($tile);
         $tiles[i] = $tile;
+
+        $mapview.append($tile);
     }
 
     // attach click listener, only if not quickmove as that will replace it
@@ -1391,7 +1478,9 @@ function create_mapview(argObj) {
                     .forEach( el => el.classList.remove('macro-Sleepymap-path'));
                 // add path class to each path tile
                 for (let i = 0; i < path?.length; i++) {
-                    $tiles[path[i]].addClass('macro-Sleepymap-path');
+                    if ($tiles[path[i]]) {
+                        $tiles[path[i]].addClass('macro-Sleepymap-path');
+                    }
                 }
             }
             // if quickmove enabled and not pathmoving
@@ -1465,13 +1554,13 @@ const UPDATE_INTERFACE_TEMPLATE = {
         type: 'object',
         aliases: ['$rose', '$mapview', 'interface'],
     },
-}
+};
 // macro wrapper
 Macro.add(['update_interface'], {
     handler() {
         const name = this.name;
         const argObj = new ArgObj(name, UPDATE_INTERFACE_TEMPLATE, this.args);
-        argObj.add_metadata('name', name);
+        ArgObj.add_metadata('name', name, argObj);
         update_interface(argObj);
     }
 });
@@ -1573,7 +1662,7 @@ Macro.add(['place_controller'], {
     handler() {
         const name = this.name;
         const argObj = new ArgObj(name, CREATE_CONTROLLER_TEMPLATE, this.args);
-        argObj.add_metadata('name', name);
+        ArgObj.add_metadata('name', name, argObj);
         create_controller(argObj).appendTo(this.output);
     }
 });
@@ -1840,7 +1929,7 @@ Macro.add(['new_entity', 'set_entity', 'delete_entity'], {
         const template = this.name.includes('delete') ? DELETE_ENTITY_TEMPLATE : SET_ENTITY_TEMPLATE;
         const argObj = new ArgObj(name, template, this.args);
         argObj.removing = this.name.includes('delete');
-        argObj.add_metadata('name', name);
+        ArgObj.add_metadata('name', name, argObj);
         set_entity(argObj);
     }
 });
@@ -1953,7 +2042,7 @@ Macro.add(['set_mapscripts'], {
             });
         }
 
-        argObj.add_metadata('name', name);
+        ArgObj.add_metadata('name', name, argObj);
         set_mapscripts(argObj);
     }
 });
@@ -2064,7 +2153,7 @@ Macro.add(['mapmove'], {
     handler() {
         const name = this.name;
         const argObj = new ArgObj(name, BEGIN_MAPMOVE_TEMPLATE, this.args);
-        argObj.add_metadata('name', name);
+        ArgObj.add_metadata('name', name, argObj);
         begin_mapmove(argObj);      
     }
 });
@@ -2122,6 +2211,17 @@ function begin_mapmove(argObj) {
 
     const { grid_travel, columns, maparray, position, entities } = this_map;
 
+    // VALIDATE: bounds
+    if (argObj.target_x !== undefined || argObj.target_y !== undefined) {
+        validate_bounds({ 
+            name, 
+            mapname, 
+            columns, 
+            maparray, 
+            x: argObj.target_x, 
+            y: argObj.target_y 
+        });
+    }
     // WARNING: assumed arg because no xy
     if (
         (! suppress_warnings) && 
@@ -2624,6 +2724,7 @@ function get_map(argObj) {
     }
     return structuredClone(maps[mapname]);
 }
+<<<<<<< HEAD
 // shortcuts
 function named_argObj(name, data) {
     Object.defineProperty(data, 'name', {
@@ -2696,6 +2797,116 @@ function get_handler(mapname) {
                     target_x: arg.x,
                     target_y: arg.y,
                 }))
+=======
+// map handler
+function get_handler(mapname) {
+    return {
+        get pos() {
+            return get_mapstate(ArgObj.add_metadata('name', 'Sleepymap.handler.pos', {
+                mapname,
+            }));
+        },
+        // get
+        get frozen() {
+            return get_mapstate(ArgObj.add_metadata('name', 'Sleepymap.handler.frozen', {
+                mapname,
+                mapstate: 'frozen',
+            }));
+        },
+        // set
+        freeze() {
+            set_mapstate(ArgObj.add_metadata('name', 'Sleepymap.handler.freeze', {
+                mapname,
+                frozen: true,
+            }));
+        },
+        unfreeze() {
+            set_mapstate(ArgObj.add_metadata('name', 'Sleepymap.handler.freeze', {
+                mapname,
+                frozen: false,
+            }));
+        },
+        // get
+        blocked(mapnode) {
+            return get_mapnode(ArgObj.add_metadata('name', 'Sleepymap.handler.blocked', {
+                mapname,
+                mapnode,
+            })).blocked;
+        },
+        // set
+        block(mapnode) {
+            set_mapnode(ArgObj.add_metadata('name', 'Sleepymap.handler.block', {
+                mapname,
+                mapnode,
+                data: { blocked: true },
+            }));
+        },
+        unblock(mapnode) {
+            set_mapnode(ArgObj.add_metadata('name', 'Sleepymap.handler.unblock', {
+                mapname,
+                mapnode,
+                data: { blocked: false },
+            }));
+        },
+        // get
+        disabled(mapnode) {
+            return get_mapnode(ArgObj.add_metadata('name', 'Sleepymap.handler.disabled', {
+                mapname,
+                mapnode,
+            })).disabled;
+        },
+        // set
+        disable(mapnode) {
+            set_mapnode(ArgObj.add_metadata('name', 'Sleepymap.handler.disable', {
+                mapname,
+                mapnode,
+                data: { disabled: true },
+            }));
+        },
+        enable(mapnode) {
+            set_mapnode(ArgObj.add_metadata('name', 'Sleepymap.handler.enable', {
+                mapname,
+                mapnode,
+                data: { disabled: false },
+            }));
+        },
+        // get
+        hidden(mapnode) {
+            return get_mapnode(ArgObj.add_metadata('name', 'Sleepymap.handler.hidden', {
+                mapname,
+                mapnode,
+            })).hidden;
+        },
+        // set
+        hide(mapnode) {
+            set_mapnode(ArgObj.add_metadata('name', 'Sleepymap.handler.hide', {
+                mapname,
+                mapnode,
+                data: { hidden: true },
+            }));
+        },
+        show(mapnode) {
+            set_mapnode(ArgObj.add_metadata('name', 'Sleepymap.handler.show', {
+                mapname,
+                mapnode,
+                data: { hidden: false },
+            }));
+        },
+        // move
+        move_to(arg) {
+            if (typeof arg === 'string') {
+                begin_mapmove(ArgObj.add_metadata('name', 'Sleepymap.handler.move_to', {
+                    mapname,
+                    target_mapnode: arg,
+                }));
+            }
+            else if (typeof arg === 'object') {
+                begin_mapmove(ArgObj.add_metadata('name', 'Sleepymap.handler.move_to', {
+                    mapname,
+                    target_x: arg.x,
+                    target_y: arg.y,
+                }));
+>>>>>>> develop
             }
         },
     }
@@ -2732,7 +2943,11 @@ const Sleepymap = {
     set_entity,
     set_mapscripts,
     update_exits,
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> develop
     get_handler,
 };
 window.Sleepymap = Sleepymap;
