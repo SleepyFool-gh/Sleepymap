@@ -15,11 +15,3 @@ $(document).on(':passagedisplay', () => {
         Prism.highlightAll();
     }
 });
-
-// tabs
-$(document).on('click', '#controls .header', function() {
-    const control = $(this).attr('data-control');
-    $('#control-content').html('');
-    $('#control-content').wikiPassage(`control_${control}`);
-    $('#headers').attr('data-selected', control);
-});

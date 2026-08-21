@@ -392,6 +392,8 @@ Sleepymap Macro Library, Demo
     _pantry_disabled = false;
     _living_walled = false;
     _stairs_blockedd = false;
+    _x_span = 16;
+    _y_span = 9;
 >>
 /* mapview, <<do>> for enabling/disabling autoupdate */
 <<do tag 'mapview'>>
@@ -404,8 +406,8 @@ Sleepymap Macro Library, Demo
         mapname     $mapname
         background  '<img src="./assets/small_house.png">'
         autoupdate  _mapview_autoupdate
-        x_span      5
-        y_span      5
+        x_span      _x_span
+        y_span      _y_span  
     >>
 <</do>>
 
@@ -413,13 +415,33 @@ Sleepymap Macro Library, Demo
 
     <div id='controls'>
         <div id='headers' data-selected='demo'>
-            <h3 class='header' data-control='demo'>Demo Navigation</h3>
-            <h3 class='header' data-control='map'>Map Manipulation</h3>
-            <h3 class='header' data-control='mapmove'>Mapmove Controls</h3>
-            <h3 class='header' data-control='interface'>Interface Controls</h3>
-        </div>
-        <div id='control-content'>
-            <<include 'control_demo'>>
+            <details open>
+                <summary>
+                    <h3 class='header' data-control='demo'>Demo Navigation</h3>
+                </summary>
+                <<include 'control_demo'>>
+            </details>
+            <hr>
+            <details open>
+                <summary>
+                    <h3 class='header' data-control='map'>Map Manipulation</h3>
+                </summary>
+                <<include 'control_map'>>
+            </details>
+            <hr>
+            <details open>
+                <summary>
+                    <h3 class='header' data-control='mapmove'>Mapmove Controls</h3>
+                </summary>
+                <<include 'control_mapmove'>>
+            </details>
+            <hr>
+            <details open>
+                <summary>
+                    <h3 class='header' data-control='interface'>Interface Controls</h3>
+                </summary>
+                <<include 'control_interface'>>
+            </details>
         </div>
     </div>
 
@@ -578,6 +600,23 @@ Sleepymap Macro Library, Demo
             <<update_interface selector '.macro-Sleepymap-mapview'>>
         <</link>>
     </li>
+    <<if passage() === 'grid_house'>>
+        <li>
+            <span class='aperture-label'>aperture x span:</span>
+            <input id="x-span" type="number" min="0" max="16" value="16">
+        </li>
+        <li>
+            <span class='aperture-label'>aperture y span:</span>
+            <input id="y-span" type="number" min="0" max="9" value="9">
+        </li>
+        <li>
+            <<link 'Update aperture'>>
+                <<set _x_span = Number($('#x-span').val())>>
+                <<set _y_span = Number($('#y-span').val())>>
+                <<redo 'mapview'>>
+            <</link>>
+        </li>
+    <</if>>
     <li>WASD for north, east, south, west respectively.</li>
     <li>E to teleport to Outhouse</li>
     <li>R to teleport to Dining Room, only from Outhouse</li>

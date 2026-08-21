@@ -9,9 +9,15 @@ html {
 }
 #grid h3 {
     margin: 0;
+    padding-bottom: 0;
 }
 #passages ul {
     margin: 0;
+    padding: 0 0 0 2.5rem;
+}
+#passages hr {
+    border-top: 1px solid var(--border-color);
+    margin: 0.5rem 0 0 0;
 }
 #grid {
     display: grid;
@@ -37,12 +43,9 @@ html {
         }
         #headers {
             display: flex;
-            flex-wrap: wrap;
+            flex-direction: column;
         }
             .header {
-                border: 1px solid var(--border-color);
-                border-bottom: none;
-                border-radius: 1rem 1rem 0 0;
                 padding: 0.5rem;
                 flex-grow: 1;
                 color: #68d;
@@ -52,21 +55,28 @@ html {
                     color: #8af;
                     text-decoration: underline;
                 }
-            #headers[data-selected='demo'] [data-control='demo'],
-            #headers[data-selected='map'] [data-control='map'],
-            #headers[data-selected='mapmove'] [data-control='mapmove'],
-            #headers[data-selected='interface'] [data-control='interface'] {
-                order: 1;
-                flex-basis: 100%;
-                color: white;
-                cursor: initial;
-                text-decoration: none;
-            }
+                details h3::before {
+                    content: "🞂";
+                    display: inline-flex;
+                    margin: 0 0.5rem;
+                    transition: transform 0.1s ease;
+                    text-align: center;
+                    place-content: center;
+                }
+                details[open] h3::before {
+                    transform: rotate(90deg);
+                }
         #control-content {
             padding: 0 0.5rem 1rem 0.5rem;
-            border: 1px solid var(--border-color);
-            border-top: none;
             min-height: 15rem;
+        }
+        .aperture-label {
+            display: inline-block;
+            width: 7.5rem;
+        }
+        #x-span, #y-span {
+            width: 3rem;
+            padding: 0 0.5rem;
         }
     #kitty {
         font-size: 1rem;

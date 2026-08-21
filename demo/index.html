@@ -113,12 +113,26 @@ var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZa
     grid-template-rows: repeat(3, 1fr);
     position: relative;
 }
-    .macro-Sleepymap-rosebg,
-    .macro-Sleepymap-mapviewbg {
+    .macro-Sleepymap-rosebg {
         position: absolute;
         height: 100%;
         width: 100%;
         z-index: -1;
+    }
+    .macro-Sleepymap-mapviewbg {
+        position: absolute;
+        z-index: -1;
+        top: 0;
+        left: 0;
+        /* Make the asset match the full width/height of the original un-clamped grid */
+        width: calc((var(--columns) / var(--aperture-x)) * 100%);
+        height: calc((var(--rows) / var(--aperture-y)) * 100%);
+        /* Shift it top/left to match the current viewport frame offset */
+        transform: translate(
+            calc((var(--offset-x) / var(--columns)) * -100%),
+            calc((var(--offset-y) / var(--rows)) * -100%)
+        );
+        transform-origin: top left;
     }
         .macro-Sleepymap-rosebg > *,
         .macro-Sleepymap-mapviewbg > * {
@@ -193,9 +207,15 @@ html {
 }
 #grid h3 {
     margin: 0;
+    padding-bottom: 0;
 }
 #passages ul {
     margin: 0;
+    padding: 0 0 0 2.5rem;
+}
+#passages hr {
+    border-top: 1px solid var(--border-color);
+    margin: 0.5rem 0 0 0;
 }
 #grid {
     display: grid;
@@ -221,12 +241,9 @@ html {
         }
         #headers {
             display: flex;
-            flex-wrap: wrap;
+            flex-direction: column;
         }
             .header {
-                border: 1px solid var(--border-color);
-                border-bottom: none;
-                border-radius: 1rem 1rem 0 0;
                 padding: 0.5rem;
                 flex-grow: 1;
                 color: #68d;
@@ -236,21 +253,28 @@ html {
                     color: #8af;
                     text-decoration: underline;
                 }
-            #headers[data-selected='demo'] [data-control='demo'],
-            #headers[data-selected='map'] [data-control='map'],
-            #headers[data-selected='mapmove'] [data-control='mapmove'],
-            #headers[data-selected='interface'] [data-control='interface'] {
-                order: 1;
-                flex-basis: 100%;
-                color: white;
-                cursor: initial;
-                text-decoration: none;
-            }
+                details h3::before {
+                    content: "🞂";
+                    display: inline-flex;
+                    margin: 0 0.5rem;
+                    transition: transform 0.1s ease;
+                    text-align: center;
+                    place-content: center;
+                }
+                details[open] h3::before {
+                    transform: rotate(90deg);
+                }
         #control-content {
             padding: 0 0.5rem 1rem 0.5rem;
-            border: 1px solid var(--border-color);
-            border-top: none;
             min-height: 15rem;
+        }
+        .aperture-label {
+            display: inline-block;
+            width: 7.5rem;
+        }
+        #x-span, #y-span {
+            width: 3rem;
+            padding: 0 0.5rem;
         }
     #kitty {
         font-size: 1rem;
@@ -522,7 +546,7 @@ const options = {
 
         pathing_on_mapview      : true,
         quickmove_on_mapview    : true,
-        quickmove_delay         : 250,
+        quickmove_delay         : 150,
         
         disabled_stops_pathing  : true,
         hidden_stops_pathing    : true,
@@ -1762,10 +1786,6 @@ function create_mapview(argObj) {
     // WARNING: quickmove without pathing
     if (quickmove && (! pathing)) {
         console.warn(`${name} — Sleepymap "${mapname}" — quickmove without showing pathing isn't sensible!`);
-    }
-    // WARNING: show labels on node travel not supported
-    if (argObj.show_labels_on_mapview && (! grid_travel)) {
-        console.warn(`${name} — Sleepymap "${mapname}" — showing labels on node travel map isn't supported! Input ignored...`);
     }
 
     // create aperture
@@ -3222,80 +3242,6 @@ function get_map(argObj) {
     }
     return structuredClone(maps[mapname]);
 }
-<<<<<<< HEAD
-// shortcuts
-function named_argObj(name, data) {
-    Object.defineProperty(data, 'name', {
-        value: name,
-        writable: false,
-        enumerable: true,
-        configurable: false,
-    });
-    return data;
-}
-function get_handler(mapname) {
-    return {
-        get pos() {
-            return get_mapstate(named_argObj('Sleepymap.handler.pos', {
-                mapname,
-            }))
-        },
-        block(mapnode) {
-            set_mapnode(named_argObj('Sleepymap.handler.block', {
-                mapname,
-                mapnode,
-                data: { blocked: true },
-            }))
-        },
-        unblock(mapnode) {
-            set_mapnode(named_argObj('Sleepymap.handler.unblock', {
-                mapname,
-                mapnode,
-                data: { blocked: false },
-            }))
-        },
-        disable(mapnode) {
-            set_mapnode(named_argObj('Sleepymap.handler.disable', {
-                mapname,
-                mapnode,
-                data: { disabled: true },
-            }))
-        },
-        enable(mapnode) {
-            set_mapnode(named_argObj('Sleepymap.handler.enable', {
-                mapname,
-                mapnode,
-                data: { disabled: false },
-            }))
-        },
-        hide(mapnode) {
-            set_mapnode(named_argObj('Sleepymap.handler.hide', {
-                mapname,
-                mapnode,
-                data: { hidden: true },
-            }))
-        },
-        show(mapnode) {
-            set_mapnode(named_argObj('Sleepymap.handler.show', {
-                mapname,
-                mapnode,
-                data: { hidden: false },
-            }))
-        },
-        move_to(arg) {
-            if (typeof arg === 'string') {
-                begin_mapmove(named_argObj('Sleepymap.handler.move_to', {
-                    mapname,
-                    target_mapnode: arg,
-                }))
-            }
-            else if (typeof arg === 'object') {
-                begin_mapmove(named_argObj('Sleepymap.handler.move_to', {
-                    mapname,
-                    target_x: arg.x,
-                    target_y: arg.y,
-                }))
-=======
 // map handler
 function get_handler(mapname) {
     return {
@@ -3404,7 +3350,6 @@ function get_handler(mapname) {
                     target_x: arg.x,
                     target_y: arg.y,
                 }));
->>>>>>> develop
             }
         },
     }
@@ -3441,11 +3386,7 @@ const Sleepymap = {
     set_entity,
     set_mapscripts,
     update_exits,
-<<<<<<< HEAD
-
-=======
     
->>>>>>> develop
     get_handler,
 };
 window.Sleepymap = Sleepymap;
@@ -3471,14 +3412,6 @@ $(document).on(':passagedisplay', () => {
     if (window.Prism) {
         Prism.highlightAll();
     }
-});
-
-// tabs
-$(document).on('click', '#controls .header', function() {
-    const control = $(this).attr('data-control');
-    $('#control-content').html('');
-    $('#control-content').wikiPassage(`control_${control}`);
-    $('#headers').attr('data-selected', control);
 });</script><tw-passagedata pid="1" name="StoryCaption" tags="nobr" position="100,100" size="100,100">/* map stats */
 &lt;h3&gt;Map Stats&lt;/h3&gt;
 &lt;&lt;do tag &#39;stats&#39;&gt;&gt;
@@ -3834,6 +3767,8 @@ $(document).on('click', '#controls .header', function() {
     _pantry_disabled = false;
     _living_walled = false;
     _stairs_blockedd = false;
+    _x_span = 16;
+    _y_span = 9;
 &gt;&gt;
 /* mapview, &lt;&lt;do&gt;&gt; for enabling/disabling autoupdate */
 &lt;&lt;do tag &#39;mapview&#39;&gt;&gt;
@@ -3846,8 +3781,8 @@ $(document).on('click', '#controls .header', function() {
         mapname     $mapname
         background  &#39;&lt;img src=&quot;./assets/small_house.png&quot;&gt;&#39;
         autoupdate  _mapview_autoupdate
-        x_span      5
-        y_span      5
+        x_span      _x_span
+        y_span      _y_span  
     &gt;&gt;
 &lt;&lt;/do&gt;&gt;
 
@@ -3855,13 +3790,33 @@ $(document).on('click', '#controls .header', function() {
 
     &lt;div id=&#39;controls&#39;&gt;
         &lt;div id=&#39;headers&#39; data-selected=&#39;demo&#39;&gt;
-            &lt;h3 class=&#39;header&#39; data-control=&#39;demo&#39;&gt;Demo Navigation&lt;/h3&gt;
-            &lt;h3 class=&#39;header&#39; data-control=&#39;map&#39;&gt;Map Manipulation&lt;/h3&gt;
-            &lt;h3 class=&#39;header&#39; data-control=&#39;mapmove&#39;&gt;Mapmove Controls&lt;/h3&gt;
-            &lt;h3 class=&#39;header&#39; data-control=&#39;interface&#39;&gt;Interface Controls&lt;/h3&gt;
-        &lt;/div&gt;
-        &lt;div id=&#39;control-content&#39;&gt;
-            &lt;&lt;include &#39;control_demo&#39;&gt;&gt;
+            &lt;details open&gt;
+                &lt;summary&gt;
+                    &lt;h3 class=&#39;header&#39; data-control=&#39;demo&#39;&gt;Demo Navigation&lt;/h3&gt;
+                &lt;/summary&gt;
+                &lt;&lt;include &#39;control_demo&#39;&gt;&gt;
+            &lt;/details&gt;
+            &lt;hr&gt;
+            &lt;details open&gt;
+                &lt;summary&gt;
+                    &lt;h3 class=&#39;header&#39; data-control=&#39;map&#39;&gt;Map Manipulation&lt;/h3&gt;
+                &lt;/summary&gt;
+                &lt;&lt;include &#39;control_map&#39;&gt;&gt;
+            &lt;/details&gt;
+            &lt;hr&gt;
+            &lt;details open&gt;
+                &lt;summary&gt;
+                    &lt;h3 class=&#39;header&#39; data-control=&#39;mapmove&#39;&gt;Mapmove Controls&lt;/h3&gt;
+                &lt;/summary&gt;
+                &lt;&lt;include &#39;control_mapmove&#39;&gt;&gt;
+            &lt;/details&gt;
+            &lt;hr&gt;
+            &lt;details open&gt;
+                &lt;summary&gt;
+                    &lt;h3 class=&#39;header&#39; data-control=&#39;interface&#39;&gt;Interface Controls&lt;/h3&gt;
+                &lt;/summary&gt;
+                &lt;&lt;include &#39;control_interface&#39;&gt;&gt;
+            &lt;/details&gt;
         &lt;/div&gt;
     &lt;/div&gt;
 
@@ -4008,6 +3963,23 @@ $(document).on('click', '#controls .header', function() {
             &lt;&lt;update_interface selector &#39;.macro-Sleepymap-mapview&#39;&gt;&gt;
         &lt;&lt;/link&gt;&gt;
     &lt;/li&gt;
+    &lt;&lt;if passage() === &#39;grid_house&#39;&gt;&gt;
+        &lt;li&gt;
+            &lt;span class=&#39;aperture-label&#39;&gt;aperture x span:&lt;/span&gt;
+            &lt;input id=&quot;x-span&quot; type=&quot;number&quot; min=&quot;0&quot; max=&quot;16&quot; value=&quot;16&quot;&gt;
+        &lt;/li&gt;
+        &lt;li&gt;
+            &lt;span class=&#39;aperture-label&#39;&gt;aperture y span:&lt;/span&gt;
+            &lt;input id=&quot;y-span&quot; type=&quot;number&quot; min=&quot;0&quot; max=&quot;9&quot; value=&quot;9&quot;&gt;
+        &lt;/li&gt;
+        &lt;li&gt;
+            &lt;&lt;link &#39;Update aperture&#39;&gt;&gt;
+                &lt;&lt;set _x_span = Number($(&#39;#x-span&#39;).val())&gt;&gt;
+                &lt;&lt;set _y_span = Number($(&#39;#y-span&#39;).val())&gt;&gt;
+                &lt;&lt;redo &#39;mapview&#39;&gt;&gt;
+            &lt;&lt;/link&gt;&gt;
+        &lt;/li&gt;
+    &lt;&lt;/if&gt;&gt;
     &lt;li&gt;WASD for north, east, south, west respectively.&lt;/li&gt;
     &lt;li&gt;E to teleport to Outhouse&lt;/li&gt;
     &lt;li&gt;R to teleport to Dining Room, only from Outhouse&lt;/li&gt;
