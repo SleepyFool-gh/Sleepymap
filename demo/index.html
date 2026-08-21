@@ -158,6 +158,7 @@ var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZa
     aspect-ratio: var(--aspect-ratio);
     display: inline-grid;
     grid-template-columns: repeat(var(--aperture-x), 1fr);
+    grid-template-rows: repeat(var(--aperture-y), 1fr);
     position: relative;
     overflow: hidden;
 }
@@ -170,6 +171,7 @@ var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZa
         place-items: center;
         position: relative;
         text-align: center;
+        contain: layout style size;
     }
         .macro-Sleepymap-tile .macro-Sleepymap-label,
         .macro-Sleepymap-entity {
