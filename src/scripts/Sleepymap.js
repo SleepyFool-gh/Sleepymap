@@ -1474,8 +1474,11 @@ function create_mapview(argObj) {
 
             const target_i = Number($(this).attr('data-i'));
 
-            // clear path
+            // clean up
             clear_path();
+            $(this).removeClass('macro-Sleepymap-hoverlink');
+            
+            // new path
             path = Sleepymap.find_path({
                 mapname, 
                 from_i  : position_i,
@@ -1494,17 +1497,13 @@ function create_mapview(argObj) {
                 }
             }
             // if not pathmoving, add cursor if either:
-            // path exists and quickmove enabled
             // path exists, is adjacent, and clickable
-            if (enabled) {
-                // if path exists, movable
-                $(this).removeClass('macro-Sleepymap-hoverlink');
-                if (
-                    (clickable && path?.length === 2) || 
-                    (quickmove && path?.length > 1)
-                ) {
-                    $(this).addClass('macro-Sleepymap-hoverlink');
-                }
+            // path exists and quickmove enabled
+            if (enabled && (
+                (clickable && path?.length === 2) || 
+                (quickmove && path?.length > 1)
+            )) {
+                $(this).addClass('macro-Sleepymap-hoverlink');
             }
         });
         // run quickmove if enabled
