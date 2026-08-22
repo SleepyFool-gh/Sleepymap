@@ -1468,6 +1468,7 @@ function create_mapview(argObj) {
                 if ($tile) $tile.removeClass('macro-Sleepymap-path');
             }
         };
+
         $mapview.on('mouseover', '.macro-Sleepymap-tile', function(ev) {
             // quickmove running, do nothing
             if (_quickmove_running) return;
@@ -1506,7 +1507,7 @@ function create_mapview(argObj) {
                 $(this).addClass('macro-Sleepymap-hoverlink');
             }
         });
-        // run quickmove if enabled
+        // run mapmove if clickable or quickmove enabled
         $mapview.on('click', '.macro-Sleepymap-tile', function(ev) {
             if (enabled && (
                 (clickable && path?.length === 2) ||    // adjacent tile
