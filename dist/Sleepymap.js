@@ -24,12 +24,12 @@ const options = {
 
         pathing_on_mapview      : true,
         quickmove_on_mapview    : true,
-        quickmove_delay         : 150,
+        quickmove_delay         : 0,
         
         disabled_stops_pathing  : true,
         hidden_stops_pathing    : true,
         blocked_stops_pathing   : false,
-        aperture_stops_pathing  : true,
+        aperture_stops_pathing  : false,
     },
 
     // default wall id
@@ -108,7 +108,7 @@ const is_diagonal = {
     SW  : true,
     NW  : true,
 };
-// quickmove flag to disable things as needed
+// quickmove flags to disable things as needed
 let _quickmove_running = false;
 
 
@@ -1457,15 +1457,25 @@ function create_mapview(argObj) {
         $mapview.append($tile);
     }
 
-    // attach click listener, only if not quickmove as that will replace it
-    if (clickable && ! quickmove) {
-        attach_click({ name, mapname, $interface: $mapview });
-    }
+    // grid travel maps
     // pathing always works, but hidden if not shown
     if (grid_travel) {
         let path;
+        // helper to clear path
+        const clear_path = function() {
+            for (let i = 0; i < path?.length; i++) {
+                const $tile = $tiles[path[i]];
+                if ($tile) $tile.removeClass('macro-Sleepymap-path');
+            }
+        };
         $mapview.on('mouseover', '.macro-Sleepymap-tile', function(ev) {
+            // quickmove running, do nothing
+            if (_quickmove_running) return;
+
             const target_i = Number($(this).attr('data-i'));
+
+            // clear path
+            clear_path();
             path = Sleepymap.find_path({
                 mapname, 
                 from_i  : position_i,
@@ -1473,36 +1483,68 @@ function create_mapview(argObj) {
                 aperture_stops_pathing,
                 aperture,
             });
+
             // show pathing if enabled and not pathmoving
-            if (enabled && pathing && ! _quickmove_running) {
-                // remove path class on all tiles
-                $mapview[0]
-                    .querySelectorAll('.macro-Sleepymap-path')
-                    .forEach( el => el.classList.remove('macro-Sleepymap-path'));
+            if (enabled && pathing) {
                 // add path class to each path tile
                 for (let i = 0; i < path?.length; i++) {
-                    if ($tiles[path[i]]) {
-                        $tiles[path[i]].addClass('macro-Sleepymap-path');
-                    }
+                    // only if tile exists on mapview
+                    const $tile = $tiles[path[i]];
+                    if ($tile) $tile.addClass('macro-Sleepymap-path');
                 }
             }
-            // if quickmove enabled and not pathmoving
-            if (enabled && quickmove && ! _quickmove_running) {
+            // if not pathmoving, add cursor if either:
+            // path exists and quickmove enabled
+            // path exists, is adjacent, and clickable
+            if (enabled) {
                 // if path exists, movable
                 $(this).removeClass('macro-Sleepymap-hoverlink');
-                if (path) {
+                if (
+                    (clickable && path?.length === 2) || 
+                    (quickmove && path?.length > 1)
+                ) {
                     $(this).addClass('macro-Sleepymap-hoverlink');
                 }
             }
         });
         // run quickmove if enabled
-        if (enabled && quickmove) {
-            $mapview.on('click', '.macro-Sleepymap-tile', function(ev) {
-                // if valid path
-                if (path?.length > 1) begin_quickmove({ mapname, path });
-            });
-        }
-        
+        $mapview.on('click', '.macro-Sleepymap-tile', function(ev) {
+            if (enabled && (
+                (clickable && path?.length === 2) ||    // adjacent tile
+                (quickmove && path?.length > 1)         // path exists
+            )) {
+                clear_path();
+                begin_quickmove({ mapname, path });
+            }
+        });
+    }
+    // node travel maps
+    // attach click listener if enabled
+    else if (clickable) {
+        $mapview.on('click', '.macro-Sleepymap-tile', (ev) => {
+            const $tile = $(ev.currentTarget);
+            // disabled, do nothing
+            if (
+                _quickmove_running      ||
+                $tile.data('disabled')  ||
+                ! this.enabled          ||
+                ! $tile.data('traversable')
+            ) return;
+
+            // attempt move to target
+            const target_mapnode    = $tile.data('mapnode');
+            const target_x          = $tile.data('x');
+            const target_y          = $tile.data('y');
+            const target_argObj = {
+                mapname,
+                target_mapnode,
+                suppress_warnings: true,
+            };
+            // only define if valid numbers
+            if (Number.isFinite(target_x)) target_argObj.target_x = target_x;
+            if (Number.isFinite(target_y)) target_argObj.target_y = target_y;
+            begin_mapmove(target_argObj);
+        });
     }
 
     return $mapview;
