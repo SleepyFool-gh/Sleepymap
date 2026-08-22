@@ -1468,14 +1468,18 @@ function create_mapview(argObj) {
                 if ($tile) $tile.removeClass('macro-Sleepymap-path');
             }
         };
+
         $mapview.on('mouseover', '.macro-Sleepymap-tile', function(ev) {
             // quickmove running, do nothing
             if (_quickmove_running) return;
 
             const target_i = Number($(this).attr('data-i'));
 
-            // clear path
+            // clean up
             clear_path();
+            $(this).removeClass('macro-Sleepymap-hoverlink');
+            
+            // new path
             path = Sleepymap.find_path({
                 mapname, 
                 from_i  : position_i,
@@ -1494,20 +1498,16 @@ function create_mapview(argObj) {
                 }
             }
             // if not pathmoving, add cursor if either:
-            // path exists and quickmove enabled
             // path exists, is adjacent, and clickable
-            if (enabled) {
-                // if path exists, movable
-                $(this).removeClass('macro-Sleepymap-hoverlink');
-                if (
-                    (clickable && path?.length === 2) || 
-                    (quickmove && path?.length > 1)
-                ) {
-                    $(this).addClass('macro-Sleepymap-hoverlink');
-                }
+            // path exists and quickmove enabled
+            if (enabled && (
+                (clickable && path?.length === 2) || 
+                (quickmove && path?.length > 1)
+            )) {
+                $(this).addClass('macro-Sleepymap-hoverlink');
             }
         });
-        // run quickmove if enabled
+        // run mapmove if clickable or quickmove enabled
         $mapview.on('click', '.macro-Sleepymap-tile', function(ev) {
             if (enabled && (
                 (clickable && path?.length === 2) ||    // adjacent tile
